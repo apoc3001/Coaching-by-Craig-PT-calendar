@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0051)file:///C:/Users/apoc3/Downloads/pt-calendar_7.html -->
+<!-- saved from url=(0051)file:///C:/Users/apoc3/Downloads/pt-calendar_8.html -->
 <html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -44,9 +44,7 @@ header {
 #gAuthBtn.connected:hover { background: transparent; color: var(--lime); }
 
 .week-nav { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px 0; }
-.week-label { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 2px; }
-.wlime { color: var(--lime); }
-.wsub { font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 300; color: var(--muted); margin-left: 8px; }
+#weekLabel { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 2px; }
 .nav-btns { display: flex; gap: 8px; }
 .nav-btn, .today-btn {
   background: var(--card); border: 1px solid var(--border); color: var(--text);
@@ -60,14 +58,10 @@ header {
 .pill { background: var(--card); border: 1px solid var(--border); padding: 10px 18px; white-space: nowrap; flex-shrink: 0; }
 .pill-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); margin-bottom: 4px; }
 .pill-value { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 1px; color: var(--lime); }
-.pill-neutral { color: var(--text); }
 
 .legend { display: flex; gap: 20px; padding: 0 24px 12px; align-items: center; }
 .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); }
 .legend-dot { width: 10px; height: 10px; border: 1px solid; flex-shrink: 0; }
-.dot-e { background: var(--empty); border-color: var(--border); }
-.dot-b { background: var(--booked-bg); border-color: var(--booked-border); }
-.dot-r { background: var(--rec-bg); border-color: var(--rec-border); }
 
 .calendar-wrapper { padding: 0 24px 80px; overflow-x: auto; }
 .cal-grid {
@@ -97,25 +91,26 @@ header {
 }
 .slot {
   border-right: 1px solid var(--border); border-bottom: 1px solid var(--border);
-  height: 52px; position: relative; overflow: hidden; cursor: pointer;
+  height: 52px; position: relative; overflow: hidden;
   background: var(--empty); transition: background 0.1s;
+  cursor: pointer; user-select: none;
 }
-.slot:hover { background: rgba(198,241,53,0.06); }
+.slot:hover { background: rgba(198,241,53,0.08); }
 .slot-booked { background: var(--booked-bg) !important; border-color: var(--booked-border); }
-.slot-rec { background: var(--rec-bg) !important; border-color: var(--rec-border); }
-.slot-past { opacity: 0.38; }
-.slot-past-empty { cursor: default; pointer-events: none; }
-.slot-inner { padding: 5px 7px; height: 100%; display: flex; flex-direction: column; justify-content: center; }
-.slot-name { font-size: 11px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.slot-rate { font-family: 'Bebas Neue', sans-serif; font-size: 13px; color: var(--lime); margin-top: 1px; }
-.slot-badge {
+.slot-rec    { background: var(--rec-bg) !important;    border-color: var(--rec-border); }
+.slot-past   { opacity: 0.38; cursor: default !important; pointer-events: none; }
+.slot-inner  { padding: 5px 7px; height: 100%; display: flex; flex-direction: column; justify-content: center; pointer-events: none; }
+.slot-name   { font-size: 11px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
+.slot-rate   { font-family: 'Bebas Neue', sans-serif; font-size: 13px; color: var(--lime); margin-top: 1px; pointer-events: none; }
+.slot-badge  {
   position: absolute; top: 3px; right: 4px; font-size: 8px; letter-spacing: 1px;
-  font-weight: 700; text-transform: uppercase; padding: 1px 4px;
+  font-weight: 700; text-transform: uppercase; padding: 1px 4px; pointer-events: none;
   background: rgba(16,112,160,0.2); color: #40b4f0; border: 1px solid rgba(16,112,160,0.4);
 }
 .plus-hint {
   position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-  font-size: 22px; color: rgba(198,241,53,0.2); opacity: 0; transition: opacity 0.1s; pointer-events: none;
+  font-size: 26px; color: rgba(198,241,53,0.25); opacity: 0; transition: opacity 0.1s;
+  pointer-events: none; font-weight: 300;
 }
 .slot:hover .plus-hint { opacity: 1; }
 
@@ -131,13 +126,13 @@ header {
 }
 @keyframes mIn { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
 .modal-title { font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 2px; color: var(--lime); margin-bottom: 3px; }
-.modal-sub { font-size: 12px; color: var(--muted); margin-bottom: 22px; }
+.modal-sub   { font-size: 12px; color: var(--muted); margin-bottom: 22px; }
 .modal-close {
   position: absolute; top: 14px; right: 16px; background: none; border: none;
   color: var(--muted); font-size: 22px; cursor: pointer; line-height: 1; padding: 4px 8px;
 }
 .modal-close:hover { color: var(--text); }
-.f-row { margin-bottom: 16px; }
+.f-row   { margin-bottom: 16px; }
 .f-label { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); margin-bottom: 6px; font-weight: 600; }
 .f-input {
   width: 100%; background: var(--card); border: 1px solid var(--border);
@@ -147,7 +142,7 @@ header {
 .f-input:focus { border-color: var(--lime); }
 .f-input::placeholder { color: var(--muted); }
 .f-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
-.toggle-row { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.toggle-row  { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
 .toggle-wrap { position: relative; width: 40px; height: 22px; cursor: pointer; flex-shrink: 0; }
 .toggle-wrap input { display: none; }
 .toggle-track { background: var(--border); border-radius: 11px; width: 100%; height: 100%; transition: background 0.2s; }
@@ -157,7 +152,6 @@ header {
   background: var(--text); border-radius: 50%; transition: transform 0.2s; pointer-events: none;
 }
 .toggle-wrap input:checked ~ .toggle-thumb { transform: translateX(18px); background: var(--black); }
-.toggle-label { font-size: 13px; }
 .modal-actions { display: flex; gap: 10px; margin-top: 22px; flex-wrap: wrap; }
 .btn-primary {
   flex: 1; min-width: 120px; background: var(--lime); color: var(--black); border: none;
@@ -175,10 +169,10 @@ header {
   font-family: 'DM Sans', sans-serif; font-size: 13px; padding: 12px 18px; cursor: pointer; transition: all 0.15s;
 }
 .btn-danger:hover { background: var(--danger); color: #fff; }
-.vf { margin-bottom: 14px; }
+.vf       { margin-bottom: 14px; }
 .vf-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); margin-bottom: 3px; }
 .vf-value { font-size: 15px; font-weight: 500; }
-.vf-lime { color: var(--lime); font-family: 'Bebas Neue', sans-serif; font-size: 22px; }
+.vf-lime  { color: var(--lime); font-family: 'Bebas Neue', sans-serif; font-size: 22px; }
 .gcal-btn {
   width: 100%; background: transparent; border: 1px solid #4285f4; color: #4285f4;
   font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600;
@@ -212,7 +206,7 @@ header {
 </header>
 
 <div class="week-nav">
-  <div class="week-label" id="weekLabel">WEEK <span class="wlime">19</span><span class="wsub">4 May – 10 May 2026</span></div>
+  <div id="weekLabel">WEEK <span style="color:var(--lime)">19</span><span style="font-family:&#39;DM Sans&#39;,sans-serif;font-size:14px;font-weight:300;color:var(--muted);margin-left:10px">4 May – 10 May 2026</span></div>
   <div class="nav-btns">
     <button class="nav-btn" id="btnPrev">←</button>
     <button class="today-btn" id="btnToday">Today</button>
@@ -220,16 +214,16 @@ header {
   </div>
 </div>
 
-<div class="summary-bar" id="summaryBar"><div class="pill"><div class="pill-label">Week Earnings</div><div class="pill-value">£0</div></div><div class="pill"><div class="pill-label">Sessions Booked</div><div class="pill-value pill-neutral">0</div></div><div class="pill"><div class="pill-label">Slots Available</div><div class="pill-value" style="color:var(--danger)">105</div></div><div class="pill"><div class="pill-label">Capacity</div><div class="pill-value" style="color:var(--danger)">0%</div></div></div>
+<div class="summary-bar" id="summaryBar"><div class="pill"><div class="pill-label">Week Earnings</div><div class="pill-value" style="color:var(--lime)">£0</div></div><div class="pill"><div class="pill-label">Sessions Booked</div><div class="pill-value" style="color:var(--text)">0</div></div><div class="pill"><div class="pill-label">Slots Available</div><div class="pill-value" style="color:var(--danger)">105</div></div><div class="pill"><div class="pill-label">Capacity</div><div class="pill-value" style="color:var(--danger)">0%</div></div></div>
 
 <div class="legend">
-  <div class="legend-item"><div class="legend-dot dot-e"></div>Available</div>
-  <div class="legend-item"><div class="legend-dot dot-b"></div>Booked</div>
-  <div class="legend-item"><div class="legend-dot dot-r"></div>Recurring</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--empty);border-color:var(--border)"></div>Available</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--booked-bg);border-color:var(--booked-border)"></div>Booked</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--rec-bg);border-color:var(--rec-border)"></div>Recurring</div>
 </div>
 
 <div class="calendar-wrapper">
-  <div class="cal-grid" id="calGrid"><div class="time-corner"></div><div class="day-hdr"><div class="dname">Mon</div><div class="ddate">4</div><div class="dearn"></div><div class="dsess"></div></div><div class="day-hdr"><div class="dname">Tue</div><div class="ddate">5</div><div class="dearn"></div><div class="dsess"></div></div><div class="day-hdr"><div class="dname">Wed</div><div class="ddate">6</div><div class="dearn"></div><div class="dsess"></div></div><div class="day-hdr"><div class="dname">Thu</div><div class="ddate">7</div><div class="dearn"></div><div class="dsess"></div></div><div class="day-hdr"><div class="dname">Fri</div><div class="ddate">8</div><div class="dearn"></div><div class="dsess"></div></div><div class="day-hdr is-today"><div class="dname">Sat</div><div class="ddate">9</div><div class="dearn"></div><div class="dsess"></div></div><div class="day-hdr"><div class="dname">Sun</div><div class="ddate">10</div><div class="dearn"></div><div class="dsess"></div></div><div class="time-lbl">6am</div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot" data-slotid="slot_dckyf85fww6"><div class="plus-hint">+</div></div><div class="time-lbl">7am</div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot" data-slotid="slot_c4lmxdzqclo"><div class="plus-hint">+</div></div><div class="time-lbl">8am</div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot" data-slotid="slot_rjygmzeogur"><div class="plus-hint">+</div></div><div class="time-lbl">9am</div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot" data-slotid="slot_y3af2lxuzeg"><div class="plus-hint">+</div></div><div class="time-lbl">10am</div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot" data-slotid="slot_ui4ghrfu0xo"><div class="plus-hint">+</div></div><div class="time-lbl">11am</div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot" data-slotid="slot_d8d1d7tlds"><div class="plus-hint">+</div></div><div class="time-lbl">12pm</div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot" data-slotid="slot_objsfniuzwe"><div class="plus-hint">+</div></div><div class="time-lbl">1pm</div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot" data-slotid="slot_u8b252lj3wj"><div class="plus-hint">+</div></div><div class="time-lbl">2pm</div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot" data-slotid="slot_7v7zsz1m6wx"><div class="plus-hint">+</div></div><div class="time-lbl">3pm</div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot" data-slotid="slot_oh44lp4u0eo"><div class="plus-hint">+</div></div><div class="time-lbl">4pm</div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot" data-slotid="slot_g2zbpsbdy9q"><div class="plus-hint">+</div></div><div class="time-lbl">5pm</div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot" data-slotid="slot_vwzgmop0omm"><div class="plus-hint">+</div></div><div class="time-lbl">6pm</div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot" data-slotid="slot_iklbak30c4"><div class="plus-hint">+</div></div><div class="time-lbl">7pm</div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot" data-slotid="slot_8z090vuusxb"><div class="plus-hint">+</div></div><div class="time-lbl">8pm</div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot slot-past slot-past-empty"></div><div class="slot" data-slotid="slot_jsy0kgoeuse"><div class="plus-hint">+</div></div></div>
+  <div class="cal-grid" id="calGrid"><div class="time-corner"></div><div class="day-hdr"><div class="dname">Mon</div><div class="ddate">4</div><div class="dearn"></div><div class="dsess"></div></div><div class="day-hdr"><div class="dname">Tue</div><div class="ddate">5</div><div class="dearn"></div><div class="dsess"></div></div><div class="day-hdr"><div class="dname">Wed</div><div class="ddate">6</div><div class="dearn"></div><div class="dsess"></div></div><div class="day-hdr"><div class="dname">Thu</div><div class="ddate">7</div><div class="dearn"></div><div class="dsess"></div></div><div class="day-hdr"><div class="dname">Fri</div><div class="ddate">8</div><div class="dearn"></div><div class="dsess"></div></div><div class="day-hdr is-today"><div class="dname">Sat</div><div class="ddate">9</div><div class="dearn"></div><div class="dsess"></div></div><div class="day-hdr"><div class="dname">Sun</div><div class="ddate">10</div><div class="dearn"></div><div class="dsess"></div></div><div class="time-lbl">6am</div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot"><div class="plus-hint">+</div></div><div class="time-lbl">7am</div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot"><div class="plus-hint">+</div></div><div class="time-lbl">8am</div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot"><div class="plus-hint">+</div></div><div class="time-lbl">9am</div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot"><div class="plus-hint">+</div></div><div class="time-lbl">10am</div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot"><div class="plus-hint">+</div></div><div class="time-lbl">11am</div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot"><div class="plus-hint">+</div></div><div class="time-lbl">12pm</div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot"><div class="plus-hint">+</div></div><div class="time-lbl">1pm</div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot"><div class="plus-hint">+</div></div><div class="time-lbl">2pm</div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot"><div class="plus-hint">+</div></div><div class="time-lbl">3pm</div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot"><div class="plus-hint">+</div></div><div class="time-lbl">4pm</div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot"><div class="plus-hint">+</div></div><div class="time-lbl">5pm</div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot"><div class="plus-hint">+</div></div><div class="time-lbl">6pm</div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot"><div class="plus-hint">+</div></div><div class="time-lbl">7pm</div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot"><div class="plus-hint">+</div></div><div class="time-lbl">8pm</div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot"><div class="plus-hint">+</div></div></div>
 </div>
 
 <!-- ADD / EDIT MODAL -->
@@ -258,7 +252,7 @@ header {
         <div class="toggle-track"></div>
         <div class="toggle-thumb"></div>
       </label>
-      <span class="toggle-label">Recurring client</span>
+      <span style="font-size:13px">Recurring client</span>
     </div>
     <div id="recurOpts" style="display:none">
       <div class="f-row">
@@ -294,452 +288,441 @@ header {
 <div class="toast" id="toast"></div>
 
 <script>
-(function () {
-  'use strict';
 
-  var GCAL_CLIENT_ID = '25101030281-stnunhc7qks2fnfjqj3nnf4afilvlvee.apps.googleusercontent.com'; // paste your Client ID here
+// ── CONFIG ──────────────────────────────────────────────────────────────────
+var GCAL_CLIENT_ID = '25101030281-stnunhc7qks2fnfjqj3nnf4afilvlvee.apps.googleusercontent.com'; // paste your Client ID here
+var START_H = 6, END_H = 20;
+var HOURS = [];
+for (var _h = START_H; _h <= END_H; _h++) HOURS.push(_h);
+var DSHORT  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+var DFULL   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+var MSHORT  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-  var START_H = 6, END_H = 20;
-  var HOURS = [];
-  for (var h = START_H; h <= END_H; h++) HOURS.push(h);
+// ── STATE ────────────────────────────────────────────────────────────────────
+var weekStart       = getMonday(new Date());
+var sessions        = loadData();
+var activeSlot      = null;
+var googleConnected = false;
+var gToken          = null;
+var currentViewKey  = null;
+var currentViewDate = null;
+var currentViewHour = null;
 
-  var DSHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  var DFULL  = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-  var MSHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+// ── STORAGE ──────────────────────────────────────────────────────────────────
+function loadData() {
+  try { return JSON.parse(localStorage.getItem('cbc_pt3') || '{}'); }
+  catch(e) { return {}; }
+}
+function saveData() {
+  localStorage.setItem('cbc_pt3', JSON.stringify(sessions));
+}
+function sk(date, hour) { return date + '_' + hour; }
 
-  var weekStart = getMonday(new Date());
-  var sessions  = loadData();
-  var activeSlot = null;
-  var googleConnected = false;
-  var gToken = null;
+// ── DATE UTILS ───────────────────────────────────────────────────────────────
+function getMonday(d) {
+  var dt = new Date(d); dt.setHours(0,0,0,0);
+  var day = dt.getDay();
+  dt.setDate(dt.getDate() - (day === 0 ? 6 : day - 1));
+  return dt;
+}
+function addDays(d, n) { var r = new Date(d); r.setDate(r.getDate() + n); return r; }
+function toISO(d) {
+  return d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate());
+}
+function pad2(n) { return n < 10 ? '0' + n : '' + n; }
+function isToday(d) { return toISO(d) === toISO(new Date()); }
+function isPast(dateStr, hour) {
+  return new Date(dateStr + 'T' + pad2(hour) + ':59:00') < new Date();
+}
+function weekNum(d) {
+  var jan1 = new Date(d.getFullYear(), 0, 1);
+  return Math.ceil((((d - jan1) / 86400000) + jan1.getDay() + 1) / 7);
+}
+function fmtH(h) { return h < 12 ? h + 'am' : h === 12 ? '12pm' : (h-12) + 'pm'; }
+function fmtDay(dateStr) {
+  var d = new Date(dateStr + 'T12:00:00');
+  return DFULL[d.getDay()] + ' ' + d.getDate() + ' ' + MSHORT[d.getMonth()];
+}
 
-  /* ── STORAGE ── */
-  function loadData() {
-    try { return JSON.parse(localStorage.getItem('cbc_pt2') || '{}'); }
-    catch (e) { return {}; }
-  }
-  function saveData() { localStorage.setItem('cbc_pt2', JSON.stringify(sessions)); }
-  function sk(date, hour) { return date + '_' + hour; }
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function render() {
+  renderWeekLabel();
+  renderSummary();
+  renderGrid();
+}
 
-  /* ── DATE UTILS ── */
-  function getMonday(d) {
-    var dt = new Date(d); dt.setHours(0,0,0,0);
-    var day = dt.getDay();
-    dt.setDate(dt.getDate() - (day === 0 ? 6 : day - 1));
-    return dt;
-  }
-  function addDays(d, n) { var r = new Date(d); r.setDate(r.getDate() + n); return r; }
-  function toISO(d) {
-    return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
-  }
-  function pad(n) { return String(n).padStart(2,'0'); }
-  function isToday(d) { return toISO(d) === toISO(new Date()); }
-  function isPast(dateStr, hour) {
-    return new Date(dateStr + 'T' + pad(hour) + ':59:00') < new Date();
-  }
-  function weekNum(d) {
-    var jan1 = new Date(d.getFullYear(), 0, 1);
-    return Math.ceil((((d - jan1) / 86400000) + jan1.getDay() + 1) / 7);
-  }
-  function fmtH(h) { return h < 12 ? h + 'am' : h === 12 ? '12pm' : (h-12) + 'pm'; }
-  function fmtD(d) { return DFULL[d.getDay()] + ' ' + d.getDate() + ' ' + MSHORT[d.getMonth()]; }
-  function dateFromISO(s) { return new Date(s + 'T12:00:00'); }
+function renderWeekLabel() {
+  var end = addDays(weekStart, 6);
+  var wn  = weekNum(weekStart);
+  var sub = weekStart.getDate() + ' ' + MSHORT[weekStart.getMonth()] +
+            ' &ndash; ' + end.getDate() + ' ' + MSHORT[end.getMonth()] + ' ' + end.getFullYear();
+  document.getElementById('weekLabel').innerHTML =
+    'WEEK <span style="color:var(--lime)">' + wn + '</span>' +
+    '<span style="font-family:\'DM Sans\',sans-serif;font-size:14px;font-weight:300;color:var(--muted);margin-left:10px">' + sub + '</span>';
+}
 
-  /* ── RENDER ── */
-  function render() {
-    renderWeekLabel();
-    renderSummary();
-    renderGrid();
-  }
-
-  function renderWeekLabel() {
-    var end = addDays(weekStart, 6);
-    var wn  = weekNum(weekStart);
-    var sub = weekStart.getDate() + ' ' + MSHORT[weekStart.getMonth()] +
-              ' \u2013 ' + end.getDate() + ' ' + MSHORT[end.getMonth()] + ' ' + end.getFullYear();
-    var el = document.getElementById('weekLabel');
-    el.innerHTML = 'WEEK <span class="wlime">' + wn + '</span><span class="wsub">' + sub + '</span>';
-  }
-
-  function renderSummary() {
-    var earn = 0, booked = 0, avail = 0;
-    for (var d = 0; d < 7; d++) {
-      var date = toISO(addDays(weekStart, d));
-      HOURS.forEach(function(h) {
-        var s = sessions[sk(date, h)];
-        if (s) { booked++; earn += (s.rate || 0); } else avail++;
-      });
+function renderSummary() {
+  var earn = 0, booked = 0, avail = 0;
+  for (var d = 0; d < 7; d++) {
+    var date = toISO(addDays(weekStart, d));
+    for (var hi = 0; hi < HOURS.length; hi++) {
+      var s = sessions[sk(date, HOURS[hi])];
+      if (s) { booked++; earn += (s.rate || 0); } else avail++;
     }
-    var total = booked + avail;
-    var pct = total ? Math.round(booked / total * 100) : 0;
-    var col = pct >= 80 ? 'var(--lime)' : pct >= 50 ? '#f0a020' : 'var(--danger)';
-    document.getElementById('summaryBar').innerHTML =
-      mkPill('Week Earnings', '\u00a3' + earn.toLocaleString(), false, null) +
-      mkPill('Sessions Booked', booked, true, null) +
-      mkPill('Slots Available', avail, false, col) +
-      mkPill('Capacity', pct + '%', false, col);
+  }
+  var total = booked + avail;
+  var pct = total ? Math.round(booked / total * 100) : 0;
+  var col = pct >= 80 ? 'var(--lime)' : pct >= 50 ? '#f0a020' : 'var(--danger)';
+  document.getElementById('summaryBar').innerHTML =
+    mkPill('Week Earnings', '&pound;' + earn.toLocaleString(), 'var(--lime)') +
+    mkPill('Sessions Booked', booked, 'var(--text)') +
+    mkPill('Slots Available', avail, col) +
+    mkPill('Capacity', pct + '%', col);
+}
+
+function mkPill(label, val, col) {
+  return '<div class="pill"><div class="pill-label">' + label + '</div>' +
+    '<div class="pill-value" style="color:' + col + '">' + val + '</div></div>';
+}
+
+function renderGrid() {
+  var grid = document.getElementById('calGrid');
+  grid.innerHTML = '';
+
+  // corner
+  var corner = el('div', 'time-corner');
+  grid.appendChild(corner);
+
+  // day headers
+  for (var d = 0; d < 7; d++) {
+    var date    = addDays(weekStart, d);
+    var dateStr = toISO(date);
+    var dayEarn = 0, dayBook = 0;
+    for (var hi = 0; hi < HOURS.length; hi++) {
+      var s = sessions[sk(dateStr, HOURS[hi])];
+      if (s) { dayEarn += (s.rate || 0); dayBook++; }
+    }
+    var hdr = el('div', 'day-hdr' + (isToday(date) ? ' is-today' : ''));
+    hdr.innerHTML =
+      '<div class="dname">' + DSHORT[date.getDay()] + '</div>' +
+      '<div class="ddate">' + date.getDate() + '</div>' +
+      '<div class="dearn">' + (dayEarn > 0 ? '&pound;' + dayEarn : '') + '</div>' +
+      '<div class="dsess">' + (dayBook > 0 ? dayBook + ' session' + (dayBook > 1 ? 's' : '') : '') + '</div>';
+    grid.appendChild(hdr);
   }
 
-  function mkPill(label, val, neutral, col) {
-    var style = col ? ' style="color:' + col + '"' : '';
-    return '<div class="pill"><div class="pill-label">' + label + '</div>' +
-      '<div class="pill-value' + (neutral ? ' pill-neutral' : '') + '"' + style + '>' + val + '</div></div>';
-  }
+  // time rows
+  for (var hi = 0; hi < HOURS.length; hi++) {
+    var hour = HOURS[hi];
+    var tl = el('div', 'time-lbl');
+    tl.textContent = fmtH(hour);
+    grid.appendChild(tl);
 
-  function renderGrid() {
-    slotMap = {};
-    var grid = document.getElementById('calGrid');
-    grid.innerHTML = '';
-
-    /* corner */
-    var corner = make('div', 'time-corner');
-    grid.appendChild(corner);
-
-    /* day headers */
     for (var d = 0; d < 7; d++) {
-      var date = addDays(weekStart, d);
+      var date    = addDays(weekStart, d);
       var dateStr = toISO(date);
-      var dayEarn = 0, dayBook = 0;
-      HOURS.forEach(function(h) {
-        var s = sessions[sk(dateStr, h)];
-        if (s) { dayEarn += (s.rate || 0); dayBook++; }
-      });
-      var hdr = make('div', 'day-hdr' + (isToday(date) ? ' is-today' : ''));
-      hdr.innerHTML =
-        '<div class="dname">' + DSHORT[date.getDay()] + '</div>' +
-        '<div class="ddate">' + date.getDate() + '</div>' +
-        '<div class="dearn">' + (dayEarn > 0 ? '\u00a3' + dayEarn : '') + '</div>' +
-        '<div class="dsess">' + (dayBook > 0 ? dayBook + ' session' + (dayBook > 1 ? 's' : '') : '') + '</div>';
-      grid.appendChild(hdr);
-    }
+      var key     = sk(dateStr, hour);
+      var s       = sessions[key];
+      var past    = isPast(dateStr, hour);
+      var cell    = el('div', 'slot');
 
-    /* rows */
-    HOURS.forEach(function(hour) {
-      var tl = make('div', 'time-lbl');
-      tl.textContent = fmtH(hour);
-      grid.appendChild(tl);
+      if (s) {
+        cell.className = 'slot ' + (s.recurring ? 'slot-rec' : 'slot-booked') + (past ? ' slot-past' : '');
 
-      for (var d = 0; d < 7; d++) {
-        var date = addDays(weekStart, d);
-        var dateStr = toISO(date);
-        var key = sk(dateStr, hour);
-        var s   = sessions[key];
-        var past = isPast(dateStr, hour);
-        var cell = make('div', 'slot');
+        var inner = el('div', 'slot-inner');
+        var nm    = el('div', 'slot-name'); nm.textContent = s.name;
+        inner.appendChild(nm);
+        if (s.rate) {
+          var rt = el('div', 'slot-rate'); rt.textContent = '\u00a3' + s.rate;
+          inner.appendChild(rt);
+        }
+        cell.appendChild(inner);
 
-        if (s) {
-          cell.classList.add(s.recurring ? 'slot-rec' : 'slot-booked');
-          if (past) cell.classList.add('slot-past');
-          /* view handler registered after cell built */
+        if (s.recurring) {
+          var badge = el('div', 'slot-badge'); badge.textContent = 'REC';
+          cell.appendChild(badge);
+        }
 
-          var inner = make('div', 'slot-inner');
-          var nm = make('div', 'slot-name'); nm.textContent = s.name;
-          inner.appendChild(nm);
-          if (s.rate) {
-            var rt = make('div', 'slot-rate'); rt.textContent = '\u00a3' + s.rate;
-            inner.appendChild(rt);
-          }
-          if (s.recurring) {
-            var badge = make('div', 'slot-badge'); badge.textContent = 'REC';
-            cell.appendChild(badge);
-          }
-          cell.appendChild(inner);
-          registerSlot(cell, { action: 'view', key: key, date: dateStr, hour: hour });
+        if (!past) {
+          attachViewClick(cell, key, dateStr, hour);
+        }
 
+      } else {
+        if (!past) {
+          var hint = el('div', 'plus-hint'); hint.textContent = '+';
+          cell.appendChild(hint);
+          attachAddClick(cell, dateStr, hour);
         } else {
-          if (past) {
-            cell.classList.add('slot-past', 'slot-past-empty');
-          } else {
-            var hint = make('div', 'plus-hint'); hint.textContent = '+';
-            cell.appendChild(hint);
-            registerSlot(cell, { action: 'add', date: dateStr, hour: hour });
-          }
-        }
-        grid.appendChild(cell);
-      }
-    });
-  }
-
-  function make(tag, cls) {
-    var el = document.createElement(tag);
-    if (cls) el.className = cls;
-    return el;
-  }
-
-  /* ── ADD / EDIT MODAL ── */
-  function openAdd(date, hour) {
-    activeSlot = { date: date, hour: hour };
-    document.getElementById('addTitle').textContent = 'BOOK SESSION';
-    document.getElementById('addSub').textContent =
-      fmtD(dateFromISO(date)) + '  \u00b7  ' + fmtH(hour) + ' \u2013 ' + fmtH(hour + 1);
-    document.getElementById('fName').value  = '';
-    document.getElementById('fRate').value  = '';
-    document.getElementById('fNotes').value = '';
-    document.getElementById('fRecurring').checked = false;
-    document.getElementById('recurOpts').style.display = 'none';
-    document.getElementById('fWeeks').value = 12;
-    document.getElementById('addModal').classList.add('open');
-    setTimeout(function() { document.getElementById('fName').focus(); }, 120);
-  }
-
-  function openEdit(key, date, hour, s) {
-    activeSlot = { date: date, hour: hour, editKey: key };
-    document.getElementById('addTitle').textContent = 'EDIT SESSION';
-    document.getElementById('addSub').textContent =
-      fmtD(dateFromISO(date)) + '  \u00b7  ' + fmtH(hour) + ' \u2013 ' + fmtH(hour + 1);
-    document.getElementById('fName').value  = s.name;
-    document.getElementById('fRate').value  = s.rate || '';
-    document.getElementById('fNotes').value = s.notes || '';
-    document.getElementById('fRecurring').checked = false;
-    document.getElementById('recurOpts').style.display = 'none';
-    document.getElementById('addModal').classList.add('open');
-    setTimeout(function() { document.getElementById('fName').focus(); }, 120);
-  }
-
-  function closeAdd() {
-    document.getElementById('addModal').classList.remove('open');
-    activeSlot = null;
-  }
-
-  function saveSession() {
-    var name = document.getElementById('fName').value.trim();
-    if (!name) { document.getElementById('fName').focus(); return; }
-    var rate  = parseFloat(document.getElementById('fRate').value) || 0;
-    var notes = document.getElementById('fNotes').value.trim();
-    var recur = document.getElementById('fRecurring').checked;
-
-    if (activeSlot && activeSlot.editKey) {
-      sessions[activeSlot.editKey] = Object.assign({}, sessions[activeSlot.editKey], { name: name, rate: rate, notes: notes });
-      saveData(); render(); closeAdd(); showToast('Session updated');
-      return;
-    }
-
-    if (recur) {
-      var interval = parseInt(document.getElementById('fFreq').value, 10) || 1;
-      var weeks    = parseInt(document.getElementById('fWeeks').value, 10) || 12;
-      var rid = Date.now().toString();
-      var count = 0;
-      for (var w = 0; w < weeks; w += interval) {
-        var dt = new Date(activeSlot.date + 'T12:00:00');
-        dt.setDate(dt.getDate() + w * 7);
-        var k = sk(toISO(dt), activeSlot.hour);
-        if (!sessions[k]) {
-          sessions[k] = { name: name, rate: rate, notes: notes, recurring: true, recurringId: rid };
-          count++;
+          cell.className = 'slot slot-past';
         }
       }
-      saveData(); render(); closeAdd(); showToast(count + ' recurring sessions added');
-    } else {
-      var k2 = sk(activeSlot.date, activeSlot.hour);
-      sessions[k2] = { name: name, rate: rate, notes: notes, recurring: false };
-      saveData(); render(); closeAdd(); showToast('Session booked');
+
+      grid.appendChild(cell);
     }
   }
+}
 
-  /* ── VIEW MODAL ── */
-  function openView(key, date, hour) {
-    var s = sessions[key];
-    if (!s) return;
+function attachAddClick(cell, dateStr, hour) {
+  cell.onclick = function() {
+    openAdd(dateStr, hour);
+  };
+}
 
-    document.getElementById('viewTitle').textContent = s.name.toUpperCase();
-    document.getElementById('viewSub').textContent =
-      fmtD(dateFromISO(date)) + '  \u00b7  ' + fmtH(hour) + ' \u2013 ' + fmtH(hour + 1);
+function attachViewClick(cell, key, dateStr, hour) {
+  cell.onclick = function() {
+    openView(key, dateStr, hour);
+  };
+}
 
-    var body = document.getElementById('viewBody');
-    body.innerHTML =
-      vf('Rate', s.rate ? '\u00a3' + s.rate + '/hr' : '\u2014', s.rate ? 'vf-lime' : '') +
-      vf('Type', s.recurring ? 'Recurring' : 'One-off', '') +
-      (s.notes ? vf('Notes', s.notes, '') : '');
+function el(tag, cls) {
+  var e = document.createElement(tag);
+  if (cls) e.className = cls;
+  return e;
+}
 
-    var gcBtn = make('button', 'gcal-btn');
-    gcBtn.innerHTML = calSVG() + ' Add to Google Calendar';
-    if (!googleConnected) gcBtn.disabled = true;
-    (function(sv, dt, hr) {
-      gcBtn.addEventListener('click', function() { pushToGcal(sv, dt, hr); });
-    })(s, date, hour);
-    body.appendChild(gcBtn);
+// ── ADD / EDIT MODAL ─────────────────────────────────────────────────────────
+function openAdd(date, hour) {
+  activeSlot = { date: date, hour: hour };
+  document.getElementById('addTitle').textContent = 'BOOK SESSION';
+  document.getElementById('addSub').textContent   = fmtDay(date) + '  \u00b7  ' + fmtH(hour) + ' \u2013 ' + fmtH(hour + 1);
+  document.getElementById('fName').value          = '';
+  document.getElementById('fRate').value          = '';
+  document.getElementById('fNotes').value         = '';
+  document.getElementById('fRecurring').checked   = false;
+  document.getElementById('recurOpts').style.display = 'none';
+  document.getElementById('fWeeks').value         = 12;
+  document.getElementById('addModal').classList.add('open');
+  setTimeout(function() { document.getElementById('fName').focus(); }, 120);
+}
 
-    var acts = document.getElementById('viewActions');
-    acts.innerHTML = '';
+function openEdit(key, date, hour, s) {
+  activeSlot = { date: date, hour: hour, editKey: key };
+  document.getElementById('addTitle').textContent = 'EDIT SESSION';
+  document.getElementById('addSub').textContent   = fmtDay(date) + '  \u00b7  ' + fmtH(hour) + ' \u2013 ' + fmtH(hour + 1);
+  document.getElementById('fName').value          = s.name;
+  document.getElementById('fRate').value          = s.rate || '';
+  document.getElementById('fNotes').value         = s.notes || '';
+  document.getElementById('fRecurring').checked   = false;
+  document.getElementById('recurOpts').style.display = 'none';
+  document.getElementById('addModal').classList.add('open');
+  setTimeout(function() { document.getElementById('fName').focus(); }, 120);
+}
 
-    var editBtn = make('button', 'btn-secondary');
-    editBtn.textContent = 'Edit';
-    editBtn.style.flex = '1';
-    (function(k, dt, hr, sv) {
-      editBtn.addEventListener('click', function() { closeView(); openEdit(k, dt, hr, sv); });
-    })(key, date, hour, s);
-    acts.appendChild(editBtn);
+function closeAdd() {
+  document.getElementById('addModal').classList.remove('open');
+  activeSlot = null;
+}
 
-    if (s.recurring) {
-      var d1 = make('button', 'btn-danger'); d1.textContent = 'Remove this';
-      (function(k) {
-        d1.addEventListener('click', function() {
-          delete sessions[k]; saveData(); render(); closeView(); showToast('Session removed');
-        });
-      })(key);
+function saveSession() {
+  var name = document.getElementById('fName').value.trim();
+  if (!name) { document.getElementById('fName').focus(); return; }
+  var rate  = parseFloat(document.getElementById('fRate').value)  || 0;
+  var notes = document.getElementById('fNotes').value.trim();
+  var recur = document.getElementById('fRecurring').checked;
 
-      var da = make('button', 'btn-danger'); da.textContent = 'Remove all';
-      (function(rid) {
-        da.addEventListener('click', function() {
-          Object.keys(sessions).forEach(function(k) { if (sessions[k].recurringId === rid) delete sessions[k]; });
-          saveData(); render(); closeView(); showToast('All recurring sessions removed');
-        });
-      })(s.recurringId);
-      acts.appendChild(d1);
-      acts.appendChild(da);
-    } else {
-      var db = make('button', 'btn-danger'); db.textContent = 'Cancel session';
-      (function(k) {
-        db.addEventListener('click', function() {
-          delete sessions[k]; saveData(); render(); closeView(); showToast('Session cancelled');
-        });
-      })(key);
-      acts.appendChild(db);
-    }
-
-    document.getElementById('viewModal').classList.add('open');
-  }
-
-  function closeView() { document.getElementById('viewModal').classList.remove('open'); }
-
-  function vf(label, value, cls) {
-    return '<div class="vf"><div class="vf-label">' + label + '</div>' +
-      '<div class="vf-value ' + cls + '">' + value + '</div></div>';
-  }
-
-  function calSVG() {
-    return '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" style="flex-shrink:0">' +
-      '<rect x="3" y="4" width="18" height="17" rx="2" stroke="#4285f4" stroke-width="1.8"/>' +
-      '<path d="M16 2v4M8 2v4M3 9h18" stroke="#4285f4" stroke-width="1.8"/></svg>';
-  }
-
-  /* ── GOOGLE CALENDAR ── */
-  function loadGSI() {
-    return new Promise(function(resolve, reject) {
-      if (typeof google !== 'undefined' && google.accounts) { resolve(); return; }
-      var s = document.createElement('script');
-      s.src = 'https://accounts.google.com/gsi/client';
-      s.onload = resolve;
-      s.onerror = reject;
-      document.head.appendChild(s);
-    });
-  }
-
-  document.getElementById('gAuthBtn').addEventListener('click', function() {
-    if (googleConnected) return;
-    var btn = document.getElementById('gAuthBtn');
-    btn.textContent = 'Connecting...';
-    loadGSI().then(function() {
-      var client = google.accounts.oauth2.initTokenClient({
-        client_id: GCAL_CLIENT_ID,
-        scope: 'https://www.googleapis.com/auth/calendar.events',
-        callback: function(resp) {
-          if (resp.error) {
-            btn.textContent = 'Connect Google Cal';
-            showToast('Auth failed: ' + (resp.error_description || resp.error));
-            return;
-          }
-          gToken = resp.access_token;
-          googleConnected = true;
-          btn.textContent = '\u2713 Connected';
-          btn.classList.add('connected');
-          document.getElementById('gcalStatus').style.display = 'block';
-          showToast('Google Calendar connected!');
-        }
-      });
-      client.requestAccessToken();
-    }).catch(function() {
-      btn.textContent = 'Connect Google Cal';
-      showToast('Could not load Google API \u2014 check internet connection');
-    });
-  });
-
-  function pushToGcal(s, date, hour) {
-    if (!googleConnected || !gToken) { showToast('Connect Google Calendar first'); return; }
-    var start = new Date(date + 'T' + pad(hour) + ':00:00');
-    var end   = new Date(start.getTime() + 3600000);
-    var desc  = (s.rate ? 'Rate: \u00a3' + s.rate + '/hr' : '') + (s.notes ? '\nNotes: ' + s.notes : '');
-    var event = {
-      summary: 'PT: ' + s.name,
-      description: desc.trim(),
-      start: { dateTime: start.toISOString(), timeZone: 'Europe/London' },
-      end:   { dateTime: end.toISOString(),   timeZone: 'Europe/London' },
-      colorId: '10'
+  if (activeSlot && activeSlot.editKey) {
+    sessions[activeSlot.editKey] = {
+      name: name, rate: rate, notes: notes,
+      recurring: sessions[activeSlot.editKey].recurring,
+      recurringId: sessions[activeSlot.editKey].recurringId
     };
-    fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + gToken, 'Content-Type': 'application/json' },
-      body: JSON.stringify(event)
-    }).then(function(r) {
-      if (r.ok) showToast('Added to Google Calendar \u2713');
-      else showToast('Google Calendar error \u2014 try reconnecting');
-    }).catch(function() { showToast('Could not reach Google Calendar'); });
+    saveData(); render(); closeAdd(); showToast('Session updated');
+    return;
   }
 
-  /* ── GRID DELEGATION ── */
-  var slotMap = {};
-
-  function registerSlot(cell, info) {
-    var id = 'slot_' + Math.random().toString(36).slice(2);
-    cell.setAttribute('data-slotid', id);
-    slotMap[id] = info;
-    cell.addEventListener('click', function(e) {
-      e.stopPropagation();
-      var sid = cell.getAttribute('data-slotid');
-      var info = slotMap[sid];
-      if (!info) return;
-      if (info.action === 'add')  openAdd(info.date, info.hour);
-      if (info.action === 'view') openView(info.key, info.date, info.hour);
-    });
-  }
-
-  /* ── WEEK NAV ── */
-  document.getElementById('btnPrev').addEventListener('click', function() {
-    weekStart = addDays(weekStart, -7); render();
-  });
-  document.getElementById('btnNext').addEventListener('click', function() {
-    weekStart = addDays(weekStart, 7); render();
-  });
-  document.getElementById('btnToday').addEventListener('click', function() {
-    weekStart = getMonday(new Date()); render();
-  });
-
-  /* ── MODAL WIRING ── */
-  document.getElementById('addClose').addEventListener('click', closeAdd);
-  document.getElementById('addCancel').addEventListener('click', closeAdd);
-  document.getElementById('btnSave').addEventListener('click', saveSession);
-  document.getElementById('viewClose').addEventListener('click', closeView);
-
-  document.getElementById('fRecurring').addEventListener('change', function() {
-    document.getElementById('recurOpts').style.display = this.checked ? 'block' : 'none';
-  });
-
-  document.getElementById('addModal').addEventListener('click', function(e) {
-    if (e.target === this) closeAdd();
-  });
-  document.getElementById('viewModal').addEventListener('click', function(e) {
-    if (e.target === this) closeView();
-  });
-
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') { closeAdd(); closeView(); }
-    if (e.key === 'Enter' && document.getElementById('addModal').classList.contains('open')) {
-      saveSession();
+  if (recur) {
+    var interval = parseInt(document.getElementById('fFreq').value, 10) || 1;
+    var weeks    = parseInt(document.getElementById('fWeeks').value, 10) || 12;
+    var rid      = 'r' + Date.now();
+    var count    = 0;
+    for (var w = 0; w < weeks; w += interval) {
+      var dt = new Date(activeSlot.date + 'T12:00:00');
+      dt.setDate(dt.getDate() + w * 7);
+      var k = sk(toISO(dt), activeSlot.hour);
+      if (!sessions[k]) {
+        sessions[k] = { name: name, rate: rate, notes: notes, recurring: true, recurringId: rid };
+        count++;
+      }
     }
-  });
+    saveData(); render(); closeAdd(); showToast(count + ' recurring sessions added');
+  } else {
+    var k2 = sk(activeSlot.date, activeSlot.hour);
+    sessions[k2] = { name: name, rate: rate, notes: notes, recurring: false };
+    saveData(); render(); closeAdd(); showToast('Session booked');
+  }
+}
 
-  /* ── TOAST ── */
-  function showToast(msg) {
-    var t = document.getElementById('toast');
-    t.textContent = msg;
-    t.classList.add('show');
-    setTimeout(function() { t.classList.remove('show'); }, 2800);
+// ── VIEW MODAL ───────────────────────────────────────────────────────────────
+function openView(key, date, hour) {
+  var s = sessions[key];
+  if (!s) return;
+  currentViewKey  = key;
+  currentViewDate = date;
+  currentViewHour = hour;
+
+  document.getElementById('viewTitle').textContent = s.name.toUpperCase();
+  document.getElementById('viewSub').textContent   = fmtDay(date) + '  \u00b7  ' + fmtH(hour) + ' \u2013 ' + fmtH(hour + 1);
+
+  document.getElementById('viewBody').innerHTML =
+    vfHtml('Rate', s.rate ? '\u00a3' + s.rate + '/hr' : '\u2014', s.rate ? 'vf-lime' : '') +
+    vfHtml('Type', s.recurring ? 'Recurring' : 'One-off', '') +
+    (s.notes ? vfHtml('Notes', s.notes, '') : '') +
+    '<button class="gcal-btn" id="gcalPushBtn"' + (!googleConnected ? ' disabled' : '') + '>' +
+    calSVG() + ' Add to Google Calendar</button>';
+
+  document.getElementById('gcalPushBtn').onclick = function() {
+    pushToGcal(s, date, hour);
+  };
+
+  var acts = document.getElementById('viewActions');
+  acts.innerHTML = '';
+
+  var editBtn = el('button', 'btn-secondary');
+  editBtn.textContent  = 'Edit';
+  editBtn.style.flex   = '1';
+  editBtn.onclick = function() { closeView(); openEdit(key, date, hour, s); };
+  acts.appendChild(editBtn);
+
+  if (s.recurring) {
+    var d1 = el('button', 'btn-danger');
+    d1.textContent = 'Remove this';
+    d1.onclick = function() {
+      delete sessions[key]; saveData(); render(); closeView(); showToast('Session removed');
+    };
+    var da = el('button', 'btn-danger');
+    da.textContent = 'Remove all';
+    da.onclick = function() {
+      var rid = s.recurringId;
+      Object.keys(sessions).forEach(function(k) {
+        if (sessions[k].recurringId === rid) delete sessions[k];
+      });
+      saveData(); render(); closeView(); showToast('All recurring sessions removed');
+    };
+    acts.appendChild(d1);
+    acts.appendChild(da);
+  } else {
+    var db = el('button', 'btn-danger');
+    db.textContent = 'Cancel session';
+    db.onclick = function() {
+      delete sessions[key]; saveData(); render(); closeView(); showToast('Session cancelled');
+    };
+    acts.appendChild(db);
   }
 
-  /* ── INIT ── */
-  render();
+  document.getElementById('viewModal').classList.add('open');
+}
 
-}());
+function closeView() {
+  document.getElementById('viewModal').classList.remove('open');
+}
+
+function vfHtml(label, value, cls) {
+  return '<div class="vf"><div class="vf-label">' + label + '</div>' +
+    '<div class="vf-value ' + cls + '">' + value + '</div></div>';
+}
+
+function calSVG() {
+  return '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" style="flex-shrink:0">' +
+    '<rect x="3" y="4" width="18" height="17" rx="2" stroke="#4285f4" stroke-width="1.8"/>' +
+    '<path d="M16 2v4M8 2v4M3 9h18" stroke="#4285f4" stroke-width="1.8"/></svg>';
+}
+
+// ── GOOGLE CALENDAR ───────────────────────────────────────────────────────────
+function loadGSI() {
+  return new Promise(function(resolve, reject) {
+    if (typeof google !== 'undefined' && google.accounts) { resolve(); return; }
+    var s = document.createElement('script');
+    s.src = 'https://accounts.google.com/gsi/client';
+    s.onload = resolve;
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
+document.getElementById('gAuthBtn').onclick = function() {
+  if (googleConnected) return;
+  var btn = document.getElementById('gAuthBtn');
+  btn.textContent = 'Connecting...';
+  loadGSI().then(function() {
+    var client = google.accounts.oauth2.initTokenClient({
+      client_id: GCAL_CLIENT_ID,
+      scope: 'https://www.googleapis.com/auth/calendar.events',
+      callback: function(resp) {
+        if (resp.error) {
+          btn.textContent = 'Connect Google Cal';
+          showToast('Auth failed: ' + (resp.error_description || resp.error));
+          return;
+        }
+        gToken = resp.access_token;
+        googleConnected = true;
+        btn.textContent = '\u2713 Connected';
+        btn.classList.add('connected');
+        document.getElementById('gcalStatus').style.display = 'block';
+        showToast('Google Calendar connected!');
+      }
+    });
+    client.requestAccessToken();
+  }).catch(function() {
+    btn.textContent = 'Connect Google Cal';
+    showToast('Could not load Google API');
+  });
+};
+
+function pushToGcal(s, date, hour) {
+  if (!googleConnected || !gToken) { showToast('Connect Google Calendar first'); return; }
+  var start = new Date(date + 'T' + pad2(hour) + ':00:00');
+  var end   = new Date(start.getTime() + 3600000);
+  var event = {
+    summary: 'PT: ' + s.name,
+    description: (s.rate ? 'Rate: \u00a3' + s.rate + '/hr' : '') + (s.notes ? '\nNotes: ' + s.notes : ''),
+    start: { dateTime: start.toISOString(), timeZone: 'Europe/London' },
+    end:   { dateTime: end.toISOString(),   timeZone: 'Europe/London' },
+    colorId: '10'
+  };
+  fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + gToken, 'Content-Type': 'application/json' },
+    body: JSON.stringify(event)
+  }).then(function(r) {
+    if (r.ok) showToast('Added to Google Calendar \u2713');
+    else showToast('Google Calendar error');
+  }).catch(function() { showToast('Could not reach Google Calendar'); });
+}
+
+// ── NAV ───────────────────────────────────────────────────────────────────────
+document.getElementById('btnPrev').onclick   = function() { weekStart = addDays(weekStart, -7); render(); };
+document.getElementById('btnNext').onclick   = function() { weekStart = addDays(weekStart,  7); render(); };
+document.getElementById('btnToday').onclick  = function() { weekStart = getMonday(new Date()); render(); };
+
+// ── MODAL WIRING ─────────────────────────────────────────────────────────────
+document.getElementById('addClose').onclick  = closeAdd;
+document.getElementById('addCancel').onclick = closeAdd;
+document.getElementById('btnSave').onclick   = saveSession;
+document.getElementById('viewClose').onclick = closeView;
+
+document.getElementById('fRecurring').onchange = function() {
+  document.getElementById('recurOpts').style.display = this.checked ? 'block' : 'none';
+};
+
+document.getElementById('addModal').onclick = function(e) { if (e.target === this) closeAdd(); };
+document.getElementById('viewModal').onclick = function(e) { if (e.target === this) closeView(); };
+
+document.onkeydown = function(e) {
+  if (e.key === 'Escape') { closeAdd(); closeView(); }
+  if (e.key === 'Enter' && document.getElementById('addModal').classList.contains('open')) saveSession();
+};
+
+// ── TOAST ─────────────────────────────────────────────────────────────────────
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 2800);
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+render();
+
 </script>
 
 
