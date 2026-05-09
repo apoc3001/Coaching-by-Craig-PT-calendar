@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<!-- saved from url=(0048)file:///C:/Users/apoc3/Downloads/click-test.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<title>Click Test</title>
+<style>
+body { background: #111; color: #fff; font-family: sans-serif; padding: 40px; }
+.slot {
+  width: 200px; height: 60px; background: #222; border: 1px solid #444;
+  margin: 10px 0; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 18px; color: #C6F135;
+}
+.slot:hover { background: #333; }
+</style>
+</head>
+<body>
+<h2 style="color:#C6F135">Click Test</h2>
+<p>Click the boxes below. If an alert pops up, clicks are working.</p>
+
+<div class="slot" id="s1">Click me</div>
+<div class="slot" id="s2">Click me too</div>
+<div class="slot" id="s3">And me</div>
+
+<p id="result" style="color:#C6F135;font-size:20px;margin-top:20px"></p>
+
+<script>
+document.getElementById('s1').onclick = function() {
+  document.getElementById('result').textContent = 'Box 1 clicked! Clicks ARE working.';
+};
+document.getElementById('s2').onclick = function() {
+  document.getElementById('result').textContent = 'Box 2 clicked! Clicks ARE working.';
+};
+document.getElementById('s3').onclick = function() {
+  document.getElementById('result').textContent = 'Box 3 clicked! Clicks ARE working.';
+};
+</script>
+
+
+</body></html>
