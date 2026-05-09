@@ -1,196 +1,184 @@
 <!DOCTYPE html>
-<!-- saved from url=(0051)file:///C:/Users/apoc3/Downloads/pt-calendar_9.html -->
+<!-- saved from url=(0052)file:///C:/Users/apoc3/Downloads/pt-calendar_10.html -->
 <html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Coaching by Craig — PT Calendar</title>
-<link href="./Calendar 3_files/css2" rel="stylesheet">
+<link href="./Calendar 4_files/css2" rel="stylesheet">
 <style>
 :root {
-  --black: #0a0a0a;
-  --dark: #111111;
-  --card: #181818;
-  --border: #242424;
-  --lime: #C6F135;
-  --text: #f0f0f0;
-  --muted: #666;
-  --booked-bg: #1e2a0e;
-  --booked-border: #4a7a10;
-  --rec-bg: #0e1e2a;
-  --rec-border: #1070a0;
-  --empty: #161616;
-  --danger: #e05555;
+  --black: #0a0a0a; --dark: #111; --card: #181818; --border: #242424;
+  --lime: #C6F135; --text: #f0f0f0; --muted: #666;
+  --booked-bg: #1e2a0e; --booked-border: #4a7a10;
+  --rec-bg: #0e1e2a; --rec-border: #1070a0;
+  --empty: #161616; --danger: #e05555;
+  --row-h: 28px;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { background: var(--black); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; min-height: 100vh; }
 
-header {
-  background: var(--dark); border-bottom: 1px solid var(--border);
-  padding: 0 24px; display: flex; align-items: center;
-  justify-content: space-between; height: 60px;
-  position: sticky; top: 0; z-index: 100;
-}
-.logo { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 2px; color: var(--lime); }
+/* HEADER */
+header { background: var(--dark); border-bottom: 1px solid var(--border); padding: 0 20px; display: flex; align-items: center; justify-content: space-between; height: 56px; position: sticky; top: 0; z-index: 100; }
+.logo { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 2px; color: var(--lime); }
 .logo span { color: var(--text); }
-.header-right { display: flex; align-items: center; gap: 12px; }
+.header-right { display: flex; align-items: center; gap: 10px; }
 #gcalStatus { font-size: 11px; color: var(--lime); display: none; }
-#gAuthBtn {
-  background: transparent; border: 1px solid var(--lime); color: var(--lime);
-  font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600;
-  letter-spacing: 1px; padding: 7px 16px; cursor: pointer; text-transform: uppercase; transition: all 0.2s;
-}
-#gAuthBtn:hover { background: var(--lime); color: var(--black); }
-#gAuthBtn.connected { opacity: 0.6; cursor: default; }
-#gAuthBtn.connected:hover { background: transparent; color: var(--lime); }
+.hbtn { background: transparent; border: 1px solid var(--lime); color: var(--lime); font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 1px; padding: 6px 14px; cursor: pointer; text-transform: uppercase; transition: all 0.2s; }
+.hbtn:hover { background: var(--lime); color: var(--black); }
+.hbtn.connected { opacity: 0.6; cursor: default; }
+.hbtn.connected:hover { background: transparent; color: var(--lime); }
 
-.week-nav { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px 0; }
-#weekLabel { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 2px; }
+/* TABS */
+.tabs { display: flex; border-bottom: 1px solid var(--border); background: var(--dark); }
+.tab { font-family: 'Bebas Neue', sans-serif; font-size: 15px; letter-spacing: 1.5px; padding: 12px 24px; cursor: pointer; color: var(--muted); border-bottom: 2px solid transparent; transition: all 0.15s; }
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--lime); border-bottom-color: var(--lime); }
+
+/* PAGE SECTIONS */
+.page { display: none; }
+.page.active { display: block; }
+
+/* WEEK NAV */
+.week-nav { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px 0; }
+#weekLabel { font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 2px; }
 .nav-btns { display: flex; gap: 8px; }
-.nav-btn, .today-btn {
-  background: var(--card); border: 1px solid var(--border); color: var(--text);
-  cursor: pointer; transition: all 0.15s; font-family: 'DM Sans', sans-serif;
-}
-.nav-btn { width: 36px; height: 36px; font-size: 18px; display: flex; align-items: center; justify-content: center; }
-.today-btn { font-size: 11px; font-weight: 600; letter-spacing: 1px; padding: 0 14px; height: 36px; text-transform: uppercase; }
+.nav-btn, .today-btn { background: var(--card); border: 1px solid var(--border); color: var(--text); cursor: pointer; transition: all 0.15s; font-family: 'DM Sans', sans-serif; }
+.nav-btn { width: 34px; height: 34px; font-size: 16px; display: flex; align-items: center; justify-content: center; }
+.today-btn { font-size: 11px; font-weight: 600; letter-spacing: 1px; padding: 0 12px; height: 34px; text-transform: uppercase; }
 .nav-btn:hover, .today-btn:hover { border-color: var(--lime); color: var(--lime); }
 
-.summary-bar { display: flex; gap: 12px; padding: 14px 24px; overflow-x: auto; }
-.pill { background: var(--card); border: 1px solid var(--border); padding: 10px 18px; white-space: nowrap; flex-shrink: 0; }
-.pill-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); margin-bottom: 4px; }
-.pill-value { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 1px; color: var(--lime); }
+/* SUMMARY */
+.summary-bar { display: flex; gap: 10px; padding: 12px 20px; overflow-x: auto; }
+.pill { background: var(--card); border: 1px solid var(--border); padding: 9px 16px; white-space: nowrap; flex-shrink: 0; }
+.pill-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); margin-bottom: 3px; }
+.pill-value { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 1px; }
 
-.legend { display: flex; gap: 20px; padding: 0 24px 12px; align-items: center; }
-.legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); }
-.legend-dot { width: 10px; height: 10px; border: 1px solid; flex-shrink: 0; }
+/* LEGEND */
+.legend { display: flex; gap: 16px; padding: 0 20px 10px; align-items: center; flex-wrap: wrap; }
+.legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
+.legend-dot { width: 9px; height: 9px; border: 1px solid; flex-shrink: 0; }
 
-.calendar-wrapper { padding: 0 24px 80px; overflow-x: auto; }
-.cal-grid {
-  display: grid; grid-template-columns: 56px repeat(7, 1fr);
-  min-width: 860px; border: 1px solid var(--border); border-bottom: none;
-}
+/* CALENDAR */
+.calendar-wrapper { padding: 0 20px 80px; overflow-x: auto; }
+.cal-grid { display: grid; grid-template-columns: 52px repeat(7, 1fr); min-width: 820px; border: 1px solid var(--border); border-bottom: none; position: relative; }
 .time-corner { background: var(--dark); border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); }
-.day-hdr {
-  background: var(--dark); border-bottom: 1px solid var(--border);
-  border-right: 1px solid var(--border); padding: 10px 6px; text-align: center;
-}
-.dname { font-family: 'Bebas Neue', sans-serif; font-size: 14px; letter-spacing: 1px; color: var(--muted); }
-.ddate { font-size: 20px; font-weight: 300; color: var(--text); line-height: 1; margin-top: 2px; }
-.dearn { font-size: 11px; color: var(--lime); font-weight: 600; margin-top: 3px; min-height: 16px; }
-.dsess { font-size: 10px; color: var(--muted); min-height: 14px; }
+.day-hdr { background: var(--dark); border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); padding: 8px 4px; text-align: center; }
+.dname { font-family: 'Bebas Neue', sans-serif; font-size: 13px; letter-spacing: 1px; color: var(--muted); }
+.ddate { font-size: 18px; font-weight: 300; color: var(--text); line-height: 1; margin-top: 1px; }
+.dearn { font-size: 10px; color: var(--lime); font-weight: 600; margin-top: 2px; min-height: 14px; }
+.dsess { font-size: 10px; color: var(--muted); min-height: 13px; }
 .is-today .dname { color: var(--lime); }
-.is-today .ddate {
-  color: var(--black); background: var(--lime); width: 30px; height: 30px;
-  border-radius: 50%; display: flex; align-items: center; justify-content: center;
-  margin: 2px auto 0; font-weight: 600; font-size: 16px;
-}
-.time-lbl {
-  background: var(--dark); border-right: 1px solid var(--border);
-  border-bottom: 1px solid var(--border); height: 52px;
-  display: flex; align-items: center; justify-content: flex-end;
-  padding: 0 6px; font-size: 10px; color: var(--muted);
-}
-.slot {
-  border-right: 1px solid var(--border); border-bottom: 1px solid var(--border);
-  height: 52px; position: relative; overflow: hidden;
-  background: var(--empty); transition: background 0.1s;
-  cursor: pointer; user-select: none;
-}
-.slot:hover { background: rgba(198,241,53,0.08); }
-.slot-booked { background: var(--booked-bg) !important; border-color: var(--booked-border); }
-.slot-rec    { background: var(--rec-bg) !important;    border-color: var(--rec-border); }
-.slot-past   { opacity: 0.38; cursor: default !important; pointer-events: none; }
-.slot-inner  { padding: 5px 7px; height: 100%; display: flex; flex-direction: column; justify-content: center; pointer-events: none; }
-.slot-name   { font-size: 11px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
-.slot-rate   { font-family: 'Bebas Neue', sans-serif; font-size: 13px; color: var(--lime); margin-top: 1px; pointer-events: none; }
-.slot-badge  {
-  position: absolute; top: 3px; right: 4px; font-size: 8px; letter-spacing: 1px;
-  font-weight: 700; text-transform: uppercase; padding: 1px 4px; pointer-events: none;
-  background: rgba(16,112,160,0.2); color: #40b4f0; border: 1px solid rgba(16,112,160,0.4);
-}
-.plus-hint {
-  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-  font-size: 26px; color: rgba(198,241,53,0.25); opacity: 0; transition: opacity 0.1s;
-  pointer-events: none; font-weight: 300;
-}
-.slot:hover .plus-hint { opacity: 1; }
+.is-today .ddate { color: var(--black); background: var(--lime); width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 1px auto 0; font-weight: 600; font-size: 14px; }
 
-.modal-overlay {
-  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.88);
-  z-index: 200; align-items: center; justify-content: center;
+/* Half-hour grid rows */
+.time-lbl { background: var(--dark); border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); height: var(--row-h); display: flex; align-items: center; justify-content: flex-end; padding: 0 5px; font-size: 9px; color: var(--muted); }
+.time-lbl.half { border-bottom-style: dashed; color: transparent; font-size: 8px; }
+.slot-cell { border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); height: var(--row-h); position: relative; background: var(--empty); transition: background 0.1s; }
+.slot-cell.half-row { border-bottom-style: dashed; border-bottom-color: #1e1e1e; }
+.slot-cell.clickable { cursor: pointer; }
+.slot-cell.clickable:hover { background: rgba(198,241,53,0.07); }
+.slot-cell.occupied { background: transparent !important; pointer-events: none; }
+
+/* Session blocks — positioned absolutely over the grid */
+.session-block {
+  position: absolute;
+  left: 1px; right: 1px;
+  border-radius: 0;
+  padding: 3px 6px;
+  overflow: hidden;
+  cursor: pointer;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
+.session-block.type-booked { background: var(--booked-bg); border: 1px solid var(--booked-border); border-left: 3px solid #6aba20; }
+.session-block.type-rec    { background: var(--rec-bg);    border: 1px solid var(--rec-border);    border-left: 3px solid #1090c0; }
+.session-block.is-past     { opacity: 0.4; cursor: default; }
+.sb-name { font-size: 10px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
+.sb-time { font-size: 9px; color: var(--muted); pointer-events: none; }
+.sb-rate { font-family: 'Bebas Neue', sans-serif; font-size: 12px; color: var(--lime); pointer-events: none; }
+.sb-badge { position: absolute; top: 2px; right: 3px; font-size: 7px; letter-spacing: 1px; font-weight: 700; text-transform: uppercase; padding: 1px 3px; background: rgba(16,112,160,0.2); color: #40b4f0; border: 1px solid rgba(16,112,160,0.3); pointer-events: none; }
+
+.plus-hint { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 16px; color: rgba(198,241,53,0.2); opacity: 0; transition: opacity 0.1s; pointer-events: none; }
+.slot-cell.clickable:hover .plus-hint { opacity: 1; }
+
+/* MODALS */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 200; align-items: center; justify-content: center; }
 .modal-overlay.open { display: flex; }
-.modal {
-  background: var(--dark); border: 1px solid var(--border);
-  width: 430px; max-width: 96vw; padding: 28px; position: relative;
-  animation: mIn 0.18s ease;
-}
-@keyframes mIn { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
-.modal-title { font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 2px; color: var(--lime); margin-bottom: 3px; }
-.modal-sub   { font-size: 12px; color: var(--muted); margin-bottom: 22px; }
-.modal-close {
-  position: absolute; top: 14px; right: 16px; background: none; border: none;
-  color: var(--muted); font-size: 22px; cursor: pointer; line-height: 1; padding: 4px 8px;
-}
+.modal { background: var(--dark); border: 1px solid var(--border); width: 440px; max-width: 96vw; padding: 26px; position: relative; animation: mIn 0.18s ease; max-height: 90vh; overflow-y: auto; }
+@keyframes mIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+.modal-title { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 2px; color: var(--lime); margin-bottom: 3px; }
+.modal-sub   { font-size: 12px; color: var(--muted); margin-bottom: 20px; }
+.modal-close { position: absolute; top: 12px; right: 14px; background: none; border: none; color: var(--muted); font-size: 22px; cursor: pointer; line-height: 1; padding: 4px 8px; }
 .modal-close:hover { color: var(--text); }
-.f-row   { margin-bottom: 16px; }
-.f-label { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); margin-bottom: 6px; font-weight: 600; }
-.f-input {
-  width: 100%; background: var(--card); border: 1px solid var(--border);
-  color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px;
-  padding: 10px 12px; outline: none; transition: border-color 0.15s;
-}
+.f-row   { margin-bottom: 14px; }
+.f-label { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); margin-bottom: 5px; font-weight: 600; }
+.f-input { width: 100%; background: var(--card); border: 1px solid var(--border); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; padding: 9px 11px; outline: none; transition: border-color 0.15s; }
 .f-input:focus { border-color: var(--lime); }
 .f-input::placeholder { color: var(--muted); }
-.f-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
-.toggle-row  { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
-.toggle-wrap { position: relative; width: 40px; height: 22px; cursor: pointer; flex-shrink: 0; }
+.f-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.f-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.toggle-row  { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.toggle-wrap { position: relative; width: 38px; height: 20px; cursor: pointer; flex-shrink: 0; }
 .toggle-wrap input { display: none; }
-.toggle-track { background: var(--border); border-radius: 11px; width: 100%; height: 100%; transition: background 0.2s; }
+.toggle-track { background: var(--border); border-radius: 10px; width: 100%; height: 100%; transition: background 0.2s; }
 .toggle-wrap input:checked + .toggle-track { background: var(--lime); }
-.toggle-thumb {
-  position: absolute; top: 3px; left: 3px; width: 16px; height: 16px;
-  background: var(--text); border-radius: 50%; transition: transform 0.2s; pointer-events: none;
-}
+.toggle-thumb { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; background: var(--text); border-radius: 50%; transition: transform 0.2s; pointer-events: none; }
 .toggle-wrap input:checked ~ .toggle-thumb { transform: translateX(18px); background: var(--black); }
-.modal-actions { display: flex; gap: 10px; margin-top: 22px; flex-wrap: wrap; }
-.btn-primary {
-  flex: 1; min-width: 120px; background: var(--lime); color: var(--black); border: none;
-  font-family: 'Bebas Neue', sans-serif; font-size: 17px; letter-spacing: 2px;
-  padding: 12px; cursor: pointer; transition: opacity 0.15s;
-}
+.modal-actions { display: flex; gap: 8px; margin-top: 20px; flex-wrap: wrap; }
+.btn-primary { flex: 1; min-width: 110px; background: var(--lime); color: var(--black); border: none; font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 2px; padding: 11px; cursor: pointer; transition: opacity 0.15s; }
 .btn-primary:hover { opacity: 0.88; }
-.btn-secondary {
-  background: transparent; border: 1px solid var(--border); color: var(--muted);
-  font-family: 'DM Sans', sans-serif; font-size: 13px; padding: 12px 18px; cursor: pointer; transition: all 0.15s;
-}
+.btn-secondary { background: transparent; border: 1px solid var(--border); color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 13px; padding: 11px 16px; cursor: pointer; transition: all 0.15s; }
 .btn-secondary:hover { border-color: var(--text); color: var(--text); }
-.btn-danger {
-  background: transparent; border: 1px solid var(--danger); color: var(--danger);
-  font-family: 'DM Sans', sans-serif; font-size: 13px; padding: 12px 18px; cursor: pointer; transition: all 0.15s;
-}
+.btn-danger { background: transparent; border: 1px solid var(--danger); color: var(--danger); font-family: 'DM Sans', sans-serif; font-size: 13px; padding: 11px 16px; cursor: pointer; transition: all 0.15s; }
 .btn-danger:hover { background: var(--danger); color: #fff; }
-.vf       { margin-bottom: 14px; }
-.vf-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); margin-bottom: 3px; }
+.vf { margin-bottom: 12px; }
+.vf-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); margin-bottom: 2px; }
 .vf-value { font-size: 15px; font-weight: 500; }
-.vf-lime  { color: var(--lime); font-family: 'Bebas Neue', sans-serif; font-size: 22px; }
-.gcal-btn {
-  width: 100%; background: transparent; border: 1px solid #4285f4; color: #4285f4;
-  font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600;
-  letter-spacing: 1px; text-transform: uppercase; padding: 10px;
-  cursor: pointer; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 8px;
-  transition: all 0.15s;
-}
+.vf-lime  { color: var(--lime); font-family: 'Bebas Neue', sans-serif; font-size: 20px; }
+.gcal-btn { width: 100%; background: transparent; border: 1px solid #4285f4; color: #4285f4; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; padding: 9px; cursor: pointer; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.15s; }
 .gcal-btn:hover { background: #4285f4; color: #fff; }
 .gcal-btn:disabled { opacity: 0.35; cursor: default; }
-.toast {
-  position: fixed; bottom: 24px; left: 50%;
-  transform: translateX(-50%) translateY(20px);
-  background: var(--lime); color: var(--black); font-weight: 700;
-  font-size: 13px; padding: 10px 24px; opacity: 0;
-  transition: all 0.3s; pointer-events: none; z-index: 300;
-}
+
+/* ANALYTICS PAGE */
+.analytics-wrap { padding: 20px; }
+.analytics-header { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 2px; color: var(--text); margin-bottom: 16px; }
+.period-toggles { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+.period-btn { background: var(--card); border: 1px solid var(--border); color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600; letter-spacing: 1px; padding: 7px 16px; cursor: pointer; text-transform: uppercase; transition: all 0.15s; }
+.period-btn:hover { border-color: var(--text); color: var(--text); }
+.period-btn.active { border-color: var(--lime); color: var(--lime); background: rgba(198,241,53,0.08); }
+
+.analytics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+.stat-card { background: var(--card); border: 1px solid var(--border); padding: 16px 20px; }
+.stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); margin-bottom: 6px; }
+.stat-value { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 1px; color: var(--lime); }
+.stat-sub   { font-size: 11px; color: var(--muted); margin-top: 3px; }
+.stat-value.warn { color: #f0a020; }
+.stat-value.danger { color: var(--danger); }
+
+.chart-card { background: var(--card); border: 1px solid var(--border); padding: 20px; margin-bottom: 16px; }
+.chart-title { font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 1.5px; color: var(--muted); margin-bottom: 16px; }
+.chart-area { position: relative; height: 180px; }
+canvas { width: 100% !important; }
+
+.missed-card { background: var(--card); border: 1px solid var(--border); border-left: 3px solid var(--danger); padding: 20px; margin-bottom: 16px; }
+.missed-title { font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 1.5px; color: var(--danger); margin-bottom: 4px; }
+.missed-sub { font-size: 11px; color: var(--muted); margin-bottom: 16px; }
+.missed-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.missed-day { background: var(--dark); border: 1px solid var(--border); padding: 10px 14px; }
+.missed-day-name { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
+.missed-day-val  { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: var(--danger); }
+.missed-day-sess { font-size: 10px; color: var(--muted); }
+
+/* EXPORT */
+.export-btn { background: transparent; border: 1px solid var(--lime); color: var(--lime); font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600; letter-spacing: 1px; padding: 8px 18px; cursor: pointer; text-transform: uppercase; transition: all 0.15s; }
+.export-btn:hover { background: var(--lime); color: var(--black); }
+
+/* TOAST */
+.toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--lime); color: var(--black); font-weight: 700; font-size: 13px; padding: 10px 22px; opacity: 0; transition: all 0.3s; pointer-events: none; z-index: 300; }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: var(--black); }
 ::-webkit-scrollbar-thumb { background: var(--border); }
 </style>
@@ -200,30 +188,69 @@ header {
 <header>
   <div class="logo">COACHING <span>BY</span> CRAIG</div>
   <div class="header-right">
-    <div id="gcalStatus">● Connected</div>
-    <button id="gAuthBtn">Connect Google Cal</button>
+    <div id="gcalStatus">● Cal Connected</div>
+    <div id="calPickerWrap" style="display:none;align-items:center;gap:8px">
+      <span style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Add to:</span>
+      <select id="calPicker" style="background:var(--card);border:1px solid var(--lime);color:var(--lime);font-family:&#39;DM Sans&#39;,sans-serif;font-size:11px;font-weight:600;padding:5px 8px;outline:none;cursor:pointer;max-width:160px"></select>
+    </div>
+    <button class="hbtn" id="exportBtn">Export CSV</button>
+    <button class="hbtn" id="gAuthBtn">Connect Google Cal</button>
   </div>
 </header>
 
-<div class="week-nav">
-  <div id="weekLabel">WEEK <span style="color:var(--lime)">19</span><span style="font-family:&#39;DM Sans&#39;,sans-serif;font-size:14px;font-weight:300;color:var(--muted);margin-left:10px">4 May – 10 May 2026</span></div>
-  <div class="nav-btns">
-    <button class="nav-btn" id="btnPrev">←</button>
-    <button class="today-btn" id="btnToday">Today</button>
-    <button class="nav-btn" id="btnNext">→</button>
+<div class="tabs">
+  <div class="tab active" id="tabCal">Calendar</div>
+  <div class="tab" id="tabAnalytics">Analytics</div>
+</div>
+
+<!-- CALENDAR PAGE -->
+<div class="page active" id="pageCal">
+  <div class="week-nav">
+    <div id="weekLabel">WEEK <span style="color:var(--lime)">19</span><span style="font-family:&#39;DM Sans&#39;,sans-serif;font-size:13px;font-weight:300;color:var(--muted);margin-left:10px">4 May – 10 May 2026</span></div>
+    <div class="nav-btns">
+      <button class="nav-btn" id="btnPrev">←</button>
+      <button class="today-btn" id="btnToday">Today</button>
+      <button class="nav-btn" id="btnNext">→</button>
+    </div>
+  </div>
+
+  <div class="summary-bar" id="summaryBar"><div class="pill"><div class="pill-label">Week Earnings</div><div class="pill-value" style="color:var(--lime)">£0</div></div><div class="pill"><div class="pill-label">Sessions Booked</div><div class="pill-value" style="color:var(--text)">0</div></div><div class="pill"><div class="pill-label">Slots Available</div><div class="pill-value" style="color:var(--danger)">49</div></div><div class="pill"><div class="pill-label">Capacity</div><div class="pill-value" style="color:var(--danger)">0%</div></div></div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--empty);border-color:var(--border)"></div>Available</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--booked-bg);border-color:var(--booked-border)"></div>Booked</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--rec-bg);border-color:var(--rec-border)"></div>Recurring</div>
+    <div class="legend-item" style="margin-left:auto;color:var(--muted);font-size:11px">Click any future slot to book &nbsp;↗</div>
+  </div>
+
+  <div class="calendar-wrapper">
+    <div class="cal-grid" id="calGrid"><div class="time-corner"></div><div class="day-hdr"><div class="dname">Mon</div><div class="ddate">4</div><div class="dearn"></div><div class="dsess"></div></div><div class="day-hdr"><div class="dname">Tue</div><div class="ddate">5</div><div class="dearn"></div><div class="dsess"></div></div><div class="day-hdr"><div class="dname">Wed</div><div class="ddate">6</div><div class="dearn"></div><div class="dsess"></div></div><div class="day-hdr"><div class="dname">Thu</div><div class="ddate">7</div><div class="dearn"></div><div class="dsess"></div></div><div class="day-hdr"><div class="dname">Fri</div><div class="ddate">8</div><div class="dearn"></div><div class="dsess"></div></div><div class="day-hdr is-today"><div class="dname">Sat</div><div class="ddate">9</div><div class="dearn"></div><div class="dsess"></div></div><div class="day-hdr"><div class="dname">Sun</div><div class="ddate">10</div><div class="dearn"></div><div class="dsess"></div></div><div class="time-lbl">6am</div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell clickable"><div class="plus-hint">+</div></div><div class="time-lbl half"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row clickable"><div class="plus-hint">+</div></div><div class="time-lbl">7am</div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell clickable"><div class="plus-hint">+</div></div><div class="time-lbl half"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row clickable"><div class="plus-hint">+</div></div><div class="time-lbl">8am</div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell clickable"><div class="plus-hint">+</div></div><div class="time-lbl half"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row clickable"><div class="plus-hint">+</div></div><div class="time-lbl">9am</div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell clickable"><div class="plus-hint">+</div></div><div class="time-lbl half"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row clickable"><div class="plus-hint">+</div></div><div class="time-lbl">10am</div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell clickable"><div class="plus-hint">+</div></div><div class="time-lbl half"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row clickable"><div class="plus-hint">+</div></div><div class="time-lbl">11am</div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell clickable"><div class="plus-hint">+</div></div><div class="time-lbl half"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row clickable"><div class="plus-hint">+</div></div><div class="time-lbl">12pm</div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell clickable"><div class="plus-hint">+</div></div><div class="time-lbl half"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row clickable"><div class="plus-hint">+</div></div><div class="time-lbl">1pm</div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell clickable"><div class="plus-hint">+</div></div><div class="time-lbl half"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row clickable"><div class="plus-hint">+</div></div><div class="time-lbl">2pm</div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell clickable"><div class="plus-hint">+</div></div><div class="time-lbl half"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row clickable"><div class="plus-hint">+</div></div><div class="time-lbl">3pm</div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell clickable"><div class="plus-hint">+</div></div><div class="time-lbl half"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row clickable"><div class="plus-hint">+</div></div><div class="time-lbl">4pm</div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell clickable"><div class="plus-hint">+</div></div><div class="time-lbl half"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row clickable"><div class="plus-hint">+</div></div><div class="time-lbl">5pm</div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell clickable"><div class="plus-hint">+</div></div><div class="time-lbl half"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row clickable"><div class="plus-hint">+</div></div><div class="time-lbl">6pm</div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell clickable"><div class="plus-hint">+</div></div><div class="time-lbl half"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row clickable"><div class="plus-hint">+</div></div><div class="time-lbl">7pm</div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell clickable"><div class="plus-hint">+</div></div><div class="time-lbl half"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row clickable"><div class="plus-hint">+</div></div><div class="time-lbl">8pm</div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell"></div><div class="slot-cell clickable"><div class="plus-hint">+</div></div><div class="time-lbl half"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row"></div><div class="slot-cell half-row clickable"><div class="plus-hint">+</div></div></div>
   </div>
 </div>
 
-<div class="summary-bar" id="summaryBar"><div class="pill"><div class="pill-label">Week Earnings</div><div class="pill-value" style="color:var(--lime)">£0</div></div><div class="pill"><div class="pill-label">Sessions Booked</div><div class="pill-value" style="color:var(--text)">0</div></div><div class="pill"><div class="pill-label">Slots Available</div><div class="pill-value" style="color:var(--danger)">105</div></div><div class="pill"><div class="pill-label">Capacity</div><div class="pill-value" style="color:var(--danger)">0%</div></div></div>
-
-<div class="legend">
-  <div class="legend-item"><div class="legend-dot" style="background:var(--empty);border-color:var(--border)"></div>Available</div>
-  <div class="legend-item"><div class="legend-dot" style="background:var(--booked-bg);border-color:var(--booked-border)"></div>Booked</div>
-  <div class="legend-item"><div class="legend-dot" style="background:var(--rec-bg);border-color:var(--rec-border)"></div>Recurring</div>
-</div>
-
-<div class="calendar-wrapper">
-  <div class="cal-grid" id="calGrid"><div class="time-corner"></div><div class="day-hdr"><div class="dname">Mon</div><div class="ddate">4</div><div class="dearn"></div><div class="dsess"></div></div><div class="day-hdr"><div class="dname">Tue</div><div class="ddate">5</div><div class="dearn"></div><div class="dsess"></div></div><div class="day-hdr"><div class="dname">Wed</div><div class="ddate">6</div><div class="dearn"></div><div class="dsess"></div></div><div class="day-hdr"><div class="dname">Thu</div><div class="ddate">7</div><div class="dearn"></div><div class="dsess"></div></div><div class="day-hdr"><div class="dname">Fri</div><div class="ddate">8</div><div class="dearn"></div><div class="dsess"></div></div><div class="day-hdr is-today"><div class="dname">Sat</div><div class="ddate">9</div><div class="dearn"></div><div class="dsess"></div></div><div class="day-hdr"><div class="dname">Sun</div><div class="ddate">10</div><div class="dearn"></div><div class="dsess"></div></div><div class="time-lbl">6am</div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot"><div class="plus-hint">+</div></div><div class="time-lbl">7am</div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot"><div class="plus-hint">+</div></div><div class="time-lbl">8am</div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot"><div class="plus-hint">+</div></div><div class="time-lbl">9am</div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot"><div class="plus-hint">+</div></div><div class="time-lbl">10am</div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot"><div class="plus-hint">+</div></div><div class="time-lbl">11am</div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot"><div class="plus-hint">+</div></div><div class="time-lbl">12pm</div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot"><div class="plus-hint">+</div></div><div class="time-lbl">1pm</div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot"><div class="plus-hint">+</div></div><div class="time-lbl">2pm</div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot"><div class="plus-hint">+</div></div><div class="time-lbl">3pm</div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot"><div class="plus-hint">+</div></div><div class="time-lbl">4pm</div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot"><div class="plus-hint">+</div></div><div class="time-lbl">5pm</div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot"><div class="plus-hint">+</div></div><div class="time-lbl">6pm</div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot"><div class="plus-hint">+</div></div><div class="time-lbl">7pm</div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot"><div class="plus-hint">+</div></div><div class="time-lbl">8pm</div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot slot-past"></div><div class="slot"><div class="plus-hint">+</div></div></div>
+<!-- ANALYTICS PAGE -->
+<div class="page" id="pageAnalytics">
+  <div class="analytics-wrap">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div class="analytics-header">ANALYTICS</div>
+      <div class="period-toggles" id="periodToggles">
+        <button class="period-btn active" data-weeks="4">4 Weeks</button>
+        <button class="period-btn" data-weeks="8">8 Weeks</button>
+        <button class="period-btn" data-weeks="12">12 Weeks</button>
+        <button class="period-btn" data-weeks="0">All Time</button>
+      </div>
+    </div>
+    <div class="analytics-grid" id="analyticsStats"></div>
+    <div class="chart-card">
+      <div class="chart-title">WEEKLY EARNINGS</div>
+      <div class="chart-area"><canvas id="earningsChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">SESSIONS PER WEEK</div>
+      <div class="chart-area"><canvas id="sessionsChart"></canvas></div>
+    </div>
+    <div class="missed-card" id="missedCard"></div>
+  </div>
 </div>
 
 <!-- ADD / EDIT MODAL -->
@@ -236,15 +263,28 @@ header {
       <label class="f-label" for="fName">Client Name</label>
       <input class="f-input" id="fName" placeholder="e.g. Sarah Johnson" autocomplete="off">
     </div>
-    <div class="f-row-2">
+    <div class="f-row-3">
+      <div>
+        <label class="f-label" for="fStartTime">Start Time</label>
+        <input class="f-input" id="fStartTime" type="time" step="1800">
+      </div>
+      <div>
+        <label class="f-label" for="fDuration">Duration</label>
+        <select class="f-input" id="fDuration">
+          <option value="60">60 min</option>
+          <option value="90">90 min</option>
+          <option value="45">45 min</option>
+          <option value="30">30 min</option>
+        </select>
+      </div>
       <div>
         <label class="f-label" for="fRate">Rate (£/hr)</label>
-        <input class="f-input" id="fRate" type="number" placeholder="e.g. 60" min="0">
+        <input class="f-input" id="fRate" type="number" placeholder="60" min="0">
       </div>
-      <div>
-        <label class="f-label" for="fNotes">Notes</label>
-        <input class="f-input" id="fNotes" placeholder="Optional">
-      </div>
+    </div>
+    <div class="f-row">
+      <label class="f-label" for="fNotes">Notes</label>
+      <input class="f-input" id="fNotes" placeholder="Optional">
     </div>
     <div class="toggle-row">
       <label class="toggle-wrap">
@@ -255,16 +295,18 @@ header {
       <span style="font-size:13px">Recurring client</span>
     </div>
     <div id="recurOpts" style="display:none">
-      <div class="f-row">
-        <label class="f-label" for="fFreq">Repeat every</label>
-        <select class="f-input" id="fFreq">
-          <option value="1">Week (same day &amp; time)</option>
-          <option value="2">2 Weeks</option>
-        </select>
-      </div>
-      <div class="f-row">
-        <label class="f-label" for="fWeeks">Number of weeks to repeat</label>
-        <input class="f-input" id="fWeeks" type="number" min="1" max="52" value="12">
+      <div class="f-row-2">
+        <div>
+          <label class="f-label" for="fFreq">Repeat every</label>
+          <select class="f-input" id="fFreq">
+            <option value="1">Every week</option>
+            <option value="2">Every 2 weeks</option>
+          </select>
+        </div>
+        <div>
+          <label class="f-label" for="fWeeks">For how many weeks</label>
+          <input class="f-input" id="fWeeks" type="number" min="1" max="52" value="12">
+        </div>
       </div>
     </div>
     <div class="modal-actions">
@@ -288,12 +330,13 @@ header {
 <div class="toast" id="toast"></div>
 
 <script>
-
 // ── CONFIG ──────────────────────────────────────────────────────────────────
-var GCAL_CLIENT_ID = '25101030281-stnunhc7qks2fnfjqj3nnf4afilvlvee.apps.googleusercontent.com'; // paste your Client ID here
-var START_H = 6, END_H = 20;
-var HOURS = [];
-for (var _h = START_H; _h <= END_H; _h++) HOURS.push(_h);
+var GCAL_CLIENT_ID  = 'YOUR_GOOGLE_CLIENT_ID';
+var MAX_SESSIONS    = 7;       // for missed opportunity calc
+var START_H         = 6;       // 6am
+var END_H           = 21;      // 9pm
+var ROW_H           = 28;      // px per half-hour row
+var HALF_ROWS       = (END_H - START_H) * 2; // number of half-hour rows
 var DSHORT  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 var DFULL   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 var MSHORT  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -302,21 +345,20 @@ var MSHORT  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov'
 var weekStart       = getMonday(new Date());
 var sessions        = loadData();
 var activeSlot      = null;
+var activeEditKey   = null;
 var googleConnected = false;
 var gToken          = null;
-var currentViewKey  = null;
-var currentViewDate = null;
-var currentViewHour = null;
+var selectedCalId   = 'primary';
+var analyticsPeriod = 4;
 
 // ── STORAGE ──────────────────────────────────────────────────────────────────
 function loadData() {
-  try { return JSON.parse(localStorage.getItem('cbc_pt3') || '{}'); }
-  catch(e) { return {}; }
+  try { return JSON.parse(localStorage.getItem('cbc_pt4') || '{}'); } catch(e) { return {}; }
 }
-function saveData() {
-  localStorage.setItem('cbc_pt3', JSON.stringify(sessions));
-}
-function sk(date, hour) { return date + '_' + hour; }
+function saveData() { localStorage.setItem('cbc_pt4', JSON.stringify(sessions)); }
+
+// Session key: date_startMinutes (e.g. "2025-05-10_450" = 7:30am)
+function sk(date, startMins) { return date + '_' + startMins; }
 
 // ── DATE UTILS ───────────────────────────────────────────────────────────────
 function getMonday(d) {
@@ -326,25 +368,34 @@ function getMonday(d) {
   return dt;
 }
 function addDays(d, n) { var r = new Date(d); r.setDate(r.getDate() + n); return r; }
-function toISO(d) {
-  return d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate());
-}
+function toISO(d) { return d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate()); }
 function pad2(n) { return n < 10 ? '0' + n : '' + n; }
 function isToday(d) { return toISO(d) === toISO(new Date()); }
-function isPast(dateStr, hour) {
-  return new Date(dateStr + 'T' + pad2(hour) + ':59:00') < new Date();
+function isPastTime(dateStr, mins) {
+  var dt = new Date(dateStr + 'T' + pad2(Math.floor(mins/60)) + ':' + pad2(mins%60) + ':00');
+  return dt < new Date();
 }
 function weekNum(d) {
   var jan1 = new Date(d.getFullYear(), 0, 1);
   return Math.ceil((((d - jan1) / 86400000) + jan1.getDay() + 1) / 7);
 }
-function fmtH(h) { return h < 12 ? h + 'am' : h === 12 ? '12pm' : (h-12) + 'pm'; }
-function fmtDay(dateStr) {
-  var d = new Date(dateStr + 'T12:00:00');
-  return DFULL[d.getDay()] + ' ' + d.getDate() + ' ' + MSHORT[d.getMonth()];
+function minsToTime(m) {
+  var h = Math.floor(m/60), mm = m%60;
+  var ampm = h < 12 ? 'am' : 'pm';
+  var h12  = h === 0 ? 12 : h > 12 ? h-12 : h;
+  return h12 + (mm ? ':' + pad2(mm) : '') + ampm;
 }
+function timeToMins(t) {
+  var parts = t.split(':');
+  return parseInt(parts[0],10)*60 + parseInt(parts[1],10);
+}
+function minsToTimeInput(m) { return pad2(Math.floor(m/60)) + ':' + pad2(m%60); }
 
-// ── RENDER ────────────────────────────────────────────────────────────────────
+// Row index for a given minute offset from START_H
+function minsToRow(m) { return (m - START_H*60) / 30; }
+function rowToMins(r) { return START_H*60 + r*30; }
+
+// ── RENDER ───────────────────────────────────────────────────────────────────
 function render() {
   renderWeekLabel();
   renderSummary();
@@ -358,17 +409,26 @@ function renderWeekLabel() {
             ' &ndash; ' + end.getDate() + ' ' + MSHORT[end.getMonth()] + ' ' + end.getFullYear();
   document.getElementById('weekLabel').innerHTML =
     'WEEK <span style="color:var(--lime)">' + wn + '</span>' +
-    '<span style="font-family:\'DM Sans\',sans-serif;font-size:14px;font-weight:300;color:var(--muted);margin-left:10px">' + sub + '</span>';
+    '<span style="font-family:\'DM Sans\',sans-serif;font-size:13px;font-weight:300;color:var(--muted);margin-left:10px">' + sub + '</span>';
 }
 
 function renderSummary() {
   var earn = 0, booked = 0, avail = 0;
+  var now = new Date();
   for (var d = 0; d < 7; d++) {
     var date = toISO(addDays(weekStart, d));
-    for (var hi = 0; hi < HOURS.length; hi++) {
-      var s = sessions[sk(date, HOURS[hi])];
-      if (s) { booked++; earn += (s.rate || 0); } else avail++;
-    }
+    var dayBooked = 0;
+    // count sessions on this day
+    Object.keys(sessions).forEach(function(k) {
+      if (k.indexOf(date + '_') === 0) {
+        var s = sessions[k];
+        earn += earnedForSession(s);
+        dayBooked++;
+        booked++;
+      }
+    });
+    // available = MAX_SESSIONS - booked per day (rough)
+    avail += Math.max(0, MAX_SESSIONS - dayBooked);
   }
   var total = booked + avail;
   var pct = total ? Math.round(booked / total * 100) : 0;
@@ -376,8 +436,13 @@ function renderSummary() {
   document.getElementById('summaryBar').innerHTML =
     mkPill('Week Earnings', '&pound;' + earn.toLocaleString(), 'var(--lime)') +
     mkPill('Sessions Booked', booked, 'var(--text)') +
-    mkPill('Slots Available', avail, col) +
+    mkPill('Slots Available', Math.max(0, MAX_SESSIONS*7 - booked), col) +
     mkPill('Capacity', pct + '%', col);
+}
+
+function earnedForSession(s) {
+  if (!s.rate) return 0;
+  return Math.round(s.rate * (s.duration || 60) / 60);
 }
 
 function mkPill(label, val, col) {
@@ -390,19 +455,20 @@ function renderGrid() {
   grid.innerHTML = '';
 
   // corner
-  var corner = el('div', 'time-corner');
-  grid.appendChild(corner);
+  grid.appendChild(elc('div', 'time-corner'));
 
   // day headers
   for (var d = 0; d < 7; d++) {
     var date    = addDays(weekStart, d);
     var dateStr = toISO(date);
     var dayEarn = 0, dayBook = 0;
-    for (var hi = 0; hi < HOURS.length; hi++) {
-      var s = sessions[sk(dateStr, HOURS[hi])];
-      if (s) { dayEarn += (s.rate || 0); dayBook++; }
-    }
-    var hdr = el('div', 'day-hdr' + (isToday(date) ? ' is-today' : ''));
+    Object.keys(sessions).forEach(function(k) {
+      if (k.indexOf(dateStr + '_') === 0) {
+        dayEarn += earnedForSession(sessions[k]);
+        dayBook++;
+      }
+    });
+    var hdr = elc('div', 'day-hdr' + (isToday(date) ? ' is-today' : ''));
     hdr.innerHTML =
       '<div class="dname">' + DSHORT[date.getDay()] + '</div>' +
       '<div class="ddate">' + date.getDate() + '</div>' +
@@ -411,128 +477,167 @@ function renderGrid() {
     grid.appendChild(hdr);
   }
 
-  // time rows — use buildRow() to give each iteration its own scope
-  for (var hi = 0; hi < HOURS.length; hi++) {
-    buildRow(HOURS[hi], grid);
-  }
-}
-
-function buildRow(hour, grid) {
-  var tl = el('div', 'time-lbl');
-  tl.textContent = fmtH(hour);
-  grid.appendChild(tl);
+  // Build the occupied map: for each col (0-6) and each half-row, is it occupied?
+  var occupied = [];
+  for (var c = 0; c < 7; c++) occupied.push({});
 
   for (var d = 0; d < 7; d++) {
-    buildCell(d, hour, grid);
+    var dateStr = toISO(addDays(weekStart, d));
+    Object.keys(sessions).forEach(function(k) {
+      if (k.indexOf(dateStr + '_') !== 0) return;
+      var s = sessions[k];
+      var startMins = s.startMins;
+      var duration  = s.duration || 60;
+      var startRow  = minsToRow(startMins);
+      var rowSpan   = duration / 30;
+      for (var r = 0; r < rowSpan; r++) {
+        occupied[d][startRow + r] = k;
+      }
+    });
+  }
+
+  // Render half-hour rows
+  for (var row = 0; row < HALF_ROWS; row++) {
+    var mins    = rowToMins(row);
+    var isHalf  = (mins % 60) === 30;
+    var tl      = elc('div', isHalf ? 'time-lbl half' : 'time-lbl');
+    if (!isHalf) tl.textContent = minsToTime(mins);
+    grid.appendChild(tl);
+
+    for (var d = 0; d < 7; d++) {
+      buildGridCell(d, row, mins, isHalf, occupied[d], grid);
+    }
+  }
+
+  // Now overlay session blocks
+  for (var d = 0; d < 7; d++) {
+    var dateStr = toISO(addDays(weekStart, d));
+    Object.keys(sessions).forEach(function(k) {
+      if (k.indexOf(dateStr + '_') !== 0) return;
+      buildSessionBlock(k, sessions[k], d, grid);
+    });
   }
 }
 
-function buildCell(d, hour, grid) {
-  var date    = addDays(weekStart, d);
-  var dateStr = toISO(date);
-  var key     = sk(dateStr, hour);
-  var s       = sessions[key];
-  var past    = isPast(dateStr, hour);
-  var cell    = el('div', 'slot');
+function buildGridCell(col, row, mins, isHalf, occupiedCol, grid) {
+  var dateStr = toISO(addDays(weekStart, col));
+  var past    = isPastTime(dateStr, mins);
+  var occ     = occupiedCol[row] !== undefined;
+  var cell    = elc('div', 'slot-cell' + (isHalf ? ' half-row' : '') + (occ ? ' occupied' : '') + (!past && !occ ? ' clickable' : ''));
 
-  if (s) {
-    cell.className = 'slot ' + (s.recurring ? 'slot-rec' : 'slot-booked') + (past ? ' slot-past' : '');
-
-    var inner = el('div', 'slot-inner');
-    var nm    = el('div', 'slot-name'); nm.textContent = s.name;
-    inner.appendChild(nm);
-    if (s.rate) {
-      var rt = el('div', 'slot-rate'); rt.textContent = '£' + s.rate;
-      inner.appendChild(rt);
-    }
-    cell.appendChild(inner);
-
-    if (s.recurring) {
-      var badge = el('div', 'slot-badge'); badge.textContent = 'REC';
-      cell.appendChild(badge);
-    }
-
-    if (!past) {
-      attachViewClick(cell, key, dateStr, hour);
-    }
-
-  } else {
-    if (!past) {
-      var hint = el('div', 'plus-hint'); hint.textContent = '+';
-      cell.appendChild(hint);
-      attachAddClick(cell, dateStr, hour);
-    } else {
-      cell.className = 'slot slot-past';
-    }
+  if (!past && !occ) {
+    var hint = elc('div', 'plus-hint'); hint.textContent = '+';
+    cell.appendChild(hint);
+    attachAddClick(cell, dateStr, mins);
   }
-
   grid.appendChild(cell);
 }
 
-function attachAddClick(cell, dateStr, hour) {
-  cell.onclick = function() {
-    openAdd(dateStr, hour);
-  };
+function buildSessionBlock(key, s, col, grid) {
+  var startRow = minsToRow(s.startMins);
+  var rowSpan  = (s.duration || 60) / 30;
+  var past     = isPastTime(toISO(addDays(weekStart, col)), s.startMins);
+
+  var block = elc('div', 'session-block type-' + (s.recurring ? 'rec' : 'booked') + (past ? ' is-past' : ''));
+
+  // Position: top = startRow * ROW_H, height = rowSpan * ROW_H
+  // We need to account for the header row (day header) — it's not a fixed-height row in the grid,
+  // so we use a column-based approach with grid-column and grid-row
+  block.style.gridColumn = (col + 2) + ''; // +2 because col 1 is time labels
+  block.style.gridRow    = (startRow + 2) + ' / span ' + rowSpan; // +2 for header row
+  block.style.position   = 'relative';
+  block.style.zIndex     = '10';
+  block.style.margin     = '1px';
+
+  var nm = elc('div', 'sb-name'); nm.textContent = s.name;
+  block.appendChild(nm);
+
+  var timeEl = elc('div', 'sb-time');
+  timeEl.textContent = minsToTime(s.startMins) + ' \u2013 ' + minsToTime(s.startMins + (s.duration||60));
+  block.appendChild(timeEl);
+
+  if (s.rate) {
+    var rt = elc('div', 'sb-rate'); rt.textContent = '\u00a3' + earnedForSession(s);
+    block.appendChild(rt);
+  }
+
+  if (s.recurring) {
+    var badge = elc('div', 'sb-badge'); badge.textContent = 'REC';
+    block.appendChild(badge);
+  }
+
+  if (!past) {
+    attachViewClick(block, key);
+  }
+
+  grid.appendChild(block);
 }
 
-function attachViewClick(cell, key, dateStr, hour) {
-  cell.onclick = function() {
-    openView(key, dateStr, hour);
-  };
+function attachAddClick(cell, dateStr, mins) {
+  cell.onclick = function() { openAdd(dateStr, mins); };
 }
-
-function el(tag, cls) {
-  var e = document.createElement(tag);
-  if (cls) e.className = cls;
-  return e;
+function attachViewClick(block, key) {
+  block.onclick = function() { openView(key); };
 }
+function elc(tag, cls) { var e = document.createElement(tag); if (cls) e.className = cls; return e; }
 
 // ── ADD / EDIT MODAL ─────────────────────────────────────────────────────────
-function openAdd(date, hour) {
-  activeSlot = { date: date, hour: hour };
-  document.getElementById('addTitle').textContent = 'BOOK SESSION';
-  document.getElementById('addSub').textContent   = fmtDay(date) + '  \u00b7  ' + fmtH(hour) + ' \u2013 ' + fmtH(hour + 1);
-  document.getElementById('fName').value          = '';
-  document.getElementById('fRate').value          = '';
-  document.getElementById('fNotes').value         = '';
-  document.getElementById('fRecurring').checked   = false;
-  document.getElementById('recurOpts').style.display = 'none';
-  document.getElementById('fWeeks').value         = 12;
+function openAdd(date, startMins) {
+  activeSlot    = { date: date, startMins: startMins };
+  activeEditKey = null;
+  document.getElementById('addTitle').textContent      = 'BOOK SESSION';
+  document.getElementById('addSub').textContent        = formatDateStr(date) + '  \u00b7  ' + minsToTime(startMins);
+  document.getElementById('fName').value               = '';
+  document.getElementById('fStartTime').value          = minsToTimeInput(startMins);
+  document.getElementById('fDuration').value           = '60';
+  document.getElementById('fRate').value               = '';
+  document.getElementById('fNotes').value              = '';
+  document.getElementById('fRecurring').checked        = false;
+  document.getElementById('recurOpts').style.display   = 'none';
+  document.getElementById('fWeeks').value              = 12;
   document.getElementById('addModal').classList.add('open');
   setTimeout(function() { document.getElementById('fName').focus(); }, 120);
 }
 
-function openEdit(key, date, hour, s) {
-  activeSlot = { date: date, hour: hour, editKey: key };
-  document.getElementById('addTitle').textContent = 'EDIT SESSION';
-  document.getElementById('addSub').textContent   = fmtDay(date) + '  \u00b7  ' + fmtH(hour) + ' \u2013 ' + fmtH(hour + 1);
-  document.getElementById('fName').value          = s.name;
-  document.getElementById('fRate').value          = s.rate || '';
-  document.getElementById('fNotes').value         = s.notes || '';
-  document.getElementById('fRecurring').checked   = false;
-  document.getElementById('recurOpts').style.display = 'none';
+function openEdit(key) {
+  var s = sessions[key];
+  if (!s) return;
+  activeSlot    = { date: s.date, startMins: s.startMins };
+  activeEditKey = key;
+  document.getElementById('addTitle').textContent      = 'EDIT SESSION';
+  document.getElementById('addSub').textContent        = formatDateStr(s.date) + '  \u00b7  ' + minsToTime(s.startMins);
+  document.getElementById('fName').value               = s.name;
+  document.getElementById('fStartTime').value          = minsToTimeInput(s.startMins);
+  document.getElementById('fDuration').value           = s.duration || 60;
+  document.getElementById('fRate').value               = s.rate || '';
+  document.getElementById('fNotes').value              = s.notes || '';
+  document.getElementById('fRecurring').checked        = false;
+  document.getElementById('recurOpts').style.display   = 'none';
   document.getElementById('addModal').classList.add('open');
   setTimeout(function() { document.getElementById('fName').focus(); }, 120);
 }
 
 function closeAdd() {
   document.getElementById('addModal').classList.remove('open');
-  activeSlot = null;
+  activeSlot = null; activeEditKey = null;
 }
 
 function saveSession() {
   var name = document.getElementById('fName').value.trim();
   if (!name) { document.getElementById('fName').focus(); return; }
-  var rate  = parseFloat(document.getElementById('fRate').value)  || 0;
-  var notes = document.getElementById('fNotes').value.trim();
-  var recur = document.getElementById('fRecurring').checked;
 
-  if (activeSlot && activeSlot.editKey) {
-    sessions[activeSlot.editKey] = {
-      name: name, rate: rate, notes: notes,
-      recurring: sessions[activeSlot.editKey].recurring,
-      recurringId: sessions[activeSlot.editKey].recurringId
-    };
+  var startMins = timeToMins(document.getElementById('fStartTime').value);
+  var duration  = parseInt(document.getElementById('fDuration').value, 10) || 60;
+  var rate      = parseFloat(document.getElementById('fRate').value) || 0;
+  var notes     = document.getElementById('fNotes').value.trim();
+  var recur     = document.getElementById('fRecurring').checked;
+  var date      = activeSlot.date;
+
+  if (activeEditKey) {
+    var old = sessions[activeEditKey];
+    delete sessions[activeEditKey];
+    var newKey = sk(date, startMins);
+    sessions[newKey] = { name: name, date: date, startMins: startMins, duration: duration, rate: rate, notes: notes, recurring: old.recurring, recurringId: old.recurringId };
     saveData(); render(); closeAdd(); showToast('Session updated');
     return;
   }
@@ -543,95 +648,257 @@ function saveSession() {
     var rid      = 'r' + Date.now();
     var count    = 0;
     for (var w = 0; w < weeks; w += interval) {
-      var dt = new Date(activeSlot.date + 'T12:00:00');
+      var dt = new Date(date + 'T12:00:00');
       dt.setDate(dt.getDate() + w * 7);
-      var k = sk(toISO(dt), activeSlot.hour);
+      var d2 = toISO(dt);
+      var k  = sk(d2, startMins);
       if (!sessions[k]) {
-        sessions[k] = { name: name, rate: rate, notes: notes, recurring: true, recurringId: rid };
+        sessions[k] = { name: name, date: d2, startMins: startMins, duration: duration, rate: rate, notes: notes, recurring: true, recurringId: rid };
         count++;
       }
     }
     saveData(); render(); closeAdd(); showToast(count + ' recurring sessions added');
   } else {
-    var k2 = sk(activeSlot.date, activeSlot.hour);
-    sessions[k2] = { name: name, rate: rate, notes: notes, recurring: false };
+    var k2 = sk(date, startMins);
+    sessions[k2] = { name: name, date: date, startMins: startMins, duration: duration, rate: rate, notes: notes, recurring: false };
     saveData(); render(); closeAdd(); showToast('Session booked');
   }
 }
 
 // ── VIEW MODAL ───────────────────────────────────────────────────────────────
-function openView(key, date, hour) {
+function openView(key) {
   var s = sessions[key];
   if (!s) return;
-  currentViewKey  = key;
-  currentViewDate = date;
-  currentViewHour = hour;
 
   document.getElementById('viewTitle').textContent = s.name.toUpperCase();
-  document.getElementById('viewSub').textContent   = fmtDay(date) + '  \u00b7  ' + fmtH(hour) + ' \u2013 ' + fmtH(hour + 1);
+  document.getElementById('viewSub').textContent   =
+    formatDateStr(s.date) + '  \u00b7  ' + minsToTime(s.startMins) + ' \u2013 ' + minsToTime(s.startMins + (s.duration||60));
 
+  var earned = earnedForSession(s);
   document.getElementById('viewBody').innerHTML =
     vfHtml('Rate', s.rate ? '\u00a3' + s.rate + '/hr' : '\u2014', s.rate ? 'vf-lime' : '') +
+    vfHtml('Session Earnings', earned ? '\u00a3' + earned : '\u2014', '') +
+    vfHtml('Duration', (s.duration || 60) + ' mins', '') +
     vfHtml('Type', s.recurring ? 'Recurring' : 'One-off', '') +
     (s.notes ? vfHtml('Notes', s.notes, '') : '') +
     '<button class="gcal-btn" id="gcalPushBtn"' + (!googleConnected ? ' disabled' : '') + '>' +
     calSVG() + ' Add to Google Calendar</button>';
 
-  document.getElementById('gcalPushBtn').onclick = function() {
-    pushToGcal(s, date, hour);
-  };
+  document.getElementById('gcalPushBtn').onclick = function() { pushToGcal(s); };
 
   var acts = document.getElementById('viewActions');
   acts.innerHTML = '';
 
-  var editBtn = el('button', 'btn-secondary');
-  editBtn.textContent  = 'Edit';
-  editBtn.style.flex   = '1';
-  editBtn.onclick = function() { closeView(); openEdit(key, date, hour, s); };
+  var editBtn = elc('button', 'btn-secondary');
+  editBtn.textContent = 'Edit'; editBtn.style.flex = '1';
+  editBtn.onclick = function() { closeView(); openEdit(key); };
   acts.appendChild(editBtn);
 
   if (s.recurring) {
-    var d1 = el('button', 'btn-danger');
-    d1.textContent = 'Remove this';
-    d1.onclick = function() {
-      delete sessions[key]; saveData(); render(); closeView(); showToast('Session removed');
-    };
-    var da = el('button', 'btn-danger');
-    da.textContent = 'Remove all';
+    var d1 = elc('button', 'btn-danger'); d1.textContent = 'Remove this';
+    d1.onclick = function() { delete sessions[key]; saveData(); render(); closeView(); showToast('Session removed'); };
+    var da = elc('button', 'btn-danger'); da.textContent = 'Remove all';
     da.onclick = function() {
       var rid = s.recurringId;
-      Object.keys(sessions).forEach(function(k) {
-        if (sessions[k].recurringId === rid) delete sessions[k];
-      });
+      Object.keys(sessions).forEach(function(k) { if (sessions[k].recurringId === rid) delete sessions[k]; });
       saveData(); render(); closeView(); showToast('All recurring sessions removed');
     };
-    acts.appendChild(d1);
-    acts.appendChild(da);
+    acts.appendChild(d1); acts.appendChild(da);
   } else {
-    var db = el('button', 'btn-danger');
-    db.textContent = 'Cancel session';
-    db.onclick = function() {
-      delete sessions[key]; saveData(); render(); closeView(); showToast('Session cancelled');
-    };
+    var db = elc('button', 'btn-danger'); db.textContent = 'Cancel session';
+    db.onclick = function() { delete sessions[key]; saveData(); render(); closeView(); showToast('Session cancelled'); };
     acts.appendChild(db);
   }
 
   document.getElementById('viewModal').classList.add('open');
 }
 
-function closeView() {
-  document.getElementById('viewModal').classList.remove('open');
-}
+function closeView() { document.getElementById('viewModal').classList.remove('open'); }
 
 function vfHtml(label, value, cls) {
-  return '<div class="vf"><div class="vf-label">' + label + '</div>' +
-    '<div class="vf-value ' + cls + '">' + value + '</div></div>';
+  return '<div class="vf"><div class="vf-label">' + label + '</div><div class="vf-value ' + cls + '">' + value + '</div></div>';
+}
+function calSVG() {
+  return '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" style="flex-shrink:0"><rect x="3" y="4" width="18" height="17" rx="2" stroke="#4285f4" stroke-width="1.8"/><path d="M16 2v4M8 2v4M3 9h18" stroke="#4285f4" stroke-width="1.8"/></svg>';
+}
+function formatDateStr(dateStr) {
+  var d = new Date(dateStr + 'T12:00:00');
+  return DFULL[d.getDay()] + ' ' + d.getDate() + ' ' + MSHORT[d.getMonth()];
 }
 
-function calSVG() {
-  return '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" style="flex-shrink:0">' +
-    '<rect x="3" y="4" width="18" height="17" rx="2" stroke="#4285f4" stroke-width="1.8"/>' +
-    '<path d="M16 2v4M8 2v4M3 9h18" stroke="#4285f4" stroke-width="1.8"/></svg>';
+// ── ANALYTICS ────────────────────────────────────────────────────────────────
+function renderAnalytics() {
+  var weeks  = analyticsPeriod === 0 ? 999 : analyticsPeriod;
+  var cutoff = analyticsPeriod === 0 ? new Date('2000-01-01') : addDays(new Date(), -weeks * 7);
+  var today  = new Date(); today.setHours(23,59,59,0);
+
+  // Collect weekly data
+  var weekMap = {};
+  Object.keys(sessions).forEach(function(k) {
+    var s = sessions[k];
+    var d = new Date(s.date + 'T12:00:00');
+    if (d > today || d < cutoff) return;
+    var mon = getMonday(d);
+    var wk  = toISO(mon);
+    if (!weekMap[wk]) weekMap[wk] = { earn: 0, count: 0 };
+    weekMap[wk].earn  += earnedForSession(s);
+    weekMap[wk].count += 1;
+  });
+
+  var wkKeys = Object.keys(weekMap).sort();
+  var totalEarn = 0, totalSess = 0;
+  wkKeys.forEach(function(k) { totalEarn += weekMap[k].earn; totalSess += weekMap[k].count; });
+  var avgWeeklyEarn = wkKeys.length ? Math.round(totalEarn / wkKeys.length) : 0;
+  var avgWeeklySess = wkKeys.length ? (totalSess / wkKeys.length).toFixed(1) : 0;
+
+  // Stats
+  document.getElementById('analyticsStats').innerHTML =
+    statCard('Total Earnings', '&pound;' + totalEarn.toLocaleString(), analyticsPeriod === 0 ? 'All time' : 'Last ' + analyticsPeriod + ' weeks', 'var(--lime)') +
+    statCard('Total Sessions', totalSess, analyticsPeriod === 0 ? 'All time' : 'Last ' + analyticsPeriod + ' weeks', 'var(--text)') +
+    statCard('Avg Weekly Earnings', '&pound;' + avgWeeklyEarn, 'Per week', avgWeeklyEarn > 0 ? 'var(--lime)' : 'var(--muted)') +
+    statCard('Avg Sessions / Week', avgWeeklySess, 'Per week', 'var(--text)');
+
+  // Charts
+  drawChart('earningsChart', wkKeys, wkKeys.map(function(k) { return weekMap[k].earn; }), '&pound;', '#C6F135');
+  drawChart('sessionsChart', wkKeys, wkKeys.map(function(k) { return weekMap[k].count; }), '', '#4090d0');
+
+  // Missed opportunity
+  renderMissed(cutoff, today);
+}
+
+function statCard(label, val, sub, col) {
+  return '<div class="stat-card"><div class="stat-label">' + label + '</div>' +
+    '<div class="stat-value" style="color:' + col + '">' + val + '</div>' +
+    '<div class="stat-sub">' + sub + '</div></div>';
+}
+
+function drawChart(canvasId, labels, data, prefix, colour) {
+  var canvas = document.getElementById(canvasId);
+  var ctx    = canvas.getContext('2d');
+  var W = canvas.offsetWidth || 600;
+  var H = 180;
+  canvas.width  = W;
+  canvas.height = H;
+  ctx.clearRect(0, 0, W, H);
+
+  if (!data.length) {
+    ctx.fillStyle = '#444'; ctx.font = '13px DM Sans';
+    ctx.fillText('No data yet', W/2 - 40, H/2); return;
+  }
+
+  var pad = { top: 10, right: 10, bottom: 36, left: 52 };
+  var gW  = W - pad.left - pad.right;
+  var gH  = H - pad.top  - pad.bottom;
+  var max = Math.max.apply(null, data) || 1;
+
+  // Grid lines
+  ctx.strokeStyle = '#222'; ctx.lineWidth = 1;
+  for (var i = 0; i <= 4; i++) {
+    var y = pad.top + gH - (i / 4) * gH;
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + gW, y); ctx.stroke();
+    ctx.fillStyle = '#555'; ctx.font = '10px DM Sans'; ctx.textAlign = 'right';
+    ctx.fillText(prefix + Math.round(max * i / 4), pad.left - 4, y + 4);
+  }
+
+  var bW   = Math.max(4, gW / data.length - 4);
+  var step = gW / data.length;
+
+  data.forEach(function(val, i) {
+    var x  = pad.left + i * step + (step - bW) / 2;
+    var bH = (val / max) * gH;
+    var y  = pad.top + gH - bH;
+
+    // Bar
+    ctx.fillStyle = colour + '33';
+    ctx.fillRect(x, y, bW, bH);
+    ctx.strokeStyle = colour;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x, y, bW, bH);
+
+    // Label
+    if (i % Math.ceil(data.length / 8) === 0 || data.length <= 8) {
+      var lbl = labels[i] ? labels[i].slice(5) : ''; // MM-DD
+      ctx.fillStyle = '#555'; ctx.font = '9px DM Sans'; ctx.textAlign = 'center';
+      ctx.fillText(lbl, x + bW/2, H - pad.bottom + 14);
+    }
+
+    // Value on bar
+    if (val > 0) {
+      ctx.fillStyle = colour; ctx.font = 'bold 9px DM Sans'; ctx.textAlign = 'center';
+      ctx.fillText(prefix + val, x + bW/2, y - 3);
+    }
+  });
+}
+
+function renderMissed(cutoff, today) {
+  var dayMap = {};
+  for (var d = new Date(cutoff); d <= today; d = addDays(d, 1)) {
+    var ds = toISO(d); dayMap[ds] = 0;
+  }
+  Object.keys(sessions).forEach(function(k) {
+    var s = sessions[k];
+    var d = new Date(s.date + 'T12:00:00');
+    if (d <= today && d >= cutoff && dayMap[s.date] !== undefined) dayMap[s.date]++;
+  });
+
+  var avgRate = 0, rateCount = 0;
+  Object.keys(sessions).forEach(function(k) {
+    if (sessions[k].rate) { avgRate += sessions[k].rate; rateCount++; }
+  });
+  avgRate = rateCount ? Math.round(avgRate / rateCount) : 50;
+
+  var totalMissedSess = 0, totalMissedEarn = 0;
+  var dayDetails = [];
+  Object.keys(dayMap).sort().slice(-14).forEach(function(ds) {
+    var booked = dayMap[ds];
+    var missed = Math.max(0, MAX_SESSIONS - booked);
+    totalMissedSess += missed;
+    totalMissedEarn += missed * avgRate;
+    dayDetails.push({ date: ds, booked: booked, missed: missed });
+  });
+
+  var mc = document.getElementById('missedCard');
+  mc.innerHTML = '<div class="missed-title">MISSED OPPORTUNITY</div>' +
+    '<div class="missed-sub">Based on ' + MAX_SESSIONS + ' sessions/day target &nbsp;&middot;&nbsp; avg rate &pound;' + avgRate + '/hr &nbsp;&middot;&nbsp; last 14 days shown</div>' +
+    '<div style="display:flex;gap:20px;margin-bottom:16px">' +
+    '<div><div class="stat-label">Missed Sessions</div><div class="stat-value danger">' + totalMissedSess + '</div></div>' +
+    '<div><div class="stat-label">Missed Earnings</div><div class="stat-value danger">&pound;' + totalMissedEarn.toLocaleString() + '</div></div>' +
+    '</div>' +
+    '<div class="missed-grid">' +
+    dayDetails.map(function(d) {
+      var dt = new Date(d.date + 'T12:00:00');
+      return '<div class="missed-day">' +
+        '<div class="missed-day-name">' + DSHORT[dt.getDay()] + ' ' + dt.getDate() + ' ' + MSHORT[dt.getMonth()] + '</div>' +
+        '<div class="missed-day-val">&pound;' + (d.missed * avgRate) + '</div>' +
+        '<div class="missed-day-sess">' + d.booked + '/' + MAX_SESSIONS + ' sessions</div>' +
+        '</div>';
+    }).join('') + '</div>';
+}
+
+// ── EXPORT CSV ────────────────────────────────────────────────────────────────
+function exportCSV() {
+  var rows = ['Date,Day,Client,Start Time,Duration (mins),Rate (£/hr),Session Earnings (£),Notes,Recurring'];
+  Object.keys(sessions).sort().forEach(function(k) {
+    var s = sessions[k];
+    var d = new Date(s.date + 'T12:00:00');
+    rows.push([
+      s.date,
+      DFULL[d.getDay()],
+      '"' + s.name + '"',
+      minsToTime(s.startMins),
+      s.duration || 60,
+      s.rate || 0,
+      earnedForSession(s),
+      '"' + (s.notes || '') + '"',
+      s.recurring ? 'Yes' : 'No'
+    ].join(','));
+  });
+  var blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+  var url  = URL.createObjectURL(blob);
+  var a    = document.createElement('a');
+  a.href = url; a.download = 'coaching-by-craig-sessions.csv';
+  a.click(); URL.revokeObjectURL(url);
+  showToast('CSV exported');
 }
 
 // ── GOOGLE CALENDAR ───────────────────────────────────────────────────────────
@@ -640,8 +907,7 @@ function loadGSI() {
     if (typeof google !== 'undefined' && google.accounts) { resolve(); return; }
     var s = document.createElement('script');
     s.src = 'https://accounts.google.com/gsi/client';
-    s.onload = resolve;
-    s.onerror = reject;
+    s.onload = resolve; s.onerror = reject;
     document.head.appendChild(s);
   });
 }
@@ -653,32 +919,49 @@ document.getElementById('gAuthBtn').onclick = function() {
   loadGSI().then(function() {
     var client = google.accounts.oauth2.initTokenClient({
       client_id: GCAL_CLIENT_ID,
-      scope: 'https://www.googleapis.com/auth/calendar.events',
+      scope: 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly',
       callback: function(resp) {
-        if (resp.error) {
-          btn.textContent = 'Connect Google Cal';
-          showToast('Auth failed: ' + (resp.error_description || resp.error));
-          return;
-        }
-        gToken = resp.access_token;
-        googleConnected = true;
-        btn.textContent = '\u2713 Connected';
-        btn.classList.add('connected');
+        if (resp.error) { btn.textContent = 'Connect Google Cal'; showToast('Auth failed'); return; }
+        gToken = resp.access_token; googleConnected = true;
+        btn.textContent = '\u2713 Connected'; btn.classList.add('connected');
         document.getElementById('gcalStatus').style.display = 'block';
         showToast('Google Calendar connected!');
+        fetchCalendars();
       }
     });
     client.requestAccessToken();
-  }).catch(function() {
-    btn.textContent = 'Connect Google Cal';
-    showToast('Could not load Google API');
-  });
+  }).catch(function() { btn.textContent = 'Connect Google Cal'; showToast('Could not load Google API'); });
 };
 
-function pushToGcal(s, date, hour) {
+function fetchCalendars() {
+  fetch('https://www.googleapis.com/calendar/v3/users/me/calendarList', {
+    headers: { 'Authorization': 'Bearer ' + gToken }
+  }).then(function(r) { return r.json(); }).then(function(data) {
+    var cals = (data.items || []).filter(function(c) { return c.accessRole === 'owner' || c.accessRole === 'writer'; });
+    if (!cals.length) return;
+    // Show calendar picker in header
+    var wrap = document.getElementById('calPickerWrap');
+    var sel  = document.getElementById('calPicker');
+    sel.innerHTML = '';
+    cals.forEach(function(c) {
+      var opt = document.createElement('option');
+      opt.value = c.id;
+      opt.textContent = c.summary;
+      if (c.id === 'primary') opt.textContent += ' (primary)';
+      sel.appendChild(opt);
+    });
+    // Try to pre-select PT Clients
+    var ptOpt = Array.from(sel.options).find(function(o) { return o.textContent.toLowerCase().indexOf('pt') !== -1; });
+    if (ptOpt) { sel.value = ptOpt.value; selectedCalId = ptOpt.value; }
+    wrap.style.display = 'flex';
+    sel.onchange = function() { selectedCalId = this.value; showToast('Calendar: ' + this.options[this.selectedIndex].text); };
+  }).catch(function() { /* silently fail — just use primary */ });
+}
+
+function pushToGcal(s) {
   if (!googleConnected || !gToken) { showToast('Connect Google Calendar first'); return; }
-  var start = new Date(date + 'T' + pad2(hour) + ':00:00');
-  var end   = new Date(start.getTime() + 3600000);
+  var start = new Date(s.date + 'T' + pad2(Math.floor(s.startMins/60)) + ':' + pad2(s.startMins%60) + ':00');
+  var end   = new Date(start.getTime() + (s.duration||60) * 60000);
   var event = {
     summary: 'PT: ' + s.name,
     description: (s.rate ? 'Rate: \u00a3' + s.rate + '/hr' : '') + (s.notes ? '\nNotes: ' + s.notes : ''),
@@ -686,7 +969,7 @@ function pushToGcal(s, date, hour) {
     end:   { dateTime: end.toISOString(),   timeZone: 'Europe/London' },
     colorId: '10'
   };
-  fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
+  fetch('https://www.googleapis.com/calendar/v3/calendars/' + encodeURIComponent(selectedCalId) + '/events', {
     method: 'POST',
     headers: { 'Authorization': 'Bearer ' + gToken, 'Content-Type': 'application/json' },
     body: JSON.stringify(event)
@@ -696,40 +979,66 @@ function pushToGcal(s, date, hour) {
   }).catch(function() { showToast('Could not reach Google Calendar'); });
 }
 
-// ── NAV ───────────────────────────────────────────────────────────────────────
-document.getElementById('btnPrev').onclick   = function() { weekStart = addDays(weekStart, -7); render(); };
-document.getElementById('btnNext').onclick   = function() { weekStart = addDays(weekStart,  7); render(); };
-document.getElementById('btnToday').onclick  = function() { weekStart = getMonday(new Date()); render(); };
-
-// ── MODAL WIRING ─────────────────────────────────────────────────────────────
+// ── NAV + WIRING ─────────────────────────────────────────────────────────────
+document.getElementById('btnPrev').onclick  = function() { weekStart = addDays(weekStart, -7); render(); };
+document.getElementById('btnNext').onclick  = function() { weekStart = addDays(weekStart,  7); render(); };
+document.getElementById('btnToday').onclick = function() { weekStart = getMonday(new Date()); render(); };
 document.getElementById('addClose').onclick  = closeAdd;
 document.getElementById('addCancel').onclick = closeAdd;
 document.getElementById('btnSave').onclick   = saveSession;
 document.getElementById('viewClose').onclick = closeView;
+document.getElementById('exportBtn').onclick = exportCSV;
 
 document.getElementById('fRecurring').onchange = function() {
   document.getElementById('recurOpts').style.display = this.checked ? 'block' : 'none';
 };
+document.getElementById('fStartTime').onchange = function() {
+  if (activeSlot) {
+    document.getElementById('addSub').textContent = formatDateStr(activeSlot.date) + '  \u00b7  ' + this.value;
+  }
+};
 
 document.getElementById('addModal').onclick = function(e) { if (e.target === this) closeAdd(); };
 document.getElementById('viewModal').onclick = function(e) { if (e.target === this) closeView(); };
-
 document.onkeydown = function(e) {
   if (e.key === 'Escape') { closeAdd(); closeView(); }
   if (e.key === 'Enter' && document.getElementById('addModal').classList.contains('open')) saveSession();
 };
 
+// Tabs
+document.getElementById('tabCal').onclick = function() {
+  document.getElementById('tabCal').classList.add('active');
+  document.getElementById('tabAnalytics').classList.remove('active');
+  document.getElementById('pageCal').classList.add('active');
+  document.getElementById('pageAnalytics').classList.remove('active');
+};
+document.getElementById('tabAnalytics').onclick = function() {
+  document.getElementById('tabAnalytics').classList.add('active');
+  document.getElementById('tabCal').classList.remove('active');
+  document.getElementById('pageAnalytics').classList.add('active');
+  document.getElementById('pageCal').classList.remove('active');
+  renderAnalytics();
+};
+
+// Period toggles
+document.getElementById('periodToggles').onclick = function(e) {
+  var btn = e.target.closest('.period-btn');
+  if (!btn) return;
+  document.querySelectorAll('.period-btn').forEach(function(b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+  analyticsPeriod = parseInt(btn.getAttribute('data-weeks'), 10);
+  renderAnalytics();
+};
+
 // ── TOAST ─────────────────────────────────────────────────────────────────────
 function showToast(msg) {
   var t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
+  t.textContent = msg; t.classList.add('show');
   setTimeout(function() { t.classList.remove('show'); }, 2800);
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 render();
-
 </script>
 
 
