@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<!-- saved from url=(0049)file:///C:/Users/apoc3/Downloads/pt-calendar.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coaching by Craig — PT Calendar</title>
+<link href="./Coaching by Craig — PT Calendar_files/css2" rel="stylesheet">
+<style>
+  :root {
+    --black: #0a0a0a;
+    --dark: #111111;
+    --card: #181818;
+    --border: #242424;
+    --lime: #C6F135;
+    --lime-dim: rgba(198,241,53,0.12);
+    --lime-glow: rgba(198,241,53,0.25);
+    --text: #f0f0f0;
+    --muted: #666;
+    --booked: #1e2a0e;
+    --booked-border: #4a7a10;
+    --recurring: #0e1e2a;
+    --recurring-border: #1070a0;
+    --empty: #161616;
+    --danger: #e05555;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--black);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--dark);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 2px;
+    color: var(--lime);
+  }
+  .logo span { color: var(--text); }
+  .header-right { display: flex; align-items: center; gap: 12px; }
+
+  /* Google auth button */
+  #gAuthBtn {
+    background: transparent;
+    border: 1px solid var(--lime);
+    color: var(--lime);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    padding: 7px 16px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.2s;
+  }
+  #gAuthBtn:hover { background: var(--lime); color: var(--black); }
+  #gAuthBtn.connected { border-color: var(--lime); color: var(--lime); opacity: 0.7; cursor: default; }
+  #gAuthBtn.connected:hover { background: transparent; color: var(--lime); }
+
+  /* ── WEEK NAV ── */
+  .week-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px 0;
+  }
+  .week-label {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 2px;
+    color: var(--text);
+  }
+  .week-label span { color: var(--lime); }
+  .nav-btns { display: flex; gap: 8px; }
+  .nav-btn {
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--text);
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.15s;
+  }
+  .nav-btn:hover { border-color: var(--lime); color: var(--lime); }
+  .today-btn {
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    padding: 0 14px;
+    height: 36px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.15s;
+  }
+  .today-btn:hover { border-color: var(--lime); color: var(--lime); }
+
+  /* ── SUMMARY BAR ── */
+  .summary-bar {
+    display: flex;
+    gap: 12px;
+    padding: 14px 24px;
+    overflow-x: auto;
+  }
+  .summary-pill {
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 10px 18px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .summary-pill .pill-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .summary-pill .pill-value {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 1px;
+    color: var(--lime);
+  }
+  .summary-pill .pill-value.neutral { color: var(--text); }
+  .summary-pill .pill-value.warn { color: #f0a020; }
+
+  /* ── CALENDAR GRID ── */
+  .calendar-wrapper {
+    padding: 0 24px 100px;
+    overflow-x: auto;
+  }
+  .calendar-grid {
+    display: grid;
+    grid-template-columns: 56px repeat(7, 1fr);
+    min-width: 900px;
+    border: 1px solid var(--border);
+    border-bottom: none;
+  }
+
+  /* Day headers */
+  .day-header {
+    background: var(--dark);
+    border-bottom: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    padding: 12px 8px;
+    text-align: center;
+  }
+  .day-header:first-child { border-right: 1px solid var(--border); }
+  .day-header .day-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 15px;
+    letter-spacing: 1px;
+    color: var(--muted);
+  }
+  .day-header .day-date {
+    font-size: 20px;
+    font-weight: 300;
+    color: var(--text);
+    line-height: 1;
+    margin-top: 2px;
+  }
+  .day-header.today .day-name { color: var(--lime); }
+  .day-header.today .day-date {
+    color: var(--black);
+    background: var(--lime);
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+    margin: 2px auto 0;
+    font-weight: 600;
+  }
+  .day-header .day-earnings {
+    font-size: 11px;
+    color: var(--lime);
+    font-weight: 600;
+    margin-top: 4px;
+  }
+  .day-header .day-slots {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .time-header {
+    background: var(--dark);
+    border-bottom: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+  }
+
+  /* Time column */
+  .time-label {
+    background: var(--dark);
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 0 6px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    height: 52px;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+  }
+
+  /* Slot cells */
+  .slot {
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    height: 52px;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.1s;
+    overflow: hidden;
+  }
+  .slot:hover { background: rgba(198,241,53,0.05); }
+  .slot.empty { background: var(--empty); }
+  .slot.booked {
+    background: var(--booked);
+    border-color: var(--booked-border);
+    cursor: default;
+  }
+  .slot.recurring {
+    background: var(--recurring);
+    border-color: var(--recurring-border);
+    cursor: default;
+  }
+  .slot.past { opacity: 0.45; cursor: default; }
+  .slot.past:hover { background: var(--empty); }
+
+  .slot-inner {
+    padding: 4px 7px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .slot-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
+  }
+  .slot-rate {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 13px;
+    color: var(--lime);
+    letter-spacing: 0.5px;
+    margin-top: 1px;
+  }
+  .slot-badge {
+    position: absolute;
+    top: 3px;
+    right: 4px;
+    font-size: 8px;
+    letter-spacing: 1px;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 1px 4px;
+    background: rgba(198,241,53,0.15);
+    color: var(--lime);
+    border: 1px solid rgba(198,241,53,0.3);
+  }
+  .slot-badge.rec { background: rgba(16,112,160,0.2); color: #40b4f0; border-color: rgba(16,112,160,0.4); }
+
+  /* Empty slot hover hint */
+  .slot.empty:hover::after {
+    content: '+';
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: rgba(198,241,53,0.3);
+    font-weight: 300;
+  }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--dark);
+    border: 1px solid var(--border);
+    width: 420px;
+    max-width: 95vw;
+    padding: 28px;
+    position: relative;
+    animation: modalIn 0.2s ease;
+  }
+  @keyframes modalIn {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .modal-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 24px;
+    letter-spacing: 2px;
+    color: var(--lime);
+    margin-bottom: 4px;
+  }
+  .modal-subtitle {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 22px;
+    letter-spacing: 0.5px;
+  }
+  .modal-close {
+    position: absolute;
+    top: 16px; right: 16px;
+    background: none; border: none;
+    color: var(--muted);
+    font-size: 20px;
+    cursor: pointer;
+    line-height: 1;
+    transition: color 0.15s;
+  }
+  .modal-close:hover { color: var(--text); }
+
+  .form-row { margin-bottom: 16px; }
+  .form-label {
+    display: block;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+    margin-bottom: 6px;
+    font-weight: 600;
+  }
+  .form-input {
+    width: 100%;
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    padding: 10px 12px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .form-input:focus { border-color: var(--lime); }
+  .form-input::placeholder { color: var(--muted); }
+
+  .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .toggle-label { font-size: 13px; color: var(--text); }
+  .toggle {
+    position: relative;
+    width: 40px; height: 22px;
+    cursor: pointer;
+  }
+  .toggle input { display: none; }
+  .toggle-track {
+    background: var(--border);
+    border-radius: 11px;
+    width: 100%; height: 100%;
+    transition: background 0.2s;
+  }
+  .toggle input:checked + .toggle-track { background: var(--lime); }
+  .toggle-thumb {
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 16px; height: 16px;
+    background: var(--text);
+    border-radius: 50%;
+    transition: transform 0.2s;
+    pointer-events: none;
+  }
+  .toggle input:checked ~ .toggle-thumb { transform: translateX(18px); background: var(--black); }
+
+  .modal-actions { display: flex; gap: 10px; margin-top: 22px; }
+  .btn-primary {
+    flex: 1;
+    background: var(--lime);
+    color: var(--black);
+    border: none;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 17px;
+    letter-spacing: 2px;
+    padding: 12px;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-secondary {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    padding: 12px 20px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-secondary:hover { border-color: var(--text); color: var(--text); }
+  .btn-danger {
+    background: transparent;
+    border: 1px solid var(--danger);
+    color: var(--danger);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    padding: 12px 20px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-danger:hover { background: var(--danger); color: #fff; }
+
+  /* view modal */
+  .view-modal-field { margin-bottom: 12px; }
+  .view-modal-field .vf-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+    margin-bottom: 3px;
+  }
+  .view-modal-field .vf-value {
+    font-size: 15px;
+    color: var(--text);
+    font-weight: 500;
+  }
+  .vf-value.lime { color: var(--lime); font-family: 'Bebas Neue', sans-serif; font-size: 22px; }
+
+  /* gcal button in view modal */
+  .gcal-btn {
+    width: 100%;
+    background: transparent;
+    border: 1px solid #4285f4;
+    color: #4285f4;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 10px;
+    cursor: pointer;
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.15s;
+  }
+  .gcal-btn:hover { background: #4285f4; color: #fff; }
+  .gcal-btn:disabled { opacity: 0.4; cursor: default; }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    gap: 20px;
+    padding: 0 24px 14px;
+    align-items: center;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .legend-dot {
+    width: 10px; height: 10px;
+    border: 1px solid;
+  }
+  .legend-dot.empty { background: var(--empty); border-color: var(--border); }
+  .legend-dot.booked { background: var(--booked); border-color: var(--booked-border); }
+  .legend-dot.recurring { background: var(--recurring); border-color: var(--recurring-border); }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--lime);
+    color: var(--black);
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    padding: 10px 24px;
+    opacity: 0;
+    transition: all 0.3s;
+    pointer-events: none;
+    z-index: 300;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--black); }
+  ::-webkit-scrollbar-thumb { background: var(--border); }
+  ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+</style>
+<style id="googleidentityservice_button_styles">.qJTHM{-moz-user-select:none;-webkit-user-select:none;-ms-user-select:none;color:#202124;direction:ltr;-webkit-touch-callout:none;font-family:Roboto-Regular,arial,sans-serif;-webkit-font-smoothing:antialiased;font-weight:400;margin:0;overflow:hidden;-webkit-text-size-adjust:100%}.ynRLnc{left:-9999px;position:absolute;top:-9999px}.L6cTce{display:none}.bltWBb{overflow-wrap:break-word;word-break:break-word}.hSRGPd{color:#1a73e8;cursor:pointer;font-weight:500;text-decoration:none}.Bz112c-W3lGp{height:16px;width:16px}.Bz112c-E3DyYd{height:20px;width:20px}.Bz112c-r9oPif{height:24px;width:24px}.Bz112c-u2z5K{height:36px;width:36px}.Bz112c-uaxL4e{border-radius:10px}.LgbsSe-Bz112c{display:block}.S9gUrf-YoZ4jf{border:none;margin:0;padding:0}.S9gUrf-YoZ4jf *{border:none;margin:0;padding:0}.fFW7wc-ibnC6b>.aZ2wEe>div{border-color:#4285f4}.P1ekSe-ZMv3u{-webkit-transition:height .2s linear;transition:height .2s linear}.P1ekSe-ZMv3u>div:first-child{background-color:#1a73e8!important;-webkit-transition:width .3s linear;transition:width .3s linear}.P1ekSe-ZMv3u>div:nth-child(2){background-image:-webkit-gradient(linear,left top,right top,from(rgba(255,255,255,.7)),to(rgba(255,255,255,.7))),-webkit-gradient(linear,left top,right top,from(#1a73e8),to(#1a73e8))!important;background-image:-webkit-linear-gradient(left,rgba(255,255,255,.7),rgba(255,255,255,.7)),-webkit-linear-gradient(left,#1a73e8,#1a73e8)!important;background-image:linear-gradient(90deg,rgba(255,255,255,.7),rgba(255,255,255,.7)),linear-gradient(90deg,#1a73e8,#1a73e8)!important}.P1ekSe-ZMv3u>div:nth-child(3){background-image:-webkit-gradient(linear,left top,right top,from(rgba(255,255,255,.7)),to(rgba(255,255,255,.7))),-webkit-gradient(linear,left top,right top,from(#1a73e8),to(#1a73e8))!important;background-image:-webkit-linear-gradient(left,rgba(255,255,255,.7),rgba(255,255,255,.7)),-webkit-linear-gradient(left,#1a73e8,#1a73e8)!important;background-image:linear-gradient(90deg,rgba(255,255,255,.7),rgba(255,255,255,.7)),linear-gradient(90deg,#1a73e8,#1a73e8)!important}.haAclf{display:inline-block}.nsm7Bb-HzV7m-LgbsSe{border-radius:4px;box-sizing:border-box;-webkit-transition:background-color .218s,border-color .218s;transition:background-color .218s,border-color .218s;-moz-user-select:none;-webkit-user-select:none;-ms-user-select:none;-webkit-appearance:none;background-color:#fff;background-image:none;border:1px solid #dadce0;color:#3c4043;cursor:pointer;font-family:Google Sans,arial,sans-serif;font-size:14px;height:40px;letter-spacing:.25px;outline:none;overflow:hidden;padding:0 12px;position:relative;text-align:center;vertical-align:middle;white-space:nowrap;width:auto}@media screen and (-ms-high-contrast:active){.nsm7Bb-HzV7m-LgbsSe{border:2px solid windowText;color:windowText}}@media screen and (preferes-contrast:more){.nsm7Bb-HzV7m-LgbsSe{color:#000}}.nsm7Bb-HzV7m-LgbsSe.pSzOP-SxQuSe{font-size:14px;height:32px;letter-spacing:.25px;padding:0 10px}.nsm7Bb-HzV7m-LgbsSe.purZT-SxQuSe{font-size:11px;height:20px;letter-spacing:.3px;padding:0 8px}.nsm7Bb-HzV7m-LgbsSe.Bz112c-LgbsSe{padding:0;width:40px}.nsm7Bb-HzV7m-LgbsSe.Bz112c-LgbsSe.pSzOP-SxQuSe{width:32px}.nsm7Bb-HzV7m-LgbsSe.Bz112c-LgbsSe.purZT-SxQuSe{width:20px}.nsm7Bb-HzV7m-LgbsSe.JGcpL-RbRzK{border-radius:20px}.nsm7Bb-HzV7m-LgbsSe.JGcpL-RbRzK.pSzOP-SxQuSe{border-radius:16px}.nsm7Bb-HzV7m-LgbsSe.JGcpL-RbRzK.purZT-SxQuSe{border-radius:10px}.nsm7Bb-HzV7m-LgbsSe.MFS4be-Ia7Qfc{border:none;color:#fff}.nsm7Bb-HzV7m-LgbsSe.MFS4be-v3pZbf-Ia7Qfc{background-color:#1a73e8}.nsm7Bb-HzV7m-LgbsSe.MFS4be-JaPV2b-Ia7Qfc{background-color:#202124;color:#e8eaed}@media screen and (prefers-contrast:more){.nsm7Bb-HzV7m-LgbsSe.MFS4be-JaPV2b-Ia7Qfc{color:#fff}}.nsm7Bb-HzV7m-LgbsSe .nsm7Bb-HzV7m-LgbsSe-Bz112c{height:18px;margin-right:8px;min-width:18px;width:18px}.nsm7Bb-HzV7m-LgbsSe.pSzOP-SxQuSe .nsm7Bb-HzV7m-LgbsSe-Bz112c{height:14px;min-width:14px;width:14px}.nsm7Bb-HzV7m-LgbsSe.purZT-SxQuSe .nsm7Bb-HzV7m-LgbsSe-Bz112c{height:10px;min-width:10px;width:10px}.nsm7Bb-HzV7m-LgbsSe.jVeSEe .nsm7Bb-HzV7m-LgbsSe-Bz112c{margin-left:8px;margin-right:-4px}.nsm7Bb-HzV7m-LgbsSe.Bz112c-LgbsSe .nsm7Bb-HzV7m-LgbsSe-Bz112c{margin:0;padding:10px}.nsm7Bb-HzV7m-LgbsSe.Bz112c-LgbsSe.pSzOP-SxQuSe .nsm7Bb-HzV7m-LgbsSe-Bz112c{padding:8px}.nsm7Bb-HzV7m-LgbsSe.Bz112c-LgbsSe.purZT-SxQuSe .nsm7Bb-HzV7m-LgbsSe-Bz112c{padding:4px}.nsm7Bb-HzV7m-LgbsSe .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf{border-top-left-radius:3px;border-bottom-left-radius:3px;display:-webkit-box;display:-webkit-flex;display:flex;-webkit-box-pack:center;-webkit-justify-content:center;justify-content:center;-webkit-box-align:center;-webkit-align-items:center;align-items:center;background-color:#fff;height:36px;margin-left:-10px;margin-right:12px;min-width:36px;width:36px}.nsm7Bb-HzV7m-LgbsSe .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf .nsm7Bb-HzV7m-LgbsSe-Bz112c,.nsm7Bb-HzV7m-LgbsSe.Bz112c-LgbsSe .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf .nsm7Bb-HzV7m-LgbsSe-Bz112c{margin:0;padding:0}.nsm7Bb-HzV7m-LgbsSe.pSzOP-SxQuSe .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf{height:28px;margin-left:-8px;margin-right:10px;min-width:28px;width:28px}.nsm7Bb-HzV7m-LgbsSe.purZT-SxQuSe .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf{height:16px;margin-left:-6px;margin-right:8px;min-width:16px;width:16px}.nsm7Bb-HzV7m-LgbsSe.Bz112c-LgbsSe .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf{border-radius:3px;margin-left:2px;margin-right:0;padding:0}.nsm7Bb-HzV7m-LgbsSe.JGcpL-RbRzK .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf{border-radius:18px}.nsm7Bb-HzV7m-LgbsSe.pSzOP-SxQuSe.JGcpL-RbRzK .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf{border-radius:14px}.nsm7Bb-HzV7m-LgbsSe.purZT-SxQuSe.JGcpL-RbRzK .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf{border-radius:8px}.nsm7Bb-HzV7m-LgbsSe .nsm7Bb-HzV7m-LgbsSe-bN97Pc-sM5MNb{display:-webkit-box;display:-webkit-flex;display:flex;-webkit-align-items:center;-webkit-box-align:center;align-items:center;-webkit-flex-direction:row;-webkit-box-orient:horizontal;-webkit-box-direction:normal;flex-direction:row;-webkit-box-pack:justify;-webkit-justify-content:space-between;justify-content:space-between;-webkit-flex-wrap:nowrap;flex-wrap:nowrap;height:100%;position:relative;width:100%}.nsm7Bb-HzV7m-LgbsSe .oXtfBe-l4eHX{-webkit-box-pack:center;-webkit-justify-content:center;justify-content:center}.nsm7Bb-HzV7m-LgbsSe .nsm7Bb-HzV7m-LgbsSe-BPrWId{-webkit-flex-grow:1;-webkit-box-flex:1;flex-grow:1;font-family:Google Sans,arial,sans-serif;font-weight:500;overflow:hidden;text-overflow:ellipsis;vertical-align:top}.nsm7Bb-HzV7m-LgbsSe.purZT-SxQuSe .nsm7Bb-HzV7m-LgbsSe-BPrWId{font-weight:300}.nsm7Bb-HzV7m-LgbsSe .oXtfBe-l4eHX .nsm7Bb-HzV7m-LgbsSe-BPrWId{-webkit-flex-grow:0;-webkit-box-flex:0;flex-grow:0}.nsm7Bb-HzV7m-LgbsSe .nsm7Bb-HzV7m-LgbsSe-MJoBVe{-webkit-transition:background-color .218s;transition:background-color .218s;bottom:0;left:0;position:absolute;right:0;top:0}.nsm7Bb-HzV7m-LgbsSe:focus,.nsm7Bb-HzV7m-LgbsSe:hover{box-shadow:none;border-color:rgb(210,227,252);outline:none}.nsm7Bb-HzV7m-LgbsSe:focus-within{outline:2px solid #00639b;border-color:transparent}.nsm7Bb-HzV7m-LgbsSe:hover .nsm7Bb-HzV7m-LgbsSe-MJoBVe{background:rgba(66,133,244,.08)}.nsm7Bb-HzV7m-LgbsSe:active .nsm7Bb-HzV7m-LgbsSe-MJoBVe,.nsm7Bb-HzV7m-LgbsSe:focus .nsm7Bb-HzV7m-LgbsSe-MJoBVe{background:rgba(66,133,244,.1)}.nsm7Bb-HzV7m-LgbsSe.MFS4be-Ia7Qfc:hover .nsm7Bb-HzV7m-LgbsSe-MJoBVe{background:rgba(255,255,255,.24)}.nsm7Bb-HzV7m-LgbsSe.MFS4be-Ia7Qfc:active .nsm7Bb-HzV7m-LgbsSe-MJoBVe,.nsm7Bb-HzV7m-LgbsSe.MFS4be-Ia7Qfc:focus .nsm7Bb-HzV7m-LgbsSe-MJoBVe{background:rgba(255,255,255,.32)}.nsm7Bb-HzV7m-LgbsSe .n1UuX-DkfjY{border-radius:50%;display:-webkit-box;display:-webkit-flex;display:flex;height:20px;margin-left:-4px;margin-right:8px;min-width:20px;width:20px}.nsm7Bb-HzV7m-LgbsSe.jVeSEe .nsm7Bb-HzV7m-LgbsSe-BPrWId{font-family:Roboto;font-size:12px;text-align:left}.nsm7Bb-HzV7m-LgbsSe.jVeSEe .nsm7Bb-HzV7m-LgbsSe-BPrWId .K4efff .fmcmS,.nsm7Bb-HzV7m-LgbsSe.jVeSEe .nsm7Bb-HzV7m-LgbsSe-BPrWId .ssJRIf{overflow:hidden;text-overflow:ellipsis}.nsm7Bb-HzV7m-LgbsSe.jVeSEe .nsm7Bb-HzV7m-LgbsSe-BPrWId .K4efff{display:-webkit-box;display:-webkit-flex;display:flex;-webkit-align-items:center;-webkit-box-align:center;align-items:center;color:#5f6368;fill:#5f6368;font-size:11px;font-weight:400}.nsm7Bb-HzV7m-LgbsSe.jVeSEe.MFS4be-Ia7Qfc .nsm7Bb-HzV7m-LgbsSe-BPrWId .K4efff{color:#e8eaed;fill:#e8eaed}@media screen and (prefers-contrast:more){.nsm7Bb-HzV7m-LgbsSe.jVeSEe .nsm7Bb-HzV7m-LgbsSe-BPrWId .K4efff,.nsm7Bb-HzV7m-LgbsSe.jVeSEe.MFS4be-Ia7Qfc .nsm7Bb-HzV7m-LgbsSe-BPrWId .K4efff{color:#000;fill:#000}}.nsm7Bb-HzV7m-LgbsSe.jVeSEe .nsm7Bb-HzV7m-LgbsSe-BPrWId .K4efff .Bz112c{height:18px;margin:-3px -3px -3px 2px;min-width:18px;width:18px}.nsm7Bb-HzV7m-LgbsSe.jVeSEe .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf{border-top-left-radius:0;border-bottom-left-radius:0;border-top-right-radius:3px;border-bottom-right-radius:3px;margin-left:12px;margin-right:-10px}.nsm7Bb-HzV7m-LgbsSe.jVeSEe.JGcpL-RbRzK .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf{border-radius:18px}.L5Fo6c-sM5MNb{border:0;display:block;left:0;position:relative;top:0}.L5Fo6c-bF1uUb{border-radius:4px;bottom:0;cursor:pointer;left:0;position:absolute;right:0;top:0}.L5Fo6c-bF1uUb:focus{border:none;outline:none}sentinel{}</style></head>
+<body>
+
+<header>
+  <div class="logo">COACHING <span>BY</span> CRAIG</div>
+  <div class="header-right">
+    <div id="gcalStatus" style="font-size:11px;color:var(--muted);display:none">● Google Calendar connected</div>
+    <button id="gAuthBtn" onclick="handleGoogleAuth()">Connect Google Cal</button>
+  </div>
+</header>
+
+<div class="week-nav">
+  <div class="week-label" id="weekLabel">WEEK <span style="color:var(--lime)">19</span> &nbsp;<span style="font-size:16px;font-family:&#39;DM Sans&#39;,sans-serif;font-weight:300;color:var(--muted)">
+    4 May – 10 May 2026</span></div>
+  <div class="nav-btns">
+    <button class="nav-btn" onclick="changeWeek(-1)">←</button>
+    <button class="today-btn" onclick="goToday()">Today</button>
+    <button class="nav-btn" onclick="changeWeek(1)">→</button>
+  </div>
+</div>
+
+<div class="summary-bar" id="summaryBar">
+    <div class="summary-pill">
+      <div class="pill-label">Week Earnings</div>
+      <div class="pill-value">£0</div>
+    </div>
+    <div class="summary-pill">
+      <div class="pill-label">Sessions Booked</div>
+      <div class="pill-value neutral">0</div>
+    </div>
+    <div class="summary-pill">
+      <div class="pill-label">Slots Available</div>
+      <div class="pill-value" style="color:var(--danger)">105</div>
+    </div>
+    <div class="summary-pill">
+      <div class="pill-label">Capacity</div>
+      <div class="pill-value" style="color:var(--danger)">0%</div>
+    </div>
+  </div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot empty"></div>Available</div>
+  <div class="legend-item"><div class="legend-dot booked"></div>Booked</div>
+  <div class="legend-item"><div class="legend-dot recurring"></div>Recurring</div>
+</div>
+
+<div class="calendar-wrapper">
+  <div class="calendar-grid" id="calendarGrid"><div class="time-header"></div><div class="day-header"><div class="day-name">Mon</div><div class="day-date">4</div><div class="day-earnings"></div><div class="day-slots"></div></div><div class="day-header"><div class="day-name">Tue</div><div class="day-date">5</div><div class="day-earnings"></div><div class="day-slots"></div></div><div class="day-header"><div class="day-name">Wed</div><div class="day-date">6</div><div class="day-earnings"></div><div class="day-slots"></div></div><div class="day-header"><div class="day-name">Thu</div><div class="day-date">7</div><div class="day-earnings"></div><div class="day-slots"></div></div><div class="day-header"><div class="day-name">Fri</div><div class="day-date">8</div><div class="day-earnings"></div><div class="day-slots"></div></div><div class="day-header today"><div class="day-name">Sat</div><div class="day-date">9</div><div class="day-earnings"></div><div class="day-slots"></div></div><div class="day-header"><div class="day-name">Sun</div><div class="day-date">10</div><div class="day-earnings"></div><div class="day-slots"></div></div><div class="time-label">6am</div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty"></div><div class="time-label">7am</div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty"></div><div class="time-label">8am</div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty"></div><div class="time-label">9am</div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty"></div><div class="time-label">10am</div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty"></div><div class="time-label">11am</div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty"></div><div class="time-label">12pm</div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty"></div><div class="time-label">1pm</div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty"></div><div class="time-label">2pm</div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty"></div><div class="time-label">3pm</div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty"></div><div class="time-label">4pm</div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty"></div><div class="time-label">5pm</div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty"></div><div class="time-label">6pm</div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty"></div><div class="slot empty"></div><div class="time-label">7pm</div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty"></div><div class="slot empty"></div><div class="time-label">8pm</div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty past"></div><div class="slot empty"></div><div class="slot empty"></div></div>
+</div>
+
+<!-- ADD/EDIT MODAL -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal(&#39;addModal&#39;)">×</button>
+    <div class="modal-title" id="modalTitle">BOOK SESSION</div>
+    <div class="modal-subtitle" id="modalSubtitle"></div>
+
+    <div class="form-row">
+      <label class="form-label">Client Name</label>
+      <input class="form-input" id="clientName" placeholder="e.g. Sarah Johnson">
+    </div>
+    <div class="form-row-2">
+      <div class="form-row" style="margin-bottom:0">
+        <label class="form-label">Rate (£/hr)</label>
+        <input class="form-input" id="clientRate" type="number" placeholder="e.g. 60" min="0">
+      </div>
+      <div class="form-row" style="margin-bottom:0">
+        <label class="form-label">Notes</label>
+        <input class="form-input" id="clientNotes" placeholder="Optional">
+      </div>
+    </div>
+
+    <div class="toggle-row" style="margin-top:16px">
+      <label class="toggle">
+        <input type="checkbox" id="isRecurring" onchange="toggleRecurringOptions()">
+        <div class="toggle-track"></div>
+        <div class="toggle-thumb"></div>
+      </label>
+      <span class="toggle-label">Recurring client</span>
+    </div>
+
+    <div id="recurringOptions" style="display:none">
+      <div class="form-row">
+        <label class="form-label">Repeat every</label>
+        <select class="form-input" id="recurFreq">
+          <option value="weekly">Week (same day &amp; time)</option>
+          <option value="biweekly">2 Weeks</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Number of weeks to repeat</label>
+        <input class="form-input" id="recurWeeks" type="number" min="1" max="52" placeholder="e.g. 12" value="12">
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-primary" onclick="saveSession()">CONFIRM BOOKING</button>
+      <button class="btn-secondary" onclick="closeModal(&#39;addModal&#39;)">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- VIEW MODAL -->
+<div class="modal-overlay" id="viewModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal(&#39;viewModal&#39;)">×</button>
+    <div class="modal-title" id="viewTitle">SESSION</div>
+    <div class="modal-subtitle" id="viewSubtitle"></div>
+    <div id="viewFields"></div>
+    <div class="modal-actions" id="viewActions"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────────────────────
+const HOURS = [];
+for (let h = 6; h <= 20; h++) HOURS.push(h); // 6am–8pm (last slot starts 8pm, ends 9pm)
+
+const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const DAYS_FULL = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+let currentWeekStart = getMonday(new Date());
+let sessions = loadSessions();
+let googleConnected = false;
+let gapiTokenClient = null;
+
+// active modal state
+let activeSlot = null; // {date: 'YYYY-MM-DD', hour: 14}
+
+// ── STORAGE ────────────────────────────────────────────────────────────────
+function loadSessions() {
+  try { return JSON.parse(localStorage.getItem('cbc_sessions') || '{}'); }
+  catch { return {}; }
+}
+function saveSessions() {
+  localStorage.setItem('cbc_sessions', JSON.stringify(sessions));
+}
+function sessionKey(date, hour) { return `${date}_${hour}`; }
+
+// ── DATES ──────────────────────────────────────────────────────────────────
+function getMonday(d) {
+  const dt = new Date(d);
+  const day = dt.getDay();
+  const diff = (day === 0) ? -6 : 1 - day;
+  dt.setDate(dt.getDate() + diff);
+  dt.setHours(0,0,0,0);
+  return dt;
+}
+function addDays(d, n) {
+  const r = new Date(d); r.setDate(r.getDate() + n); return r;
+}
+function fmtDate(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function fmtDisplay(d) {
+  return `${DAYS_FULL[d.getDay()]} ${d.getDate()} ${d.toLocaleString('en-GB',{month:'short'})}`;
+}
+function fmtHour(h) {
+  return h < 12 ? `${h}am` : h === 12 ? '12pm' : `${h-12}pm`;
+}
+function weekNumber(d) {
+  const jan1 = new Date(d.getFullYear(), 0, 1);
+  return Math.ceil((((d - jan1) / 86400000) + jan1.getDay() + 1) / 7);
+}
+function isToday(d) {
+  const t = new Date(); t.setHours(0,0,0,0);
+  return fmtDate(d) === fmtDate(t);
+}
+function isPast(date, hour) {
+  const now = new Date();
+  const slotDt = new Date(`${date}T${String(hour).padStart(2,'0')}:00:00`);
+  return slotDt < now;
+}
+
+// ── RENDER ─────────────────────────────────────────────────────────────────
+function render() {
+  renderWeekLabel();
+  renderSummary();
+  renderGrid();
+}
+
+function renderWeekLabel() {
+  const end = addDays(currentWeekStart, 6);
+  const wn = weekNumber(currentWeekStart);
+  document.getElementById('weekSpan').textContent = wn;
+  document.getElementById('weekLabel').innerHTML =
+    `WEEK <span style="color:var(--lime)">${wn}</span> &nbsp;<span style="font-size:16px;font-family:'DM Sans',sans-serif;font-weight:300;color:var(--muted)">
+    ${currentWeekStart.getDate()} ${currentWeekStart.toLocaleString('en-GB',{month:'short'})} – ${end.getDate()} ${end.toLocaleString('en-GB',{month:'short'})} ${end.getFullYear()}</span>`;
+}
+
+function renderSummary() {
+  const bar = document.getElementById('summaryBar');
+  let totalEarnings = 0, totalBooked = 0, totalAvail = 0;
+
+  for (let d = 0; d < 7; d++) {
+    const date = fmtDate(addDays(currentWeekStart, d));
+    HOURS.forEach(h => {
+      const s = sessions[sessionKey(date, h)];
+      if (s) { totalBooked++; totalEarnings += (s.rate || 0); }
+      else { totalAvail++; }
+    });
+  }
+
+  const totalSlots = totalBooked + totalAvail;
+  const fillPct = totalSlots ? Math.round((totalBooked / totalSlots) * 100) : 0;
+  const fillColor = fillPct >= 80 ? 'var(--lime)' : fillPct >= 50 ? '#f0a020' : 'var(--danger)';
+
+  bar.innerHTML = `
+    <div class="summary-pill">
+      <div class="pill-label">Week Earnings</div>
+      <div class="pill-value">£${totalEarnings.toLocaleString()}</div>
+    </div>
+    <div class="summary-pill">
+      <div class="pill-label">Sessions Booked</div>
+      <div class="pill-value neutral">${totalBooked}</div>
+    </div>
+    <div class="summary-pill">
+      <div class="pill-label">Slots Available</div>
+      <div class="pill-value" style="color:${fillColor}">${totalAvail}</div>
+    </div>
+    <div class="summary-pill">
+      <div class="pill-label">Capacity</div>
+      <div class="pill-value" style="color:${fillColor}">${fillPct}%</div>
+    </div>
+  `;
+}
+
+function renderGrid() {
+  const grid = document.getElementById('calendarGrid');
+  grid.innerHTML = '';
+
+  // Time corner
+  const corner = document.createElement('div');
+  corner.className = 'time-header';
+  grid.appendChild(corner);
+
+  // Day headers
+  for (let d = 0; d < 7; d++) {
+    const date = addDays(currentWeekStart, d);
+    const dateStr = fmtDate(date);
+    let dayEarnings = 0, dayBooked = 0;
+    HOURS.forEach(h => {
+      const s = sessions[sessionKey(dateStr, h)];
+      if (s) { dayEarnings += (s.rate || 0); dayBooked++; }
+    });
+
+    const hdr = document.createElement('div');
+    hdr.className = 'day-header' + (isToday(date) ? ' today' : '');
+
+    const dayName = document.createElement('div');
+    dayName.className = 'day-name';
+    dayName.textContent = DAYS[date.getDay()];
+
+    const dayDate = document.createElement('div');
+    dayDate.className = 'day-date';
+    dayDate.textContent = date.getDate();
+
+    const dayEarn = document.createElement('div');
+    dayEarn.className = 'day-earnings';
+    dayEarn.textContent = dayEarnings > 0 ? `£${dayEarnings}` : '';
+
+    const daySlotInfo = document.createElement('div');
+    daySlotInfo.className = 'day-slots';
+    daySlotInfo.textContent = dayBooked > 0 ? `${dayBooked} session${dayBooked>1?'s':''}` : '';
+
+    hdr.appendChild(dayName);
+    hdr.appendChild(dayDate);
+    hdr.appendChild(dayEarn);
+    hdr.appendChild(daySlotInfo);
+    grid.appendChild(hdr);
+  }
+
+  // Time rows
+  HOURS.forEach(h => {
+    const timeLabel = document.createElement('div');
+    timeLabel.className = 'time-label';
+    timeLabel.textContent = fmtHour(h);
+    grid.appendChild(timeLabel);
+
+    for (let d = 0; d < 7; d++) {
+      const date = addDays(currentWeekStart, d);
+      const dateStr = fmtDate(date);
+      const key = sessionKey(dateStr, h);
+      const s = sessions[key];
+      const past = isPast(dateStr, h);
+
+      const cell = document.createElement('div');
+      cell.className = 'slot';
+
+      if (s) {
+        cell.classList.add(s.recurring ? 'recurring' : 'booked');
+        if (past) cell.classList.add('past');
+        const inner = document.createElement('div');
+        inner.className = 'slot-inner';
+        inner.innerHTML = `
+          <div class="slot-name">${s.name}</div>
+          ${s.rate ? `<div class="slot-rate">£${s.rate}</div>` : ''}
+        `;
+        if (s.recurring) {
+          const badge = document.createElement('div');
+          badge.className = 'slot-badge rec';
+          badge.textContent = 'REC';
+          cell.appendChild(badge);
+        }
+        cell.appendChild(inner);
+        cell.addEventListener('click', () => openViewModal(key, dateStr, h));
+      } else {
+        cell.classList.add('empty');
+        if (past) cell.classList.add('past');
+        if (!past) cell.addEventListener('click', () => openAddModal(dateStr, h));
+      }
+
+      grid.appendChild(cell);
+    }
+  });
+}
+
+// ── MODALS ─────────────────────────────────────────────────────────────────
+function openAddModal(date, hour) {
+  activeSlot = { date, hour };
+  document.getElementById('modalTitle').textContent = 'BOOK SESSION';
+  const d = new Date(date + 'T12:00:00');
+  document.getElementById('modalSubtitle').textContent =
+    `${fmtDisplay(d)}  ·  ${fmtHour(hour)} – ${fmtHour(hour+1)}`;
+  document.getElementById('clientName').value = '';
+  document.getElementById('clientRate').value = '';
+  document.getElementById('clientNotes').value = '';
+  document.getElementById('isRecurring').checked = false;
+  document.getElementById('recurringOptions').style.display = 'none';
+  document.getElementById('recurWeeks').value = 12;
+  document.getElementById('addModal').classList.add('open');
+  setTimeout(() => document.getElementById('clientName').focus(), 100);
+}
+
+function openViewModal(key, date, hour) {
+  const s = sessions[key];
+  if (!s) return;
+  const d = new Date(date + 'T12:00:00');
+
+  document.getElementById('viewTitle').textContent = s.name.toUpperCase();
+  document.getElementById('viewSubtitle').textContent =
+    `${fmtDisplay(d)}  ·  ${fmtHour(hour)} – ${fmtHour(hour+1)}`;
+
+  let fieldsHtml = `
+    <div class="view-modal-field">
+      <div class="vf-label">Rate</div>
+      <div class="vf-value lime">${s.rate ? `£${s.rate}/hr` : '—'}</div>
+    </div>
+    <div class="view-modal-field">
+      <div class="vf-label">Type</div>
+      <div class="vf-value">${s.recurring ? 'Recurring' : 'One-off'}</div>
+    </div>
+  `;
+  if (s.notes) fieldsHtml += `
+    <div class="view-modal-field">
+      <div class="vf-label">Notes</div>
+      <div class="vf-value">${s.notes}</div>
+    </div>
+  `;
+
+  document.getElementById('viewFields').innerHTML = fieldsHtml;
+
+  const gcalBtn = document.createElement('button');
+  gcalBtn.className = 'gcal-btn';
+  gcalBtn.innerHTML = `
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+      <rect x="3" y="4" width="18" height="17" rx="2" stroke="#4285f4" stroke-width="1.5"/>
+      <path d="M16 2v4M8 2v4M3 9h18" stroke="#4285f4" stroke-width="1.5"/>
+    </svg>
+    Add to Google Calendar
+  `;
+  gcalBtn.onclick = () => addToGoogleCalendar(s, date, hour);
+  if (!googleConnected) {
+    gcalBtn.disabled = true;
+    gcalBtn.title = 'Connect Google Calendar first';
+  }
+  document.getElementById('viewFields').appendChild(gcalBtn);
+
+  const actionsDiv = document.getElementById('viewActions');
+  actionsDiv.innerHTML = '';
+
+  const editBtn = document.createElement('button');
+  editBtn.className = 'btn-secondary';
+  editBtn.textContent = 'Edit';
+  editBtn.style.flex = '1';
+  editBtn.onclick = () => {
+    closeModal('viewModal');
+    openEditModal(key, date, hour, s);
+  };
+
+  const delBtn = document.createElement('button');
+  if (s.recurring) {
+    delBtn.className = 'btn-danger';
+    delBtn.textContent = 'Remove this';
+    delBtn.onclick = () => {
+      deleteSession(key);
+      closeModal('viewModal');
+      showToast('Session removed');
+    };
+    const delAllBtn = document.createElement('button');
+    delAllBtn.className = 'btn-danger';
+    delAllBtn.textContent = 'Remove all';
+    delAllBtn.style.marginLeft = '8px';
+    delAllBtn.onclick = () => {
+      deleteRecurringSeries(s.recurringId);
+      closeModal('viewModal');
+      showToast('All recurring sessions removed');
+    };
+    actionsDiv.appendChild(editBtn);
+    actionsDiv.appendChild(delBtn);
+    actionsDiv.appendChild(delAllBtn);
+  } else {
+    delBtn.className = 'btn-danger';
+    delBtn.textContent = 'Cancel';
+    delBtn.onclick = () => {
+      deleteSession(key);
+      closeModal('viewModal');
+      showToast('Session cancelled');
+    };
+    actionsDiv.appendChild(editBtn);
+    actionsDiv.appendChild(delBtn);
+  }
+
+  document.getElementById('viewModal').classList.add('open');
+}
+
+function openEditModal(key, date, hour, s) {
+  activeSlot = { date, hour, editKey: key };
+  document.getElementById('modalTitle').textContent = 'EDIT SESSION';
+  const d = new Date(date + 'T12:00:00');
+  document.getElementById('modalSubtitle').textContent =
+    `${fmtDisplay(d)}  ·  ${fmtHour(hour)} – ${fmtHour(hour+1)}`;
+  document.getElementById('clientName').value = s.name;
+  document.getElementById('clientRate').value = s.rate || '';
+  document.getElementById('clientNotes').value = s.notes || '';
+  document.getElementById('isRecurring').checked = false;
+  document.getElementById('recurringOptions').style.display = 'none';
+  document.getElementById('addModal').classList.add('open');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+  activeSlot = null;
+}
+
+function toggleRecurringOptions() {
+  const checked = document.getElementById('isRecurring').checked;
+  document.getElementById('recurringOptions').style.display = checked ? 'block' : 'none';
+}
+
+// ── SAVE SESSION ───────────────────────────────────────────────────────────
+function saveSession() {
+  const name = document.getElementById('clientName').value.trim();
+  if (!name) { document.getElementById('clientName').focus(); return; }
+  const rate = parseFloat(document.getElementById('clientRate').value) || 0;
+  const notes = document.getElementById('clientNotes').value.trim();
+  const recurring = document.getElementById('isRecurring').checked;
+
+  if (activeSlot.editKey) {
+    // edit existing
+    sessions[activeSlot.editKey] = { ...sessions[activeSlot.editKey], name, rate, notes };
+    saveSessions(); render(); closeModal('addModal');
+    showToast('Session updated');
+    return;
+  }
+
+  if (recurring) {
+    const freq = document.getElementById('recurFreq').value;
+    const weeks = parseInt(document.getElementById('recurWeeks').value) || 12;
+    const recurringId = Date.now().toString();
+    const interval = freq === 'biweekly' ? 2 : 1;
+
+    for (let w = 0; w < weeks; w += interval) {
+      const targetDate = new Date(activeSlot.date + 'T12:00:00');
+      targetDate.setDate(targetDate.getDate() + w * 7);
+      const key = sessionKey(fmtDate(targetDate), activeSlot.hour);
+      if (!sessions[key]) {
+        sessions[key] = { name, rate, notes, recurring: true, recurringId };
+      }
+    }
+    showToast(`${Math.ceil(weeks / interval)} recurring sessions added`);
+  } else {
+    const key = sessionKey(activeSlot.date, activeSlot.hour);
+    sessions[key] = { name, rate, notes, recurring: false };
+    showToast('Session booked');
+  }
+
+  saveSessions(); render(); closeModal('addModal');
+}
+
+function deleteSession(key) {
+  delete sessions[key];
+  saveSessions(); render();
+}
+
+function deleteRecurringSeries(recurringId) {
+  Object.keys(sessions).forEach(k => {
+    if (sessions[k].recurringId === recurringId) delete sessions[k];
+  });
+  saveSessions(); render();
+}
+
+// ── WEEK NAV ───────────────────────────────────────────────────────────────
+function changeWeek(dir) {
+  currentWeekStart = addDays(currentWeekStart, dir * 7);
+  render();
+}
+function goToday() {
+  currentWeekStart = getMonday(new Date());
+  render();
+}
+
+// ── GOOGLE CALENDAR ────────────────────────────────────────────────────────
+// Uses Google Identity Services + Calendar API v3
+const GCAL_CLIENT_ID = '25101030281-stnunhc7qks2fnfjqj3nnf4afilvlvee.apps.googleusercontent.com'; // Replace with your OAuth Client ID
+const GCAL_SCOPES = 'https://www.googleapis.com/auth/calendar.events';
+
+function handleGoogleAuth() {
+  if (googleConnected) return;
+  if (typeof google === 'undefined') {
+    showToast('Google API not loaded — check internet connection');
+    return;
+  }
+  gapiTokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: GCAL_CLIENT_ID,
+    scope: GCAL_SCOPES,
+    callback: (resp) => {
+      if (resp.error) { showToast('Google auth failed'); return; }
+      googleConnected = true;
+      document.getElementById('gAuthBtn').textContent = '✓ Google Cal Connected';
+      document.getElementById('gAuthBtn').classList.add('connected');
+      document.getElementById('gcalStatus').style.display = 'block';
+      showToast('Google Calendar connected!');
+    }
+  });
+  gapiTokenClient.requestAccessToken();
+}
+
+async function addToGoogleCalendar(session, date, hour) {
+  if (!googleConnected) { showToast('Connect Google Calendar first'); return; }
+
+  const start = new Date(`${date}T${String(hour).padStart(2,'0')}:00:00`);
+  const end = new Date(start.getTime() + 60 * 60000);
+
+  const event = {
+    summary: `PT: ${session.name}`,
+    description: `${session.rate ? `Rate: £${session.rate}/hr` : ''}${session.notes ? `\nNotes: ${session.notes}` : ''}`,
+    start: { dateTime: start.toISOString(), timeZone: 'Europe/London' },
+    end: { dateTime: end.toISOString(), timeZone: 'Europe/London' },
+    colorId: '10' // sage green
+  };
+
+  try {
+    const resp = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${gapiTokenClient._token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(event)
+    });
+    if (resp.ok) { showToast('Added to Google Calendar ✓'); }
+    else { showToast('Google Calendar error — try again'); }
+  } catch {
+    showToast('Could not reach Google Calendar');
+  }
+}
+
+// ── TOAST ──────────────────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ── KEYBOARD ──────────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    closeModal('addModal');
+    closeModal('viewModal');
+  }
+  if (e.key === 'Enter' && document.getElementById('addModal').classList.contains('open')) {
+    saveSession();
+  }
+});
+
+// Close modal on overlay click
+['addModal','viewModal'].forEach(id => {
+  document.getElementById(id).addEventListener('click', function(e) {
+    if (e.target === this) closeModal(id);
+  });
+});
+
+// ── INIT ───────────────────────────────────────────────────────────────────
+render();
+</script>
+
+<!-- Google Identity Services -->
+<script src="./Coaching by Craig — PT Calendar_files/client" async="" defer=""></script>
+
+
+
+</body></html>
