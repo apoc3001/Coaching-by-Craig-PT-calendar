@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0052)file:///C:/Users/apoc3/Downloads/pt-calendar_41.html -->
+<!-- saved from url=(0052)file:///C:/Users/apoc3/Downloads/pt-calendar_42.html -->
 <html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -317,9 +317,72 @@ var ws=gMon(new Date()),sess=ld(),aSlot=null,aEk=null,gConn=false,gTok=null,selC
 
 function ld(){try{return JSON.parse(localStorage.getItem('cbc6')||'{}');}catch(e){return {};}}
 function sd(){localStorage.setItem('cbc6',JSON.stringify(sess));}
+// Deleted IDs — stored locally AND synced to GCal as a special event
+var DELETED_EVENT_TITLE='CBC_DELETED_IDS';
+var deletedEventId=null; // GCal event ID of the deleted-list event
+
 function ldDel(){try{return JSON.parse(localStorage.getItem('cbc6_del')||'[]');}catch(e){return [];}}
 function sdDel(arr){localStorage.setItem('cbc6_del',JSON.stringify(arr));}
-function markDeleted(gcalId){if(!gcalId)return;var arr=ldDel();if(arr.indexOf(gcalId)===-1){arr.push(gcalId);sdDel(arr);}}
+
+function markDeleted(gcalId){
+  if(!gcalId) return;
+  var arr=ldDel();
+  if(arr.indexOf(gcalId)===-1){
+    arr.push(gcalId);
+    sdDel(arr);
+    pushDeletedList(arr);
+  }
+}
+
+function pushDeletedList(arr){
+  if(!gConn||!gTok||!selCal2) return;
+  var body={
+    summary:DELETED_EVENT_TITLE,
+    description:JSON.stringify(arr),
+    start:{date:'2000-01-01'},
+    end:{date:'2000-01-02'}
+  };
+  if(deletedEventId){
+    // Update existing event
+    fetch('https://www.googleapis.com/calendar/v3/calendars/'+encodeURIComponent(selCal2)+'/events/'+deletedEventId,{
+      method:'PUT',
+      headers:{'Authorization':'Bearer '+gTok,'Content-Type':'application/json'},
+      body:JSON.stringify(body)
+    }).catch(function(e){console.log('pushDeletedList update error:',e);});
+  } else {
+    // Create new event
+    fetch('https://www.googleapis.com/calendar/v3/calendars/'+encodeURIComponent(selCal2)+'/events',{
+      method:'POST',
+      headers:{'Authorization':'Bearer '+gTok,'Content-Type':'application/json'},
+      body:JSON.stringify(body)
+    }).then(function(r){return r.json();})
+    .then(function(data){if(data.id) deletedEventId=data.id;})
+    .catch(function(e){console.log('pushDeletedList create error:',e);});
+  }
+}
+
+function fetchDeletedList(){
+  // Pull the deleted list from GCal and merge with local
+  if(!gConn||!gTok||!selCal2) return Promise.resolve([]);
+  var url='https://www.googleapis.com/calendar/v3/calendars/'+encodeURIComponent(selCal2)+'/events?q='+encodeURIComponent(DELETED_EVENT_TITLE)+'&maxResults=5';
+  return fetch(url,{headers:{'Authorization':'Bearer '+gTok}})
+    .then(function(r){return r.json();})
+    .then(function(data){
+      var items=(data.items||[]).filter(function(e){return e.summary===DELETED_EVENT_TITLE;});
+      if(!items.length) return ldDel();
+      var ev=items[0];
+      deletedEventId=ev.id;
+      var remoteIds=[];
+      try{remoteIds=JSON.parse(ev.description||'[]');}catch(e){}
+      // Merge local + remote
+      var local=ldDel();
+      var merged=local.slice();
+      remoteIds.forEach(function(id){if(merged.indexOf(id)===-1) merged.push(id);});
+      sdDel(merged);
+      return merged;
+    })
+    .catch(function(){return ldDel();});
+}
 function sk(d,m){return d+'_'+m;}
 function gMon(d){var dt=new Date(d);dt.setHours(0,0,0,0);var day=dt.getDay();dt.setDate(dt.getDate()-(day===0?6:day-1));return dt;}
 function aD(d,n){var r=new Date(d);r.setDate(r.getDate()+n);return r;}
@@ -934,13 +997,18 @@ function importFromGCal(silent){
   var from=new Date(now); from.setMonth(from.getMonth()-1);
   var to=new Date(now); to.setMonth(to.getMonth()+14);
   var imported=0;
-  var deletedIds=ldDel();
 
-  function buildUrl(calId){
-    return 'https://www.googleapis.com/calendar/v3/calendars/'+encodeURIComponent(calId)+'/events'+
-      '?timeMin='+from.toISOString()+'&timeMax='+to.toISOString()+
-      '&singleEvents=true&orderBy=startTime&maxResults=2500';
-  }
+  // First fetch the shared deleted list, then import
+  fetchDeletedList().then(function(deletedIds){
+    doImport(deletedIds);
+  });
+}
+
+function doImport(deletedIds){
+  var now=new Date();
+  var from=new Date(now); from.setMonth(from.getMonth()-1);
+  var to=new Date(now); to.setMonth(to.getMonth()+14);
+  var imported=0;
 
   function processEvents(items, isCFCal){
     items.forEach(function(ev){
@@ -968,6 +1036,12 @@ function importFromGCal(silent){
         sess[key].gcalId=ev.id;
       }
     });
+  }
+
+  function buildUrl(calId){
+    return 'https://www.googleapis.com/calendar/v3/calendars/'+encodeURIComponent(calId)+'/events'+
+      '?timeMin='+from.toISOString()+'&timeMax='+to.toISOString()+
+      '&singleEvents=true&orderBy=startTime&maxResults=2500';
   }
 
   fetch(buildUrl(selCal),{headers:{'Authorization':'Bearer '+gTok}})
