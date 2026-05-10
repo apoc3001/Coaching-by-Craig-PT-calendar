@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0052)file:///C:/Users/apoc3/Downloads/pt-calendar_25.html -->
+<!-- saved from url=(0052)file:///C:/Users/apoc3/Downloads/pt-calendar_26.html -->
 <html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -166,32 +166,37 @@ canvas{display:block;}
 ::-webkit-scrollbar-thumb{background:var(--border);}
 /* PWA / Mobile */
 @media(max-width:600px){
-  header{padding:0 12px;height:50px;}
-  .logo{font-size:16px;}
-  .hbtn{font-size:10px;padding:5px 10px;}
+  header{padding:0 10px;height:auto;min-height:50px;flex-direction:column;align-items:flex-start;padding-top:8px;padding-bottom:8px;gap:6px;}
+  .logo{font-size:15px;letter-spacing:1.5px;}
+  .hr{width:100%;justify-content:flex-start;gap:6px;}
+  .hbtn{font-size:9px;padding:4px 8px;letter-spacing:0.5px;}
   #gcalStatus{display:none!important;}
+  #cpw span{display:none;}
+  #cp{font-size:10px;max-width:110px;padding:4px 6px;}
+  .tabs{position:sticky;top:0;z-index:99;}
+  .tab{font-size:12px;padding:9px 14px;letter-spacing:1px;}
   .wn{padding:10px 12px 0;}
-  #wl{font-size:18px;}
-  .nb{width:30px;height:30px;font-size:14px;}
-  .tb{font-size:10px;padding:0 10px;height:30px;}
-  .sb{padding:8px 12px;gap:8px;}
-  .pill{padding:7px 12px;}
+  #wl{font-size:17px;}
+  .nb{width:28px;height:28px;font-size:13px;}
+  .tb{font-size:10px;padding:0 8px;height:28px;}
+  .sb{padding:8px 12px;gap:6px;}
+  .pill{padding:6px 10px;}
   .pl{font-size:9px;}
-  .pv{font-size:17px;}
-  .leg{padding:0 12px 8px;gap:10px;}
+  .pv{font-size:16px;}
+  .leg{padding:0 12px 6px;gap:8px;font-size:10px;}
   .cw{padding:0 0 80px;}
-  .cg{min-width:500px;}
+  .cg{min-width:460px;}
   .aw{padding:12px;}
   .ag{grid-template-columns:1fr 1fr;}
   .umg{grid-template-columns:1fr;}
   .mg{grid-template-columns:repeat(auto-fill,minmax(110px,1fr));}
-  .tab{font-size:13px;padding:10px 16px;}
   .md{padding:20px 16px;}
   .fr3{grid-template-columns:1fr 1fr;gap:8px;}
 }
 @media(max-width:380px){
   .fr3{grid-template-columns:1fr;}
   .ag{grid-template-columns:1fr;}
+  #cpw{display:none!important;}
 }
 /* Safe area for notched phones */
 body{padding-bottom:env(safe-area-inset-bottom);}
