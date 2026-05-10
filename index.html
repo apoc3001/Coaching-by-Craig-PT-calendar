@@ -1,10 +1,17 @@
 <!DOCTYPE html>
-<!-- saved from url=(0052)file:///C:/Users/apoc3/Downloads/pt-calendar_24.html -->
-<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Coaching by Craig - PT Calendar v6</title>
-<link href="./Index_files/css2" rel="stylesheet">
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CBC Calendar">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Coaching by Craig - PT Calendar</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 :root {
   --black:#0a0a0a;--dark:#111;--card:#181818;--border:#242424;
@@ -157,13 +164,45 @@ canvas{display:block;}
 ::-webkit-scrollbar{width:5px;height:5px;}
 ::-webkit-scrollbar-track{background:var(--black);}
 ::-webkit-scrollbar-thumb{background:var(--border);}
+/* PWA / Mobile */
+@media(max-width:600px){
+  header{padding:0 12px;height:50px;}
+  .logo{font-size:16px;}
+  .hbtn{font-size:10px;padding:5px 10px;}
+  #gcalStatus{display:none!important;}
+  .wn{padding:10px 12px 0;}
+  #wl{font-size:18px;}
+  .nb{width:30px;height:30px;font-size:14px;}
+  .tb{font-size:10px;padding:0 10px;height:30px;}
+  .sb{padding:8px 12px;gap:8px;}
+  .pill{padding:7px 12px;}
+  .pl{font-size:9px;}
+  .pv{font-size:17px;}
+  .leg{padding:0 12px 8px;gap:10px;}
+  .cw{padding:0 0 80px;}
+  .cg{min-width:500px;}
+  .aw{padding:12px;}
+  .ag{grid-template-columns:1fr 1fr;}
+  .umg{grid-template-columns:1fr;}
+  .mg{grid-template-columns:repeat(auto-fill,minmax(110px,1fr));}
+  .tab{font-size:13px;padding:10px 16px;}
+  .md{padding:20px 16px;}
+  .fr3{grid-template-columns:1fr 1fr;gap:8px;}
+}
+@media(max-width:380px){
+  .fr3{grid-template-columns:1fr;}
+  .ag{grid-template-columns:1fr;}
+}
+/* Safe area for notched phones */
+body{padding-bottom:env(safe-area-inset-bottom);}
+header{padding-top:env(safe-area-inset-top);}
 </style>
 </head>
 <body>
 <header>
   <div class="logo">COACHING <span>BY</span> CRAIG</div>
   <div class="hr">
-    <div id="gcalStatus">● Cal Connected</div>
+    <div id="gcalStatus">&#9679; Cal Connected</div>
     <div id="cpw"><span>Add to:</span><select id="cp"></select></div>
     <button class="hbtn" id="expBtn">Export CSV</button>
     <button class="hbtn" id="gBtn">Connect Google Cal</button>
@@ -176,20 +215,20 @@ canvas{display:block;}
 <!-- CALENDAR PAGE -->
 <div class="page active" id="pCal">
   <div class="wn">
-    <div id="wl">WEEK <span style="color:var(--lime)">19</span><span style="font-family:&#39;DM Sans&#39;,sans-serif;font-size:13px;font-weight:300;color:var(--muted);margin-left:10px">4 May–10 May 2026</span></div>
+    <div id="wl">WEEK</div>
     <div class="nbs">
-      <button class="nb" id="bPrev">←</button>
+      <button class="nb" id="bPrev">&#8592;</button>
       <button class="tb" id="bToday">Today</button>
-      <button class="nb" id="bNext">→</button>
+      <button class="nb" id="bNext">&#8594;</button>
     </div>
   </div>
-  <div class="sb" id="sumBar"><div class="pill"><div class="pl">Week Earnings</div><div class="pv" style="color:var(--lime)">£0</div></div><div class="pill"><div class="pl">Sessions Booked</div><div class="pv" style="color:var(--text)">0</div></div><div class="pill"><div class="pl">Slots Available</div><div class="pv" style="color:var(--danger)">49</div></div><div class="pill"><div class="pl">Capacity</div><div class="pv" style="color:var(--danger)">0%</div></div></div>
+  <div class="sb" id="sumBar"></div>
   <div class="leg">
     <div class="li"><div class="ld" style="background:var(--ef);border-color:var(--border)"></div>Available</div>
     <div class="li"><div class="ld" style="background:var(--booked-bg);border-color:var(--booked-border)"></div>Booked</div>
     <div class="li"><div class="ld" style="background:var(--rec-bg);border-color:var(--rec-border)"></div>Recurring</div>
   </div>
-  <div class="cw"><div class="cg" id="cg"><div class="tc"></div><div class="dh"><div class="dn">Mon</div><div class="dd">4</div><div class="de"></div><div class="ds"></div></div><div class="dh"><div class="dn">Tue</div><div class="dd">5</div><div class="de"></div><div class="ds"></div></div><div class="dh"><div class="dn">Wed</div><div class="dd">6</div><div class="de"></div><div class="ds"></div></div><div class="dh"><div class="dn">Thu</div><div class="dd">7</div><div class="de"></div><div class="ds"></div></div><div class="dh"><div class="dn">Fri</div><div class="dd">8</div><div class="de"></div><div class="ds"></div></div><div class="dh"><div class="dn">Sat</div><div class="dd">9</div><div class="de"></div><div class="ds"></div></div><div class="dh it"><div class="dn">Sun</div><div class="dd">10</div><div class="de"></div><div class="ds"></div></div><div class="tl">6am</div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="tl tlh"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="tl">7am</div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc sck"><div class="ph">+</div></div><div class="tl tlh"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch sck"><div class="ph">+</div></div><div class="tl">8am</div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc sck"><div class="ph">+</div></div><div class="tl tlh"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch sck"><div class="ph">+</div></div><div class="tl">9am</div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc sck"><div class="ph">+</div></div><div class="tl tlh"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch sck"><div class="ph">+</div></div><div class="tl">10am</div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc sck"><div class="ph">+</div></div><div class="tl tlh"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch sck"><div class="ph">+</div></div><div class="tl">11am</div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc sck"><div class="ph">+</div></div><div class="tl tlh"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch sck"><div class="ph">+</div></div><div class="tl">12pm</div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc sck"><div class="ph">+</div></div><div class="tl tlh"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch sck"><div class="ph">+</div></div><div class="tl">1pm</div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc sck"><div class="ph">+</div></div><div class="tl tlh"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch sck"><div class="ph">+</div></div><div class="tl">2pm</div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc sck"><div class="ph">+</div></div><div class="tl tlh"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch sck"><div class="ph">+</div></div><div class="tl">3pm</div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc sck"><div class="ph">+</div></div><div class="tl tlh"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch sck"><div class="ph">+</div></div><div class="tl">4pm</div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc sck"><div class="ph">+</div></div><div class="tl tlh"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch sck"><div class="ph">+</div></div><div class="tl">5pm</div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc sck"><div class="ph">+</div></div><div class="tl tlh"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch sck"><div class="ph">+</div></div><div class="tl">6pm</div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc sck"><div class="ph">+</div></div><div class="tl tlh"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch sck"><div class="ph">+</div></div><div class="tl">7pm</div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc sck"><div class="ph">+</div></div><div class="tl tlh"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch sck"><div class="ph">+</div></div><div class="tl">8pm</div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc sck"><div class="ph">+</div></div><div class="tl tlh"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch sck"><div class="ph">+</div></div></div></div>
+  <div class="cw"><div class="cg" id="cg"></div></div>
 </div>
 <!-- ANALYTICS PAGE -->
 <div class="page" id="pAna">
@@ -203,34 +242,34 @@ canvas{display:block;}
         <button class="ptb" data-w="0">All Time</button>
       </div>
     </div>
-    <div class="ag" id="aStats"><div class="sc2"><div class="sl">Total Earnings</div><div class="sv" style="color:var(--lime)">£0</div><div class="su">Last 4 weeks</div></div><div class="sc2"><div class="sl">Total Sessions</div><div class="sv" style="color:var(--text)">0</div><div class="su">Last 4 weeks</div></div><div class="sc2"><div class="sl">Avg Weekly Earnings</div><div class="sv" style="color:var(--muted)">£0</div><div class="su">Per week</div></div><div class="sc2"><div class="sl">Avg Sessions/Week</div><div class="sv" style="color:var(--text)">0</div><div class="su">Per week</div></div></div>
-    <div class="cc"><div class="ct">WEEKLY EARNINGS</div><div class="ca"><canvas id="echart" width="300" height="180"></canvas></div></div>
-    <div class="cc"><div class="ct">SESSIONS PER WEEK</div><div class="ca"><canvas id="schart" width="300" height="180"></canvas></div></div>
-    <div class="mc2" id="mCard"><div class="mt2">AVAILABLE CAPACITY</div><div class="ms2">Forward-looking gaps · target 7 sessions/day · avg rate £37/hr</div><div class="utabs" id="mTabs"><button class="utab active" data-mv="1w">1 Week</button><button class="utab" data-mv="2w">2 Weeks</button><button class="utab" data-mv="1m">1 Month</button><button class="utab" data-mv="2m">2 Months</button><button class="utab" data-mv="3m">3 Months</button></div><div style="display:flex;gap:20px;margin-bottom:16px"><div><div class="sl">Available Slots</div><div class="sv" style="color:var(--danger)">31</div></div><div><div class="sl">Potential Earnings</div><div class="sv" style="color:var(--danger)">£1,147</div></div></div><div class="mg"><div class="md2"><div class="mdn">Mon 11 May</div><div class="mdv" style="color:var(--danger)">£222</div><div class="mds">1/7 booked</div></div><div class="md2"><div class="mdn">Tue 12 May</div><div class="mdv" style="color:var(--danger)">£259</div><div class="mds">0/7 booked</div></div><div class="md2"><div class="mdn">Wed 13 May</div><div class="mdv" style="color:var(--danger)">£148</div><div class="mds">3/7 booked</div></div><div class="md2"><div class="mdn">Thu 14 May</div><div class="mdv" style="color:var(--danger)">£259</div><div class="mds">0/7 booked</div></div><div class="md2"><div class="mdn">Fri 15 May</div><div class="mdv" style="color:var(--danger)">£259</div><div class="mds">0/7 booked</div></div></div></div>
-    <div class="uc" id="uCard"><div class="uh"><div class="ut">UPCOMING EARNINGS</div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px"><div class="utt">£210<span> total booked</span></div><div style="display:flex;gap:16px;margin-top:2px"><div style="text-align:right"><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Regular (£70/hr or under)</div><div style="font-family:Bebas Neue,sans-serif;font-size:18px;color:var(--lime)">£110</div></div><div style="text-align:right"><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Premium (above £70/hr)</div><div style="font-family:Bebas Neue,sans-serif;font-size:18px;color:#f0a020">£100</div></div></div></div></div><div class="utabs" id="utabs"><button class="utab active" data-uv="all">All</button><button class="utab" data-uv="2026-05">May 2026</button></div><div class="umg"><div class="um"><div class="umn">MAY 2026</div><div class="ur"><div><div class="ucl">Paul Wright</div><div class="um2">Mon 11&nbsp;·&nbsp;10am</div></div><div class="ue" style="color:var(--lime)">£30</div></div><div class="ur"><div><div class="ucl">Test</div><div class="um2">Wed 13&nbsp;·&nbsp;8:30am</div></div><div class="ue" style="color:var(--lime)">£40</div></div><div class="ur"><div><div class="ucl">test 2</div><div class="um2">Wed 13&nbsp;·&nbsp;11am</div></div><div class="ue" style="color:var(--lime)">£40</div></div><div class="ur"><div><div class="ucl">Rugby Group 2 <span style="font-size:9px;color:#f0a020;letter-spacing:1px">PREMIUM</span></div><div class="um2">Wed 13&nbsp;·&nbsp;7pm</div></div><div class="ue" style="color:#f0a020">£100</div></div><div class="umt"><div class="umtl">Month Total</div><div class="umtv">£210</div></div></div></div></div>
+    <div class="ag" id="aStats"></div>
+    <div class="cc"><div class="ct">WEEKLY EARNINGS</div><div class="ca"><canvas id="echart"></canvas></div></div>
+    <div class="cc"><div class="ct">SESSIONS PER WEEK</div><div class="ca"><canvas id="schart"></canvas></div></div>
+    <div class="mc2" id="mCard"></div>
+    <div class="uc" id="uCard"></div>
   </div>
 </div>
 <!-- ADD MODAL -->
 <div class="mo" id="addMo">
   <div class="md">
-    <button class="mc" id="addX">×</button>
+    <button class="mc" id="addX">&#215;</button>
     <div class="mt" id="addTit">BOOK SESSION</div>
     <div class="ms" id="addSub"></div>
-    <div class="fr"><label class="fl" for="fN">Client Name</label><input class="fi" id="fN" placeholder="e.g. Sarah Johnson" autocomplete="off"></div>
+    <div class="fr"><label class="fl" for="fN">Client Name</label><input class="fi" id="fN" placeholder="e.g. Sarah Johnson" autocomplete="off"/></div>
     <div class="fr3">
-      <div><label class="fl" for="fST">Start Time</label><input class="fi" id="fST" type="time" step="1800"></div>
+      <div><label class="fl" for="fST">Start Time</label><input class="fi" id="fST" type="time" step="1800"/></div>
       <div><label class="fl" for="fD">Duration</label><select class="fi" id="fD"><option value="60">60 min</option><option value="90">90 min</option><option value="45">45 min</option><option value="30">30 min</option></select></div>
-      <div><label class="fl" for="fR">Rate (£/hr)</label><input class="fi" id="fR" type="number" placeholder="60" min="0"></div>
+      <div><label class="fl" for="fR">Rate (£/hr)</label><input class="fi" id="fR" type="number" placeholder="60" min="0"/></div>
     </div>
-    <div class="fr"><label class="fl" for="fNo">Notes</label><input class="fi" id="fNo" placeholder="Optional"></div>
+    <div class="fr"><label class="fl" for="fNo">Notes</label><input class="fi" id="fNo" placeholder="Optional"/></div>
     <div class="tr2">
-      <label class="tw"><input type="checkbox" id="fRec"><div class="tt"></div><div class="th"></div></label>
+      <label class="tw"><input type="checkbox" id="fRec"/><div class="tt"></div><div class="th"></div></label>
       <span style="font-size:13px">Recurring client</span>
     </div>
     <div id="rOpts" style="display:none">
       <div class="fr2">
         <div><label class="fl" for="fFq">Repeat every</label><select class="fi" id="fFq"><option value="1">Every week</option><option value="2">Every 2 weeks</option><option value="4">Every 4 weeks</option></select></div>
-        <div><label class="fl" for="fW">For how many weeks</label><input class="fi" id="fW" type="number" min="1" max="52" value="12"></div>
+        <div><label class="fl" for="fW">For how many weeks</label><input class="fi" id="fW" type="number" min="1" max="52" value="12"/></div>
       </div>
     </div>
     <div class="ma"><button class="bp" id="bSave">CONFIRM BOOKING</button><button class="bs" id="addCan">Cancel</button></div>
@@ -239,7 +278,7 @@ canvas{display:block;}
 <!-- VIEW MODAL -->
 <div class="mo" id="viewMo">
   <div class="md">
-    <button class="mc" id="viewX">×</button>
+    <button class="mc" id="viewX">&#215;</button>
     <div class="mt" id="viewTit"></div>
     <div class="ms" id="viewSub"></div>
     <div id="viewBody"></div>
@@ -733,6 +772,17 @@ document.getElementById('ptg').onclick=function(e){
 function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2800);}
 console.log("CBC Calendar v6 loaded");
 render();
-</script>
 
-</body></html>
+// Register service worker for PWA offline support
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('sw.js').then(function(reg) {
+      console.log('SW registered');
+    }).catch(function(err) {
+      console.log('SW registration failed:', err);
+    });
+  });
+}
+</script>
+</body>
+</html>
