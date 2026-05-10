@@ -1,17 +1,17 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
+<!-- saved from url=(0052)file:///C:/Users/apoc3/Downloads/pt-calendar_25.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0a0a0a">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="CBC Calendar">
 <meta name="mobile-web-app-capable" content="yes">
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="manifest" href="file:///C:/Users/apoc3/Downloads/manifest.json">
+<link rel="apple-touch-icon" href="file:///C:/Users/apoc3/Downloads/icon-192.png">
 <title>Coaching by Craig - PT Calendar</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="./Calendar v6_files/css2" rel="stylesheet">
 <style>
 :root {
   --black:#0a0a0a;--dark:#111;--card:#181818;--border:#242424;
@@ -202,8 +202,9 @@ header{padding-top:env(safe-area-inset-top);}
 <header>
   <div class="logo">COACHING <span>BY</span> CRAIG</div>
   <div class="hr">
-    <div id="gcalStatus">&#9679; Cal Connected</div>
+    <div id="gcalStatus">● Cal Connected</div>
     <div id="cpw"><span>Add to:</span><select id="cp"></select></div>
+    <button class="hbtn" id="impBtn" style="display:none">Import from GCal</button>
     <button class="hbtn" id="expBtn">Export CSV</button>
     <button class="hbtn" id="gBtn">Connect Google Cal</button>
   </div>
@@ -215,20 +216,20 @@ header{padding-top:env(safe-area-inset-top);}
 <!-- CALENDAR PAGE -->
 <div class="page active" id="pCal">
   <div class="wn">
-    <div id="wl">WEEK</div>
+    <div id="wl">WEEK <span style="color:var(--lime)">19</span><span style="font-family:&#39;DM Sans&#39;,sans-serif;font-size:13px;font-weight:300;color:var(--muted);margin-left:10px">4 May–10 May 2026</span></div>
     <div class="nbs">
-      <button class="nb" id="bPrev">&#8592;</button>
+      <button class="nb" id="bPrev">←</button>
       <button class="tb" id="bToday">Today</button>
-      <button class="nb" id="bNext">&#8594;</button>
+      <button class="nb" id="bNext">→</button>
     </div>
   </div>
-  <div class="sb" id="sumBar"></div>
+  <div class="sb" id="sumBar"><div class="pill"><div class="pl">Week Earnings</div><div class="pv" style="color:var(--lime)">£0</div></div><div class="pill"><div class="pl">Sessions Booked</div><div class="pv" style="color:var(--text)">0</div></div><div class="pill"><div class="pl">Slots Available</div><div class="pv" style="color:var(--danger)">49</div></div><div class="pill"><div class="pl">Capacity</div><div class="pv" style="color:var(--danger)">0%</div></div></div>
   <div class="leg">
     <div class="li"><div class="ld" style="background:var(--ef);border-color:var(--border)"></div>Available</div>
     <div class="li"><div class="ld" style="background:var(--booked-bg);border-color:var(--booked-border)"></div>Booked</div>
     <div class="li"><div class="ld" style="background:var(--rec-bg);border-color:var(--rec-border)"></div>Recurring</div>
   </div>
-  <div class="cw"><div class="cg" id="cg"></div></div>
+  <div class="cw"><div class="cg" id="cg"><div class="tc"></div><div class="dh"><div class="dn">Mon</div><div class="dd">4</div><div class="de"></div><div class="ds"></div></div><div class="dh"><div class="dn">Tue</div><div class="dd">5</div><div class="de"></div><div class="ds"></div></div><div class="dh"><div class="dn">Wed</div><div class="dd">6</div><div class="de"></div><div class="ds"></div></div><div class="dh"><div class="dn">Thu</div><div class="dd">7</div><div class="de"></div><div class="ds"></div></div><div class="dh"><div class="dn">Fri</div><div class="dd">8</div><div class="de"></div><div class="ds"></div></div><div class="dh"><div class="dn">Sat</div><div class="dd">9</div><div class="de"></div><div class="ds"></div></div><div class="dh it"><div class="dn">Sun</div><div class="dd">10</div><div class="de"></div><div class="ds"></div></div><div class="tl">6am</div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="tl tlh"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="tl">7am</div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="tl tlh"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="tl">8am</div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc sck"><div class="ph">+</div></div><div class="tl tlh"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch sck"><div class="ph">+</div></div><div class="tl">9am</div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc sck"><div class="ph">+</div></div><div class="tl tlh"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch sck"><div class="ph">+</div></div><div class="tl">10am</div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc sck"><div class="ph">+</div></div><div class="tl tlh"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch sck"><div class="ph">+</div></div><div class="tl">11am</div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc sck"><div class="ph">+</div></div><div class="tl tlh"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch sck"><div class="ph">+</div></div><div class="tl">12pm</div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc sck"><div class="ph">+</div></div><div class="tl tlh"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch sck"><div class="ph">+</div></div><div class="tl">1pm</div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc sck"><div class="ph">+</div></div><div class="tl tlh"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch sck"><div class="ph">+</div></div><div class="tl">2pm</div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc sck"><div class="ph">+</div></div><div class="tl tlh"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch sck"><div class="ph">+</div></div><div class="tl">3pm</div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc sck"><div class="ph">+</div></div><div class="tl tlh"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch sck"><div class="ph">+</div></div><div class="tl">4pm</div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc sck"><div class="ph">+</div></div><div class="tl tlh"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch sck"><div class="ph">+</div></div><div class="tl">5pm</div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc sck"><div class="ph">+</div></div><div class="tl tlh"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch sck"><div class="ph">+</div></div><div class="tl">6pm</div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc sck"><div class="ph">+</div></div><div class="tl tlh"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch sck"><div class="ph">+</div></div><div class="tl">7pm</div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc sck"><div class="ph">+</div></div><div class="tl tlh"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch sck"><div class="ph">+</div></div><div class="tl">8pm</div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc scp"></div><div class="sc sck"><div class="ph">+</div></div><div class="tl tlh"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch scp"></div><div class="sc sch sck"><div class="ph">+</div></div></div></div>
 </div>
 <!-- ANALYTICS PAGE -->
 <div class="page" id="pAna">
@@ -252,24 +253,24 @@ header{padding-top:env(safe-area-inset-top);}
 <!-- ADD MODAL -->
 <div class="mo" id="addMo">
   <div class="md">
-    <button class="mc" id="addX">&#215;</button>
+    <button class="mc" id="addX">×</button>
     <div class="mt" id="addTit">BOOK SESSION</div>
     <div class="ms" id="addSub"></div>
-    <div class="fr"><label class="fl" for="fN">Client Name</label><input class="fi" id="fN" placeholder="e.g. Sarah Johnson" autocomplete="off"/></div>
+    <div class="fr"><label class="fl" for="fN">Client Name</label><input class="fi" id="fN" placeholder="e.g. Sarah Johnson" autocomplete="off"></div>
     <div class="fr3">
-      <div><label class="fl" for="fST">Start Time</label><input class="fi" id="fST" type="time" step="1800"/></div>
+      <div><label class="fl" for="fST">Start Time</label><input class="fi" id="fST" type="time" step="1800"></div>
       <div><label class="fl" for="fD">Duration</label><select class="fi" id="fD"><option value="60">60 min</option><option value="90">90 min</option><option value="45">45 min</option><option value="30">30 min</option></select></div>
-      <div><label class="fl" for="fR">Rate (£/hr)</label><input class="fi" id="fR" type="number" placeholder="60" min="0"/></div>
+      <div><label class="fl" for="fR">Rate (£/hr)</label><input class="fi" id="fR" type="number" placeholder="60" min="0"></div>
     </div>
-    <div class="fr"><label class="fl" for="fNo">Notes</label><input class="fi" id="fNo" placeholder="Optional"/></div>
+    <div class="fr"><label class="fl" for="fNo">Notes</label><input class="fi" id="fNo" placeholder="Optional"></div>
     <div class="tr2">
-      <label class="tw"><input type="checkbox" id="fRec"/><div class="tt"></div><div class="th"></div></label>
+      <label class="tw"><input type="checkbox" id="fRec"><div class="tt"></div><div class="th"></div></label>
       <span style="font-size:13px">Recurring client</span>
     </div>
     <div id="rOpts" style="display:none">
       <div class="fr2">
         <div><label class="fl" for="fFq">Repeat every</label><select class="fi" id="fFq"><option value="1">Every week</option><option value="2">Every 2 weeks</option><option value="4">Every 4 weeks</option></select></div>
-        <div><label class="fl" for="fW">For how many weeks</label><input class="fi" id="fW" type="number" min="1" max="52" value="12"/></div>
+        <div><label class="fl" for="fW">For how many weeks</label><input class="fi" id="fW" type="number" min="1" max="52" value="12"></div>
       </div>
     </div>
     <div class="ma"><button class="bp" id="bSave">CONFIRM BOOKING</button><button class="bs" id="addCan">Cancel</button></div>
@@ -278,7 +279,7 @@ header{padding-top:env(safe-area-inset-top);}
 <!-- VIEW MODAL -->
 <div class="mo" id="viewMo">
   <div class="md">
-    <button class="mc" id="viewX">&#215;</button>
+    <button class="mc" id="viewX">×</button>
     <div class="mt" id="viewTit"></div>
     <div class="ms" id="viewSub"></div>
     <div id="viewBody"></div>
@@ -448,9 +449,12 @@ function svSess(){
       if(!sess[k]){sess[k]={name:name,date:d2,startMins:sm,duration:dur,rate:rate,notes:notes,recurring:true,recurringId:rid};cnt++;}
     }
     sd();render();cAdd();toast(cnt+' recurring sessions added');
+    if(gConn&&gTok){Object.keys(sess).forEach(function(k){if(sess[k].recurringId===rid)pgCal(sess[k],true);});}
   } else {
-    sess[sk(date,sm)]={name:name,date:date,startMins:sm,duration:dur,rate:rate,notes:notes,recurring:false};
+    var newKey=sk(date,sm);
+    sess[newKey]={name:name,date:date,startMins:sm,duration:dur,rate:rate,notes:notes,recurring:false};
     sd();render();cAdd();toast('Session booked');
+    if(gConn&&gTok) pgCal(sess[newKey],true);
   }
 }
 
@@ -702,6 +706,7 @@ document.getElementById('gBtn').onclick=function(){
         gTok=resp.access_token;gConn=true;
         btn.textContent='\u2713 Connected';btn.classList.add('conn');
         document.getElementById('gcalStatus').style.display='block';
+        document.getElementById('impBtn').style.display='block';
         toast('Google Calendar connected!');
         fCals();
       }
@@ -720,16 +725,77 @@ function fCals(){
     if(pt){sel.value=pt.value;selCal=pt.value;}
     w.style.display='flex';
     sel.onchange=function(){selCal=this.value;toast('Calendar: '+this.options[this.selectedIndex].text);};
+    // Auto-import if localStorage is empty
+    var isEmpty=Object.keys(sess).length===0;
+    if(isEmpty){
+      toast('Importing sessions from Google Calendar...');
+      setTimeout(function(){importFromGCal();},500);
+    }
   }).catch(function(){});
 }
 
-function pgCal(s){
-  if(!gConn||!gTok){toast('Connect Google Calendar first');return;}
+function importFromGCal(){
+  // Fetch events from PT Clients calendar for next 6 months + past 1 month
+  var now=new Date();
+  var from=new Date(now); from.setMonth(from.getMonth()-1);
+  var to=new Date(now); to.setMonth(to.getMonth()+6);
+  var url='https://www.googleapis.com/calendar/v3/calendars/'+encodeURIComponent(selCal)+'/events'+
+    '?timeMin='+from.toISOString()+
+    '&timeMax='+to.toISOString()+
+    '&singleEvents=true&orderBy=startTime&maxResults=500';
+
+  fetch(url,{headers:{'Authorization':'Bearer '+gTok}})
+  .then(function(r){return r.json();})
+  .then(function(data){
+    var items=data.items||[];
+    var imported=0;
+    items.forEach(function(ev){
+      // Only import events created by this app (summary starts with "PT: ")
+      if(!ev.summary||ev.summary.indexOf('PT: ')!==0) return;
+      if(!ev.start||!ev.start.dateTime) return;
+
+      var start=new Date(ev.start.dateTime);
+      var end=new Date(ev.end.dateTime);
+      var dateStr=iso(start);
+      var startMins=start.getHours()*60+start.getMinutes();
+      var duration=Math.round((end-start)/60000);
+      var name=ev.summary.replace('PT: ','');
+
+      // Parse rate and notes from description
+      var rate=0,notes='',recurring=false;
+      if(ev.description){
+        var rateMatch=ev.description.match(/Rate: £(\d+)/);
+        if(rateMatch) rate=parseInt(rateMatch[1],10);
+        var notesMatch=ev.description.match(/Notes: (.+)/);
+        if(notesMatch) notes=notesMatch[1].trim();
+      }
+
+      var key=sk(dateStr,startMins);
+      if(!sess[key]){
+        sess[key]={name:name,date:dateStr,startMins:startMins,duration:duration,rate:rate,notes:notes,recurring:false};
+        imported++;
+      }
+    });
+
+    if(imported>0){
+      sd();render();
+      toast(imported+' sessions imported from Google Calendar');
+    } else {
+      toast('No PT sessions found to import');
+    }
+  }).catch(function(e){
+    toast('Import failed - check connection');
+    console.error('Import error:',e);
+  });
+}
+
+function pgCal(s,silent){
+  if(!gConn||!gTok){if(!silent)toast('Connect Google Calendar first');return;}
   var start=new Date(s.date+'T'+p2(Math.floor(s.startMins/60))+':'+p2(s.startMins%60)+':00');
   var end=new Date(start.getTime()+(s.duration||60)*60000);
   var ev={summary:'PT: '+s.name,description:(s.rate?'Rate: \u00a3'+s.rate+'/hr':'')+(s.notes?'\nNotes: '+s.notes:''),start:{dateTime:start.toISOString(),timeZone:'Europe/London'},end:{dateTime:end.toISOString(),timeZone:'Europe/London'},colorId:'10'};
   fetch('https://www.googleapis.com/calendar/v3/calendars/'+encodeURIComponent(selCal)+'/events',{method:'POST',headers:{'Authorization':'Bearer '+gTok,'Content-Type':'application/json'},body:JSON.stringify(ev)})
-  .then(function(r){if(r.ok)toast('Added to Google Calendar \u2713');else toast('Google Calendar error');})
+  .then(function(r){if(r.ok){if(!silent)toast('Added to Google Calendar \u2713');}else{if(!silent)toast('Google Calendar error');}})
   .catch(function(){toast('Could not reach Google Calendar');});
 }
 
@@ -749,6 +815,7 @@ document.getElementById('addCan').onclick=cAdd;
 document.getElementById('bSave').onclick=svSess;
 document.getElementById('viewX').onclick=cView;
 document.getElementById('expBtn').onclick=expCSV;
+document.getElementById('impBtn').onclick=function(){importFromGCal();};
 document.getElementById('fRec').onchange=function(){document.getElementById('rOpts').style.display=this.checked?'block':'none';};
 document.getElementById('addMo').onclick=function(e){if(e.target===this)cAdd();};
 document.getElementById('viewMo').onclick=function(e){if(e.target===this)cView();};
@@ -784,5 +851,5 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
-</body>
-</html>
+
+</body></html>
