@@ -211,8 +211,6 @@ header{padding-top:env(safe-area-inset-top);}
     <div id="gcalStatus">● Cal Connected</div>
     <div id="cpw"><span>PT Cal:</span><select id="cp"></select></div>
     <div id="cpw2" style="display:none;align-items:center;gap:8px"><span style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">CF/Other:</span><select id="cp2" style="background:var(--card);border:1px solid #f0a020;color:#f0a020;font-family:&#39;DM Sans&#39;,sans-serif;font-size:11px;font-weight:600;padding:5px 8px;outline:none;cursor:pointer;max-width:160px"></select></div>
-    <button class="hbtn" id="syncBtn" style="display:none">↻ Sync</button>
-    <button class="hbtn" id="impBtn" style="display:none">Import from GCal</button>
     <button class="hbtn" id="expBtn">Export CSV</button>
     <button class="hbtn" id="gBtn">Connect Google Cal</button>
   </div>
@@ -306,7 +304,43 @@ header{padding-top:env(safe-area-inset-top);}
   </div>
 </div>
 <div class="toast" id="toast"></div>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
+// --- Firebase: real-time cross-device data store (replaces localStorage-only + GCal relay) ---
+var firebaseConfig={
+  apiKey:"AIzaSyCWu2zQ8_w0CZhL5ICgyFoUSKXlTfuSVzI",
+  authDomain:"coaching-by-craig.firebaseapp.com",
+  projectId:"coaching-by-craig",
+  storageBucket:"coaching-by-craig.firebasestorage.app",
+  messagingSenderId:"4708848171",
+  appId:"1:4708848171:web:234be6db656cbe3043106e"
+};
+var fbDb=null,fbReady=false,fbSuppressNextWrite=false;
+function fbInit(){
+  firebase.initializeApp(firebaseConfig);
+  fbDb=firebase.firestore();
+  firebase.auth().signInAnonymously().then(function(){
+    fbDb.collection('cbc').doc('sessions').onSnapshot(function(doc){
+      if(fbSuppressNextWrite){fbSuppressNextWrite=false;return;}
+      if(doc.exists){
+        sess=doc.data().data||{};
+        localStorage.setItem('cbc6',JSON.stringify(sess));
+        render();
+        if(document.getElementById('pAna').classList.contains('active'))rAna();
+      } else if(!fbReady&&Object.keys(sess).length){
+        // First time this device connects to Firestore and the cloud doc doesn't exist yet -
+        // migrate this device's existing local sessions up instead of treating cloud as empty.
+        sd();
+        toast('Existing sessions migrated to cloud');
+      }
+      fbReady=true;
+    },function(e){console.log('Firestore listen error:',e);toast('Cloud sync unavailable - using offline data');});
+  }).catch(function(e){console.log('Firebase auth error:',e);toast('Cloud sync unavailable - using offline data');});
+}
+fbInit();
+
 var GCI='25101030281-stnunhc7qks2fnfjqj3nnf4afilvlvee.apps.googleusercontent.com';
 var MAX=7,SH=6,EH=21,RH=30,HR=(EH-SH)*2;
 var DS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -315,72 +349,16 @@ var MS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 var ws=gMon(new Date()),sess=ld(),aSlot=null,aEk=null,gConn=false,gTok=null,selCal='primary',selCal2='',aPer=4,uView='all',mView='1w',syncInProgress=false;
 
 function ld(){try{return JSON.parse(localStorage.getItem('cbc6')||'{}');}catch(e){return {};}}
-function sd(){localStorage.setItem('cbc6',JSON.stringify(sess));}
-// Deleted IDs — stored locally AND synced to GCal as a special event
-var DELETED_EVENT_TITLE='CBC_DELETED_IDS';
-var deletedEventId=null; // GCal event ID of the deleted-list event
-
-function ldDel(){try{return JSON.parse(localStorage.getItem('cbc6_del')||'[]');}catch(e){return [];}}
-function sdDel(arr){localStorage.setItem('cbc6_del',JSON.stringify(arr));}
-
-function markDeleted(gcalId){
-  if(!gcalId) return;
-  var arr=ldDel();
-  if(arr.indexOf(gcalId)===-1){
-    arr.push(gcalId);
-    sdDel(arr);
-    pushDeletedList(arr);
+function sd(){
+  localStorage.setItem('cbc6',JSON.stringify(sess));
+  if(fbDb){
+    fbSuppressNextWrite=true;
+    fbDb.collection('cbc').doc('sessions').set({data:sess}).catch(function(e){
+      console.log('Firestore save error:',e);
+      fbSuppressNextWrite=false;
+      toast('Could not save to cloud - check connection');
+    });
   }
-}
-
-function pushDeletedList(arr){
-  if(!gConn||!gTok||!selCal2) return;
-  var body={
-    summary:DELETED_EVENT_TITLE,
-    description:JSON.stringify(arr),
-    start:{date:'2000-01-01'},
-    end:{date:'2000-01-02'}
-  };
-  if(deletedEventId){
-    // Update existing event
-    gFetch('https://www.googleapis.com/calendar/v3/calendars/'+encodeURIComponent(selCal2)+'/events/'+deletedEventId,{
-      method:'PUT',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify(body)
-    }).catch(function(e){console.log('pushDeletedList update error:',e);});
-  } else {
-    // Create new event
-    gFetch('https://www.googleapis.com/calendar/v3/calendars/'+encodeURIComponent(selCal2)+'/events',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify(body)
-    }).then(function(r){return r.json();})
-    .then(function(data){if(data.id) deletedEventId=data.id;})
-    .catch(function(e){console.log('pushDeletedList create error:',e);});
-  }
-}
-
-function fetchDeletedList(){
-  // Pull the deleted list from GCal and merge with local
-  if(!gConn||!gTok||!selCal2) return Promise.resolve([]);
-  var url='https://www.googleapis.com/calendar/v3/calendars/'+encodeURIComponent(selCal2)+'/events?q='+encodeURIComponent(DELETED_EVENT_TITLE)+'&maxResults=5';
-  return gFetch(url)
-    .then(function(r){return r.json();})
-    .then(function(data){
-      var items=(data.items||[]).filter(function(e){return e.summary===DELETED_EVENT_TITLE;});
-      if(!items.length) return ldDel();
-      var ev=items[0];
-      deletedEventId=ev.id;
-      var remoteIds=[];
-      try{remoteIds=JSON.parse(ev.description||'[]');}catch(e){}
-      // Merge local + remote
-      var local=ldDel();
-      var merged=local.slice();
-      remoteIds.forEach(function(id){if(merged.indexOf(id)===-1) merged.push(id);});
-      sdDel(merged);
-      return merged;
-    })
-    .catch(function(){return ldDel();});
 }
 function sk(d,m){return d+'_'+m;}
 function gMon(d){var dt=new Date(d);dt.setHours(0,0,0,0);var day=dt.getDay();dt.setDate(dt.getDate()-(day===0?6:day-1));return dt;}
@@ -665,11 +643,9 @@ function oView(key){
       var s2=sess[key];
       var gcalId=s2&&s2.gcalId;
       var sType=s2&&s2.type;
-      var sDate=s2&&s2.date,sMins=s2&&s2.startMins,sName=s2&&s2.name;
       delete sess[key];sd();render();cView();toast('Session removed');
       var delCal=(sType==='crossfit'||sType==='other')&&selCal2?selCal2:selCal;
-      if(gcalId){markDeleted(gcalId);deleteFromGCal(gcalId,delCal);}
-      else{findAndDeleteGCalEvent(sName,sDate,sMins,delCal);}
+      if(gcalId)deleteFromGCal(gcalId,delCal);
     };
     var da=mk('button','bd');da.textContent='Remove all';
     da.onclick=function(){
@@ -679,10 +655,7 @@ function oView(key){
       var isOth=s.type==='other';
       Object.keys(sess).forEach(function(k){
         if(sess[k].recurringId===rid){
-          if(sess[k].gcalId){
-            if(!isCF&&!isOth) toDelete.push(sess[k].gcalId);
-            markDeleted(sess[k].gcalId);
-          }
+          if(sess[k].gcalId&&!isCF&&!isOth) toDelete.push(sess[k].gcalId);
           delete sess[k];
         }
       });
@@ -711,18 +684,9 @@ function oView(key){
       var s2=sess[key];
       var gcalId=s2&&s2.gcalId;
       var sType=s2&&s2.type;
-      var sDate=s2&&s2.date;
-      var sMins=s2&&s2.startMins;
-      var sName=s2&&s2.name;
       delete sess[key];sd();render();cView();toast('Session cancelled');
       var delCal=(sType==='crossfit'||sType==='other')&&selCal2?selCal2:selCal;
-      if(gcalId){
-        markDeleted(gcalId);
-        deleteFromGCal(gcalId,delCal);
-      } else {
-        // No gcalId stored - try to find and delete by name+time
-        findAndDeleteGCalEvent(sName,sDate,sMins,delCal);
-      }
+      if(gcalId)deleteFromGCal(gcalId,delCal);
     };
     acts.appendChild(db);
   }
@@ -1039,115 +1003,7 @@ function fCals(){
     if(savedCal2){sel2.value=savedCal2;selCal2=savedCal2;}
     w2.style.display='flex';
     sel2.onchange=function(){selCal2=this.value;localStorage.setItem('cbc_selCal2',selCal2);toast('CF/Other calendar: '+this.options[this.selectedIndex].text);};
-
-    // Always sync after calendar picker is ready and selCal confirmed
-    setTimeout(function(){
-      console.log('Syncing from calendars:', selCal, selCal2);
-      importFromGCal(true);
-    }, 1500);
   }).catch(function(e){console.error('fCals error:',e);toast('Could not load calendars');});
-}
-
-function importFromGCal(silent){
-  if(syncInProgress){
-    console.log('Sync already running, skipping');
-    return;
-  }
-  if(!gConn||!gTok){
-    if(!silent)toast('Not connected to Google Calendar');
-    return;
-  }
-  syncInProgress=true;
-  console.log('Starting sync. Connected:',gConn,'Token:',!!gTok,'selCal:',selCal,'selCal2:',selCal2);
-
-  fetchDeletedList().then(function(deletedIds){
-    doImport(deletedIds, silent);
-  }).catch(function(e){
-    console.error('fetchDeletedList error:',e);
-    syncInProgress=false;
-    if(!silent)toast('Sync error: '+(e.message||'fetch failed'));
-  });
-}
-
-function doImport(deletedIds, silent){
-  var now=new Date();
-  var from=new Date(now); from.setMonth(from.getMonth()-1);
-  var to=new Date(now); to.setMonth(to.getMonth()+14);
-  var imported=0;
-
-  var seenIds={}; // Track all event IDs seen across both calendars
-
-  function processEvents(items, isCFCal){
-    items.forEach(function(ev){
-      if(!ev.summary||!ev.start||!ev.start.dateTime) return;
-      // Skip the special deleted-list tracking event itself
-      if(ev.summary===DELETED_EVENT_TITLE) return;
-      if(ev.id) seenIds[ev.id]=true;
-      if(ev.id&&deletedIds.indexOf(ev.id)!==-1) return;
-      var start=new Date(ev.start.dateTime);
-      var end=new Date(ev.end.dateTime);
-      var dateStr=iso(start);
-      var startMins=start.getHours()*60+start.getMinutes();
-      var duration=Math.round((end-start)/60000);
-      var name=ev.summary.indexOf('PT: ')===0?ev.summary.slice(4):ev.summary;
-      var rate=0,notes='';
-      if(ev.description){
-        var rm=ev.description.match(/Rate: £([\d]+)/);
-        if(rm) rate=parseInt(rm[1],10);
-        var nm2=ev.description.match(/Notes: (.+)/);
-        if(nm2) notes=nm2[1].trim();
-      }
-      var key=sk(dateStr,startMins);
-      var sType=isCFCal?'crossfit':'pt';
-      if(!sess[key]){
-        sess[key]={name:name,type:sType,date:dateStr,startMins:startMins,duration:duration,rate:rate,notes:notes,recurring:false,gcalId:ev.id};
-        imported++;
-      } else if(!sess[key].gcalId&&ev.id){
-        sess[key].gcalId=ev.id;
-      }
-    });
-  }
-
-  function buildUrl(calId){
-    return 'https://www.googleapis.com/calendar/v3/calendars/'+encodeURIComponent(calId)+'/events'+
-      '?timeMin='+from.toISOString()+'&timeMax='+to.toISOString()+
-      '&singleEvents=true&orderBy=startTime&maxResults=2500';
-  }
-
-  gFetch(buildUrl(selCal))
-  .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
-  .then(function(data){
-    processEvents(data.items||[], false);
-    if(selCal2&&selCal2!==selCal){
-      return gFetch(buildUrl(selCal2))
-        .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
-        .then(function(data2){ processEvents(data2.items||[], true); });
-    }
-  })
-  .then(function(){
-    // Remove local sessions whose Google Calendar events no longer exist (deleted on another device)
-    var removed=0;
-    Object.keys(sess).forEach(function(key){
-      var s=sess[key];
-      if(s.gcalId && !seenIds[s.gcalId]){
-        console.log('Removing session deleted on another device:',s.name,s.date);
-        delete sess[key];
-        removed++;
-      }
-    });
-    if(imported>0||removed>0){
-      sd();render();
-      var msg='';
-      if(imported>0) msg+=imported+' added';
-      if(removed>0){if(msg)msg+=', ';msg+=removed+' removed';}
-      if(!silent)toast(msg+' ✓'); else toast('Sync complete ✓');
-    } else {
-      if(!silent)toast('Already up to date');
-    }
-    console.log('Sync complete - imported:',imported,'removed:',removed);
-  })
-  .catch(function(e){toast('Sync failed - check connection');console.error('Sync error:',e);})
-  .finally(function(){syncInProgress=false;});
 }
 
 function pgCal(s,silent){
@@ -1168,39 +1024,6 @@ function pgCal(s,silent){
     }
   })
   .catch(function(){if(!silent)toast('Could not reach Google Calendar');});
-}
-
-function findAndDeleteGCalEvent(name,dateStr,startMins,calId){
-  if(!gConn||!gTok) return;
-  var cal=calId||selCal;
-  // Search for events around that date/time
-  var dt=new Date(dateStr+'T'+p2(Math.floor(startMins/60))+':'+p2(startMins%60)+':00');
-  var dayStart=new Date(dateStr+'T00:00:00');
-  var dayEnd=new Date(dateStr+'T23:59:59');
-  var url='https://www.googleapis.com/calendar/v3/calendars/'+encodeURIComponent(cal)+'/events'+
-    '?timeMin='+dayStart.toISOString()+'&timeMax='+dayEnd.toISOString()+
-    '&singleEvents=true&maxResults=50';
-
-  gFetch(url).then(function(r){return r.json();}).then(function(data){
-    var items=data.items||[];
-    var matched=items.filter(function(ev){
-      if(!ev.summary||!ev.start||!ev.start.dateTime) return false;
-      var evName=ev.summary.indexOf('PT: ')===0?ev.summary.slice(4):ev.summary;
-      if(evName!==name) return false;
-      var evStart=new Date(ev.start.dateTime);
-      var evMins=evStart.getHours()*60+evStart.getMinutes();
-      return evMins===startMins;
-    });
-    if(matched.length){
-      matched.forEach(function(ev){
-        markDeleted(ev.id);
-        deleteFromGCal(ev.id,cal);
-      });
-      console.log('findAndDelete: deleted',matched.length,'matching event(s)');
-    } else {
-      console.log('findAndDelete: no matching event found in GCal');
-    }
-  }).catch(function(e){console.log('findAndDelete error:',e);});
 }
 
 function deleteFromGCal(gcalId,calId){
@@ -1241,12 +1064,6 @@ document.getElementById('fST').addEventListener('change', function(){
   }
 });
 document.getElementById('expBtn').onclick=expCSV;
-document.getElementById('impBtn').onclick=function(){importFromGCal();};
-document.getElementById('syncBtn').onclick=function(){
-  if(!gConn||!gTok){toast('Connect Google Calendar first');return;}
-  toast('Syncing...');
-  importFromGCal(false);
-};
 document.getElementById('reconnectBtn').onclick=function(){
   document.getElementById('gBtn').classList.remove('conn');
   document.getElementById('gBtn').textContent='Connect Google Cal';
@@ -1289,8 +1106,6 @@ function onConnected(){
   var btn=document.getElementById('gBtn');
   btn.textContent='✓ Connected'; btn.classList.add('conn');
   document.getElementById('gcalStatus').style.display='block';
-  document.getElementById('impBtn').style.display='block';
-  document.getElementById('syncBtn').style.display='block';
   var savedCal=localStorage.getItem('cbc_selCal');
   if(savedCal) selCal=savedCal;
   showBanner(false);
@@ -1316,8 +1131,7 @@ function tryAutoConnect(){
 
 // Online/offline recovery
 window.addEventListener('online', function(){
-  toast('Back online - syncing...');
-  if(gConn) importFromGCal(true);
+  toast('Back online');
 });
 window.addEventListener('offline', function(){
   toast('Offline mode');
