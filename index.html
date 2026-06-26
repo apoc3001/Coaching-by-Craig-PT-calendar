@@ -1087,6 +1087,21 @@ function rSummary(){
 
 function lGSI(){return new Promise(function(res,rej){if(typeof google!=='undefined'&&google.accounts){res();return;}var s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.onload=res;s.onerror=rej;document.head.appendChild(s);});}
 
+// Cache the Google access token until it expires so refreshes within the hour reconnect instantly.
+function saveTok(token,expiresIn){
+  gTok=token;gConn=true;
+  try{localStorage.setItem('cbc_gtok',JSON.stringify({t:token,e:Date.now()+((expiresIn||3500)*1000)}));}catch(e){}
+}
+function restoreTok(){
+  try{
+    var o=JSON.parse(localStorage.getItem('cbc_gtok')||'null');
+    // require at least 2 min of life left so a fetch doesn't fail mid-flight
+    if(o&&o.t&&o.e>Date.now()+120000){gTok=o.t;gConn=true;onConnected();return true;}
+  }catch(e){}
+  return false;
+}
+function clearTok(){try{localStorage.removeItem('cbc_gtok');}catch(e){}}
+
 // Silent token refresh - only used in background, NEVER on user click
 function refreshToken(callback){
   lGSI().then(function(){
@@ -1101,7 +1116,7 @@ function refreshToken(callback){
           showBanner(true);
           return;
         }
-        gTok=resp.access_token; gConn=true;
+        saveTok(resp.access_token,resp.expires_in);
         console.log('Google token refreshed silently');
         if(callback) callback();
       }
@@ -1138,7 +1153,7 @@ document.getElementById('gBtn').onclick=function(){
       scope:'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly',
       callback:function(resp){
         if(resp.error){btn.textContent='Connect Google Cal';toast('Auth failed');return;}
-        gTok=resp.access_token;gConn=true;
+        saveTok(resp.access_token,resp.expires_in);
         btn.textContent='\u2713 Connected';btn.classList.add('conn');
         toast('Google Calendar connected!');
         onConnected();
@@ -1259,7 +1274,7 @@ document.getElementById('aPass').addEventListener('keydown',function(e){if(e.key
 document.getElementById('reconnectBtn').onclick=function(){
   document.getElementById('gBtn').classList.remove('conn');
   document.getElementById('gBtn').textContent='Connect Google Cal';
-  gConn=false; gTok=null;
+  gConn=false; gTok=null; clearTok();
   document.getElementById('gBtn').click();
 };
 document.getElementById('fRec').onchange=function(){document.getElementById('rOpts').style.display=this.checked?'block':'none';};
@@ -1291,8 +1306,8 @@ document.getElementById('ptg').onclick=function(e){
 function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2800);}
 console.log("CBC Calendar v6 loaded");
 render();
-// Delay auto-connect slightly to ensure DOM and event listeners are ready
-setTimeout(tryAutoConnect, 200);
+// Reuse a cached, still-valid token if we have one; otherwise try a silent reconnect.
+setTimeout(function(){if(!restoreTok())tryAutoConnect();}, 200);
 
 // Auto-reconnect Google Calendar on page load
 function showBanner(show){
@@ -1319,7 +1334,7 @@ function tryAutoConnect(){
       prompt:'none',
       callback:function(resp){
         if(resp.error){showBanner(true);return;}
-        gTok=resp.access_token; gConn=true;
+        saveTok(resp.access_token,resp.expires_in);
         onConnected();
       }
     });
