@@ -244,8 +244,11 @@ header{padding-top:env(safe-area-inset-top);}
 <!-- ANALYTICS PAGE -->
 <div class="page" id="pAna">
   <div class="aw">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
-      <div class="ah">ANALYTICS</div>
+    <div class="ah" style="margin-bottom:16px">ANALYTICS</div>
+    <div class="uc" id="uCard"></div>
+    <div class="mc2" id="mCard"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin:24px 0 16px;flex-wrap:wrap;gap:10px">
+      <div class="ah" style="font-size:18px;color:var(--muted)">PAST PERFORMANCE</div>
       <div class="ptg" id="ptg">
         <button class="ptb active" data-w="4">4 Weeks</button>
         <button class="ptb" data-w="8">8 Weeks</button>
@@ -256,8 +259,6 @@ header{padding-top:env(safe-area-inset-top);}
     <div class="ag" id="aStats"></div>
     <div class="cc"><div class="ct">WEEKLY EARNINGS</div><div class="ca"><canvas id="echart"></canvas></div></div>
     <div class="cc"><div class="ct">SESSIONS PER WEEK</div><div class="ca"><canvas id="schart"></canvas></div></div>
-    <div class="mc2" id="mCard"></div>
-    <div class="uc" id="uCard"></div>
   </div>
 </div>
 <!-- ADD MODAL -->
@@ -638,6 +639,8 @@ function oView(key){
   var eb=mk('button','bs');eb.textContent='Edit';eb.style.flex='1';
   eb.onclick=function(){cView();oEdit(key);};acts.appendChild(eb);
   if(s.recurring){
+    var ex=mk('button','bs');ex.textContent='Extend';ex.style.flex='1';
+    ex.onclick=function(){oExtend(key);};acts.appendChild(ex);
     var d1=mk('button','bd');d1.textContent='Remove this';
     d1.onclick=function(){
       var s2=sess[key];
@@ -693,6 +696,31 @@ function oView(key){
   document.getElementById('viewMo').classList.add('open');
 }
 function cView(){document.getElementById('viewMo').classList.remove('open');}
+
+function oExtend(key){
+  var s=sess[key];if(!s||!s.recurringId)return;
+  var rid=s.recurringId;
+  var dates=[];
+  Object.keys(sess).forEach(function(k){if(sess[k].recurringId===rid)dates.push(sess[k].date);});
+  dates.sort();
+  var last=dates[dates.length-1];
+  var intervalWeeks=1;
+  if(dates.length>1){
+    var d0=new Date(dates[0]+'T12:00:00'),d1x=new Date(dates[1]+'T12:00:00');
+    intervalWeeks=Math.max(1,Math.round((d1x-d0)/(7*86400000)));
+  }
+  var more=parseInt(window.prompt('Extend '+s.name+'’s recurring sessions by how many more weeks?\n(repeats every '+intervalWeeks+' week'+(intervalWeeks>1?'s':'')+', last session currently '+fd(last)+')','12'),10);
+  if(!more||more<=0)return;
+  var cnt=0,lastDt=new Date(last+'T12:00:00');
+  for(var w=intervalWeeks;w<=more;w+=intervalWeeks){
+    var dt=new Date(lastDt);dt.setDate(dt.getDate()+w*7);
+    var d2=iso(dt),k2=sk(d2,s.startMins);
+    if(!sess[k2]){sess[k2]={name:s.name,type:s.type,date:d2,startMins:s.startMins,duration:s.duration,rate:s.rate,notes:s.notes,recurring:true,recurringId:rid};cnt++;}
+  }
+  if(!cnt){toast('No new sessions added');return;}
+  sd();render();cView();toast(cnt+' more session'+(cnt>1?'s':'')+' added');
+  if(gConn&&gTok){Object.keys(sess).forEach(function(k){if(sess[k].recurringId===rid&&!sess[k].gcalId)pgCal(sess[k],true);});}
+}
 function vf(l,v,c){return '<div class="vf"><div class="vfl">'+l+'</div><div class="vfv '+c+'">'+v+'</div></div>';}
 function gSVG(){return '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" style="flex-shrink:0"><rect x="3" y="4" width="18" height="17" rx="2" stroke="#4285f4" stroke-width="1.8"/><path d="M16 2v4M8 2v4M3 9h18" stroke="#4285f4" stroke-width="1.8"/></svg>';}
 
@@ -886,16 +914,16 @@ function rUpcoming(){
     grd+='<div class="um"><div class="umn">'+MS[d.getMonth()].toUpperCase()+' '+d.getFullYear()+'</div>'+rows+'<div class="umt"><div class="umtl">Month Total</div><div class="umtv">&pound;'+mT.toLocaleString()+'</div></div></div>';
   });
   grd+='</div>';
-  var regTot=0,premTot=0,cfTot=0;
-  mks.forEach(function(mk2){mm[mk2].forEach(function(s){
-    var e=ef(s);
+  var regTot=0,premTot=0,cfTot=0,visTot=0;
+  vis.forEach(function(mk2){mm[mk2].forEach(function(s){
+    var e=ef(s);visTot+=e;
     if(s.type==='crossfit') cfTot+=e;
     else if(s.rate&&s.rate>70) premTot+=e;
     else regTot+=e;
   });});
-  card.innerHTML='<div class="uh"><div class="ut">UPCOMING EARNINGS</div>'+
+  card.innerHTML='<div class="uh"><div class="ut">UPCOMING EARNINGS'+(uView!=='all'?' — '+MS[new Date(uView+'-01T12:00:00').getMonth()].toUpperCase():'')+'</div>'+
     '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">'+
-    '<div class="utt">&pound;'+(regTot+premTot).toLocaleString()+'<span> total booked</span></div>'+
+    '<div class="utt">&pound;'+visTot.toLocaleString()+'<span> total booked</span></div>'+
     '<div style="display:flex;gap:14px;margin-top:2px;flex-wrap:wrap">'+
     '<div style="text-align:right"><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Regular (£20-£70/hr)</div>'+
     '<div style="font-family:Bebas Neue,sans-serif;font-size:18px;color:var(--lime)">&pound;'+regTot.toLocaleString()+'</div></div>'+
