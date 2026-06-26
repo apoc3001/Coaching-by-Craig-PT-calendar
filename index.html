@@ -53,6 +53,21 @@ header{background:var(--dark);border-bottom:1px solid var(--border);padding:0 20
 .li{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);}
 .ld{width:9px;height:9px;border:1px solid;flex-shrink:0;}
 .cw{padding:0 20px 60px;overflow-x:auto;}
+/* Month summary (wall calendar) */
+.sumwrap{padding:0 20px 60px;overflow-x:auto;}
+.sumg{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;min-width:760px;}
+.sumwh{font-family:Bebas Neue,sans-serif;font-size:12px;letter-spacing:1px;color:var(--muted);text-align:center;padding:6px 0;}
+.sumc{background:var(--card);border:1px solid var(--border);min-height:104px;padding:5px 6px;display:flex;flex-direction:column;}
+.sumc.empty{background:transparent;border:none;min-height:0;}
+.sumc.today{border-color:var(--lime);}
+.sumc.pastday{background:var(--ep);}
+.sumc.wknd{background:#0d0d0d;}
+.sumdate{font-size:12px;font-weight:600;color:var(--text);margin-bottom:3px;}
+.sumc.today .sumdate{color:var(--lime);}
+.sumev{font-size:10px;line-height:1.45;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;}
+.sumev:hover{text-decoration:underline;}
+.sumtot{font-family:Bebas Neue,sans-serif;font-size:13px;color:var(--lime);margin-top:auto;padding-top:3px;border-top:1px solid var(--border);}
+@media(max-width:600px){.sumwrap{padding:0 8px 80px;}.sumg{min-width:680px;gap:3px;}.sumc{min-height:88px;padding:4px;}}
 .cg{display:grid;grid-template-columns:52px repeat(7,1fr);min-width:820px;border-top:1px solid var(--border);border-left:1px solid var(--border);}
 .tc{background:var(--dark);border-right:1px solid var(--border);border-bottom:1px solid var(--border);}
 .dh{background:var(--dark);border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:8px 4px;text-align:center;}
@@ -217,6 +232,7 @@ header{padding-top:env(safe-area-inset-top);}
 </header>
 <div class="tabs">
   <div class="tab active" id="tCal">Calendar</div>
+  <div class="tab" id="tSum">Month</div>
   <div class="tab" id="tAna">Analytics</div>
 </div>
 <div id="reconnectBanner" style="display:none;background:#1a1000;border-bottom:1px solid #f0a020;padding:8px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px">
@@ -250,15 +266,33 @@ header{padding-top:env(safe-area-inset-top);}
     <div style="display:flex;align-items:center;justify-content:space-between;margin:24px 0 16px;flex-wrap:wrap;gap:10px">
       <div class="ah" style="font-size:18px;color:var(--muted)">PAST PERFORMANCE</div>
       <div class="ptg" id="ptg">
-        <button class="ptb active" data-w="4">4 Weeks</button>
-        <button class="ptb" data-w="8">8 Weeks</button>
-        <button class="ptb" data-w="12">12 Weeks</button>
+        <button class="ptb active" data-w="6">6 Months</button>
+        <button class="ptb" data-w="12">12 Months</button>
+        <button class="ptb" data-w="24">24 Months</button>
         <button class="ptb" data-w="0">All Time</button>
       </div>
     </div>
     <div class="ag" id="aStats"></div>
-    <div class="cc"><div class="ct">WEEKLY EARNINGS</div><div class="ca"><canvas id="echart"></canvas></div></div>
-    <div class="cc"><div class="ct">SESSIONS PER WEEK</div><div class="ca"><canvas id="schart"></canvas></div></div>
+    <div class="cc"><div class="ct">MONTHLY EARNINGS</div><div class="ca"><canvas id="echart"></canvas></div></div>
+    <div class="cc"><div class="ct">SESSIONS PER MONTH</div><div class="ca"><canvas id="schart"></canvas></div></div>
+  </div>
+</div>
+<!-- MONTH SUMMARY PAGE -->
+<div class="page" id="pSum">
+  <div class="wn">
+    <div id="sumLbl" style="font-family:Bebas Neue,sans-serif;font-size:24px;letter-spacing:2px"></div>
+    <div class="nbs">
+      <button class="nb" id="sPrev">←</button>
+      <button class="tb" id="sToday">This Month</button>
+      <button class="nb" id="sNext">→</button>
+    </div>
+  </div>
+  <div class="sb" id="sumStats"></div>
+  <div class="sumwrap">
+    <div class="sumg sumwh-row">
+      <div class="sumwh">Mon</div><div class="sumwh">Tue</div><div class="sumwh">Wed</div><div class="sumwh">Thu</div><div class="sumwh">Fri</div><div class="sumwh">Sat</div><div class="sumwh">Sun</div>
+    </div>
+    <div class="sumg" id="sumGrid"></div>
   </div>
 </div>
 <!-- ADD MODAL -->
@@ -280,6 +314,14 @@ header{padding-top:env(safe-area-inset-top);}
       <div><label class="fl" for="fR">Rate (£/hr)</label><input class="fi" id="fR" type="number" placeholder="60" min="0"></div>
     </div>
     <div id="endDateWrap" style="display:none" class="fr"><label class="fl" for="fED">End Date</label><input class="fi" id="fED" type="date"></div>
+    <div class="fr2">
+      <div><label class="fl" for="fLoc">Location</label><input class="fi" id="fLoc" placeholder="e.g. PureGym / Client's home / Online" autocomplete="off"></div>
+      <div><label class="fl" for="fFoc">Session Focus</label><input class="fi" id="fFoc" placeholder="e.g. Strength / Assessment" autocomplete="off"></div>
+    </div>
+    <div class="fr2">
+      <div><label class="fl" for="fPh">Client Phone</label><input class="fi" id="fPh" type="tel" placeholder="Optional" autocomplete="off"></div>
+      <div><label class="fl" for="fEm">Client Email</label><input class="fi" id="fEm" type="email" placeholder="Optional" autocomplete="off"></div>
+    </div>
     <div class="fr"><label class="fl" for="fNo">Notes</label><input class="fi" id="fNo" placeholder="Optional"></div>
     <div class="tr2">
       <label class="tw"><input type="checkbox" id="fRec"><div class="tt"></div><div class="th"></div></label>
@@ -318,41 +360,59 @@ var firebaseConfig={
   messagingSenderId:"4708848171",
   appId:"1:4708848171:web:234be6db656cbe3043106e"
 };
-var fbDb=null,fbReady=false,fbSuppressNextWrite=false;
+var fbDb=null,fbReady=false,fbSuppressNextWrite=false,fbUser=null,fbListening=false;
 function fbInit(){
   firebase.initializeApp(firebaseConfig);
   fbDb=firebase.firestore();
-  firebase.auth().signInAnonymously().then(function(){
-    fbDb.collection('cbc').doc('sessions').onSnapshot(function(doc){
-      if(fbSuppressNextWrite){fbSuppressNextWrite=false;return;}
-      if(doc.exists){
-        sess=doc.data().data||{};
-        localStorage.setItem('cbc6',JSON.stringify(sess));
-        render();
-        if(document.getElementById('pAna').classList.contains('active'))rAna();
-      } else if(!fbReady&&Object.keys(sess).length){
-        // First time this device connects to Firestore and the cloud doc doesn't exist yet -
-        // migrate this device's existing local sessions up instead of treating cloud as empty.
-        sd();
-        toast('Existing sessions migrated to cloud');
-      }
-      fbReady=true;
-    },function(e){console.log('Firestore listen error:',e);toast('Cloud sync unavailable - using offline data');});
-  }).catch(function(e){console.log('Firebase auth error:',e);toast('Cloud sync unavailable - using offline data');});
+  // Auth is tied to your Google account (same one you connect for Calendar).
+  // The Firestore listener only starts once you're signed in.
+  firebase.auth().onAuthStateChanged(function(user){
+    fbUser=user||null;
+    if(user&&!fbListening){
+      fbListening=true;
+      fbDb.collection('cbc').doc('sessions').onSnapshot(function(doc){
+        if(fbSuppressNextWrite){fbSuppressNextWrite=false;return;}
+        if(doc.exists){
+          sess=doc.data().data||{};
+          localStorage.setItem('cbc6',JSON.stringify(sess));
+          render();
+          if(document.getElementById('pAna').classList.contains('active'))rAna();
+          if(document.getElementById('pSum').classList.contains('active'))rSummary();
+        } else if(!fbReady&&Object.keys(sess).length){
+          // First time signed in and the cloud doc doesn't exist yet -
+          // migrate this device's existing local sessions up.
+          sd();
+          toast('Existing sessions migrated to cloud');
+        }
+        fbReady=true;
+      },function(e){console.log('Firestore listen error:',e);toast('Cloud sync unavailable - check sign-in');});
+    }
+  });
 }
 fbInit();
+
+// Sign Firebase in using the Google access token we already get for Calendar -
+// no separate login needed. Persisted by Firebase across reloads.
+function fbSignIn(accessToken){
+  if(!accessToken||fbUser||!firebase||!firebase.auth) return;
+  try{
+    var cred=firebase.auth.GoogleAuthProvider.credential(null,accessToken);
+    firebase.auth().signInWithCredential(cred).catch(function(e){console.log('Firebase sign-in error:',e);});
+  }catch(e){console.log('fbSignIn error:',e);}
+}
 
 var GCI='25101030281-stnunhc7qks2fnfjqj3nnf4afilvlvee.apps.googleusercontent.com';
 var MAX=7,SH=6,EH=21,RH=30,HR=(EH-SH)*2;
 var DS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 var DF=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 var MS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-var ws=gMon(new Date()),sess=ld(),aSlot=null,aEk=null,gConn=false,gTok=null,selCal='primary',selCal2='',aPer=4,uView='all',mView='1w',syncInProgress=false;
+var ws=gMon(new Date()),sess=ld(),aSlot=null,aEk=null,gConn=false,gTok=null,selCal='primary',selCal2='',aPer=6,uView='all',mView='1w',syncInProgress=false;
+var sumMonth=(function(){var d=new Date();d.setDate(1);d.setHours(0,0,0,0);return d;})();
 
 function ld(){try{return JSON.parse(localStorage.getItem('cbc6')||'{}');}catch(e){return {};}}
 function sd(){
   localStorage.setItem('cbc6',JSON.stringify(sess));
-  if(fbDb){
+  if(fbDb&&fbUser){
     fbSuppressNextWrite=true;
     fbDb.collection('cbc').doc('sessions').set({data:sess}).catch(function(e){
       console.log('Firestore save error:',e);
@@ -513,6 +573,10 @@ function oAdd(date,sm){
   document.getElementById('fD').value='60';
   document.getElementById('fR').value='';
   document.getElementById('fNo').value='';
+  document.getElementById('fLoc').value='';
+  document.getElementById('fFoc').value='';
+  document.getElementById('fPh').value='';
+  document.getElementById('fEm').value='';
   document.getElementById('fType').value='pt';
   onTypeChange('pt');
   document.getElementById('fET').value='';
@@ -547,6 +611,10 @@ function oEdit(key){
   document.getElementById('fD').value=s.duration||60;
   document.getElementById('fR').value=s.rate||'';
   document.getElementById('fNo').value=s.notes||'';
+  document.getElementById('fLoc').value=s.location||'';
+  document.getElementById('fFoc').value=s.focus||'';
+  document.getElementById('fPh').value=s.phone||'';
+  document.getElementById('fEm').value=s.email||'';
   document.getElementById('fRec').checked=false;
   document.getElementById('rOpts').style.display='none';
   document.getElementById('addMo').classList.add('open');
@@ -555,6 +623,13 @@ function oEdit(key){
 
 function cAdd(){document.getElementById('addMo').classList.remove('open');aSlot=null;aEk=null;}
 
+function fExtra(){return {
+  location:document.getElementById('fLoc').value.trim(),
+  focus:document.getElementById('fFoc').value.trim(),
+  phone:document.getElementById('fPh').value.trim(),
+  email:document.getElementById('fEm').value.trim()
+};}
+
 function svSess(){
   var name=document.getElementById('fN').value.trim();if(!name){document.getElementById('fN').focus();return;}
   var type=document.getElementById('fType').value||'pt';
@@ -562,11 +637,12 @@ function svSess(){
   var dur=getDuration();
   var rate=parseFloat(document.getElementById('fR').value)||0;
   var notes=document.getElementById('fNo').value.trim();
+  var xt=fExtra();
   var rec=document.getElementById('fRec').checked;
   var date=aSlot.date;
   if(aEk){
     var old=sess[aEk];delete sess[aEk];
-    sess[sk(date,sm)]={name:name,type:type,date:date,startMins:sm,duration:dur,rate:rate,notes:notes,recurring:old.recurring,recurringId:old.recurringId};
+    sess[sk(date,sm)]=Object.assign({name:name,type:type,date:date,startMins:sm,duration:dur,rate:rate,notes:notes,recurring:old.recurring,recurringId:old.recurringId,gcalId:old.gcalId},xt);
     sd();render();cAdd();toast('Session updated');return;
   }
   if(rec){
@@ -576,7 +652,7 @@ function svSess(){
     for(var w=0;w<wks;w+=intv){
       var dt=new Date(date+'T12:00:00');dt.setDate(dt.getDate()+w*7);
       var d2=iso(dt);var k=sk(d2,sm);
-      if(!sess[k]){sess[k]={name:name,type:type,date:d2,startMins:sm,duration:dur,rate:rate,notes:notes,recurring:true,recurringId:rid};cnt++;}
+      if(!sess[k]){sess[k]=Object.assign({name:name,type:type,date:d2,startMins:sm,duration:dur,rate:rate,notes:notes,recurring:true,recurringId:rid},xt);cnt++;}
     }
     sd();render();cAdd();toast(cnt+' recurring sessions added');
     if(gConn&&gTok){Object.keys(sess).forEach(function(k){if(sess[k].recurringId===rid)pgCal(sess[k],true);});}
@@ -607,7 +683,7 @@ function svSess(){
         }
         var dayKey=sk(dayStr,daySm);
         if(!sess[dayKey]){
-          sess[dayKey]={name:name,type:type,date:dayStr,startMins:daySm,duration:dayDur,rate:rate,notes:notes,recurring:false,recurringId:rid2};
+          sess[dayKey]=Object.assign({name:name,type:type,date:dayStr,startMins:daySm,duration:dayDur,rate:rate,notes:notes,recurring:false,recurringId:rid2},xt);
           cnt2++;
         }
       }
@@ -615,7 +691,7 @@ function svSess(){
       toast(cnt2>1?name+' blocked '+cnt2+' days':name+' blocked');
     } else {
       var newKey=sk(date,sm);
-      sess[newKey]={name:name,type:type,date:date,startMins:sm,duration:dur,rate:rate,notes:notes,recurring:false};
+      sess[newKey]=Object.assign({name:name,type:type,date:date,startMins:sm,duration:dur,rate:rate,notes:notes,recurring:false},xt);
       sd();render();cAdd();toast('Session booked');
       if(gConn&&gTok) pgCal(sess[newKey],true);
     }
@@ -632,6 +708,10 @@ function oView(key){
     vf('Session Earnings',earned?'\u00a3'+earned:'\u2014','')+
     vf('Duration',(s.duration||60)+' mins','')+
     vf('Type',(s.type==='crossfit'?'Crossfit':s.type==='other'?'Other':'PT Session')+(s.recurring?' (Recurring)':' (One-off)'),'')+
+    (s.location?vf('Location',s.location,''):'')+
+    (s.focus?vf('Session Focus',s.focus,''):'')+
+    (s.phone?'<div class="vf"><div class="vfl">Phone</div><div class="vfv"><a href="tel:'+s.phone+'" style="color:var(--lime);text-decoration:none">'+s.phone+'</a></div></div>':'')+
+    (s.email?'<div class="vf"><div class="vfl">Email</div><div class="vfv"><a href="mailto:'+s.email+'" style="color:var(--lime);text-decoration:none">'+s.email+'</a></div></div>':'')+
     (s.notes?vf('Notes',s.notes,''):'')+
     '<button class="gb" id="gpBtn"'+(gConn?'':' disabled')+'>'+gSVG()+' Add to Google Calendar</button>';
   document.getElementById('gpBtn').onclick=function(){pgCal(s);};
@@ -715,7 +795,7 @@ function oExtend(key){
   for(var w=intervalWeeks;w<=more;w+=intervalWeeks){
     var dt=new Date(lastDt);dt.setDate(dt.getDate()+w*7);
     var d2=iso(dt),k2=sk(d2,s.startMins);
-    if(!sess[k2]){sess[k2]={name:s.name,type:s.type,date:d2,startMins:s.startMins,duration:s.duration,rate:s.rate,notes:s.notes,recurring:true,recurringId:rid};cnt++;}
+    if(!sess[k2]){sess[k2]={name:s.name,type:s.type,date:d2,startMins:s.startMins,duration:s.duration,rate:s.rate,notes:s.notes,location:s.location,focus:s.focus,phone:s.phone,email:s.email,recurring:true,recurringId:rid};cnt++;}
   }
   if(!cnt){toast('No new sessions added');return;}
   sd();render();cView();toast(cnt+' more session'+(cnt>1?'s':'')+' added');
@@ -725,30 +805,30 @@ function vf(l,v,c){return '<div class="vf"><div class="vfl">'+l+'</div><div clas
 function gSVG(){return '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" style="flex-shrink:0"><rect x="3" y="4" width="18" height="17" rx="2" stroke="#4285f4" stroke-width="1.8"/><path d="M16 2v4M8 2v4M3 9h18" stroke="#4285f4" stroke-width="1.8"/></svg>';}
 
 function rAna(){
-  var wks=aPer===0?999:aPer;
-  var cut=aPer===0?new Date('2000-01-01'):aD(new Date(),-wks*7);
+  var now=new Date();
+  var cut=aPer===0?new Date('2000-01-01'):new Date(now.getFullYear(),now.getMonth()-(aPer-1),1);
   var tod=new Date();tod.setHours(23,59,59,0);
-  var wm={};
+  var mm={};
   Object.keys(sess).forEach(function(k){
     var s=sess[k];var d=new Date(s.date+'T12:00:00');
     if(d>tod||d<cut)return;
-    var mon=iso(gMon(d));
-    if(!wm[mon])wm[mon]={earn:0,count:0};
-    wm[mon].earn+=ef(s);wm[mon].count++;
+    var mon=s.date.slice(0,7);
+    if(!mm[mon])mm[mon]={earn:0,count:0};
+    mm[mon].earn+=ef(s);mm[mon].count++;
   });
-  var wks2=Object.keys(wm).sort(),tE=0,tS=0;
-  wks2.forEach(function(k){tE+=wm[k].earn;tS+=wm[k].count;});
-  var aE=wks2.length?Math.round(tE/wks2.length):0;
-  var regE=0,regS=0;
-  Object.keys(sess).forEach(function(k){var s=sess[k];var d=new Date(s.date+'T12:00:00');if(d>tod||d<cut)return;if(s.rate&&s.rate>=20&&s.rate<=70&&s.type!=='crossfit'){regE+=ef(s);regS++;}});
-  var aS=wks2.length?(tS/wks2.length).toFixed(1):0;
+  var months=Object.keys(mm).sort(),tE=0,tS=0;
+  months.forEach(function(k){tE+=mm[k].earn;tS+=mm[k].count;});
+  var aE=months.length?Math.round(tE/months.length):0;
+  var aS=months.length?(tS/months.length).toFixed(1):0;
+  var per=aPer===0?'All time':'Last '+aPer+' months';
   document.getElementById('aStats').innerHTML=
-    sc('Total Earnings','&pound;'+tE.toLocaleString(),aPer===0?'All time':'Last '+aPer+' weeks','var(--lime)')+
-    sc('Total Sessions',tS,aPer===0?'All time':'Last '+aPer+' weeks','var(--text)')+
-    sc('Avg Weekly Earnings','&pound;'+aE,'Per week',aE>0?'var(--lime)':'var(--muted)')+
-    sc('Avg Sessions/Week',aS,'Per week','var(--text)');
-  dChart('echart',wks2,wks2.map(function(k){return wm[k].earn;}),'£','#C6F135');
-  dChart('schart',wks2,wks2.map(function(k){return wm[k].count;}),'','#4090d0');
+    sc('Total Earnings','&pound;'+tE.toLocaleString(),per,'var(--lime)')+
+    sc('Total Sessions',tS,per,'var(--text)')+
+    sc('Avg Monthly Earnings','&pound;'+aE,'Per month',aE>0?'var(--lime)':'var(--muted)')+
+    sc('Avg Sessions/Month',aS,'Per month','var(--text)');
+  var disp=months.map(function(k){var d=new Date(k+'-01T12:00:00');return MS[d.getMonth()]+(months.length>8?' '+(''+d.getFullYear()).slice(2):'');});
+  dChart('echart',disp,months.map(function(k){return mm[k].earn;}),'£','#C6F135');
+  dChart('schart',disp,months.map(function(k){return mm[k].count;}),'','#4090d0');
   rMissed();
   rUpcoming();
 }
@@ -775,7 +855,7 @@ function dChart(id,labels,data,pre,col){
     ctx.strokeStyle=col;ctx.lineWidth=1;ctx.strokeRect(x,y,bW,bH);
     if(i%Math.ceil(data.length/8)===0||data.length<=8){
       ctx.fillStyle='#555';ctx.font='9px DM Sans';ctx.textAlign='center';
-      ctx.fillText(labels[i]?labels[i].slice(5):'',x+bW/2,H-p.b+14);
+      ctx.fillText(labels[i]||'',x+bW/2,H-p.b+14);
     }
     if(val>0){ctx.fillStyle=col;ctx.font='bold 9px DM Sans';ctx.textAlign='center';ctx.fillText(pre+val,x+bW/2,y-3);}
   });
@@ -884,11 +964,13 @@ function rMissed(){
 }
 
 function rUpcoming(){
-  var now=new Date();now.setHours(0,0,0,0);
+  var nowTs=new Date();
+  // Always show the whole current month onward (incl. sessions earlier this month that have passed)
+  var monthStart=new Date(nowTs.getFullYear(),nowTs.getMonth(),1);
   var mm={};
   Object.keys(sess).sort().forEach(function(k){
     var s=sess[k];var d=new Date(s.date+'T12:00:00');
-    if(d<now)return;
+    if(d<monthStart)return;
     var mk2=s.date.slice(0,7);
     if(!mm[mk2])mm[mk2]=[];
     mm[mk2].push(s);
@@ -909,7 +991,9 @@ function rUpcoming(){
     mm[mk2].sort(function(a,b){return a.date>b.date?1:a.date<b.date?-1:a.startMins-b.startMins;}).forEach(function(s){
       var e=ef(s);mT+=e;var dt=new Date(s.date+'T12:00:00');
       var isPrem=s.rate&&s.rate>70;
-      rows+='<div class="ur"><div><div class="ucl">'+s.name+(isPrem?' <span style="font-size:9px;color:#f0a020;letter-spacing:1px">PREMIUM</span>':'')+'</div><div class="um2">'+DS[dt.getDay()]+' '+dt.getDate()+'&nbsp;&middot;&nbsp;'+m2t(s.startMins)+(s.recurring?'&nbsp;&middot;&nbsp;REC':'')+'</div></div><div class="ue" style="color:'+(isPrem?'#f0a020':'var(--lime)')+'">'+(e?'&pound;'+e:'&mdash;')+'</div></div>';
+      var sStart=new Date(s.date+'T'+p2(Math.floor(s.startMins/60))+':'+p2(s.startMins%60)+':00');
+      var gone=sStart<nowTs;
+      rows+='<div class="ur"'+(gone?' style="opacity:.4"':'')+'><div><div class="ucl">'+s.name+(gone?' <span style="font-size:9px;color:var(--muted);letter-spacing:1px">DONE</span>':'')+(isPrem?' <span style="font-size:9px;color:#f0a020;letter-spacing:1px">PREMIUM</span>':'')+'</div><div class="um2">'+DS[dt.getDay()]+' '+dt.getDate()+'&nbsp;&middot;&nbsp;'+m2t(s.startMins)+(s.recurring?'&nbsp;&middot;&nbsp;REC':'')+'</div></div><div class="ue" style="color:'+(gone?'var(--muted)':(isPrem?'#f0a020':'var(--lime)'))+'">'+(e?'&pound;'+e:'&mdash;')+'</div></div>';
     });
     grd+='<div class="um"><div class="umn">'+MS[d.getMonth()].toUpperCase()+' '+d.getFullYear()+'</div>'+rows+'<div class="umt"><div class="umtl">Month Total</div><div class="umtv">&pound;'+mT.toLocaleString()+'</div></div></div>';
   });
@@ -936,6 +1020,55 @@ function rUpcoming(){
   document.getElementById('utabs').onclick=function(e){var b=e.target.closest('.utab');if(!b)return;uView=b.getAttribute('data-uv');rUpcoming();};
 }
 
+function esc(t){return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+function rSummary(){
+  var y=sumMonth.getFullYear(),mo=sumMonth.getMonth();
+  var monKey=y+'-'+p2(mo+1);
+  document.getElementById('sumLbl').innerHTML=MS[mo].toUpperCase()+' <span style="color:var(--lime)">'+y+'</span>';
+  var daysInMonth=new Date(y,mo+1,0).getDate();
+  var firstDow=new Date(y,mo,1).getDay();
+  var lead=(firstDow===0?6:firstDow-1);
+  var byDay={},monthEarn=0,monthCount=0,cfCount=0;
+  Object.keys(sess).forEach(function(k){
+    var s=sess[k];
+    if(s.date.slice(0,7)!==monKey)return;
+    var day=parseInt(s.date.slice(8,10),10);
+    if(!byDay[day])byDay[day]=[];
+    byDay[day].push({k:k,s:s});
+    monthEarn+=ef(s);monthCount++;
+    if(s.type==='crossfit')cfCount++;
+  });
+  document.getElementById('sumStats').innerHTML=
+    pl('Month Earnings','&pound;'+monthEarn.toLocaleString(),'var(--lime)')+
+    pl('Total Sessions',monthCount,'var(--text)')+
+    pl('PT Sessions',monthCount-cfCount,'var(--text)')+
+    pl('Crossfit',cfCount,'#f0a020');
+  var g=document.getElementById('sumGrid');g.innerHTML='';
+  for(var i=0;i<lead;i++){g.appendChild(mk('div','sumc empty'));}
+  var todayIso=iso(new Date());
+  for(var dnum=1;dnum<=daysInMonth;dnum++){
+    var ds=monKey+'-'+p2(dnum);
+    var dow=new Date(y,mo,dnum).getDay();
+    var wknd=(dow===0||dow===6);
+    var past=ds<todayIso;
+    var cls='sumc'+(ds===todayIso?' today':'')+(past?' pastday':'')+(wknd&&!past?' wknd':'');
+    var cell=mk('div',cls);
+    var html='<div class="sumdate">'+dnum+'</div>';
+    var list=byDay[dnum]||[];
+    list.sort(function(a,b){return a.s.startMins-b.s.startMins;});
+    var de=0;
+    list.forEach(function(it){
+      var s=it.s;de+=ef(s);
+      var col=s.type==='crossfit'?'#f0a020':s.type==='other'?'#b060b0':(s.recurring?'#1090c0':'var(--booked-accent)');
+      html+='<div class="sumev" data-key="'+it.k+'" style="color:'+col+'">'+esc(m2t(s.startMins)+' '+s.name)+'</div>';
+    });
+    if(de>0)html+='<div class="sumtot">&pound;'+de+'</div>';
+    cell.innerHTML=html;
+    g.appendChild(cell);
+  }
+}
+
 function lGSI(){return new Promise(function(res,rej){if(typeof google!=='undefined'&&google.accounts){res();return;}var s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.onload=res;s.onerror=rej;document.head.appendChild(s);});}
 
 // Silent token refresh - only used in background, NEVER on user click
@@ -943,7 +1076,7 @@ function refreshToken(callback){
   lGSI().then(function(){
     var client=google.accounts.oauth2.initTokenClient({
       client_id:GCI,
-      scope:'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly',
+      scope:'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
       prompt:'none', // SILENT only - no popup
       callback:function(resp){
         if(resp.error){
@@ -953,6 +1086,7 @@ function refreshToken(callback){
           return;
         }
         gTok=resp.access_token; gConn=true;
+        fbSignIn(gTok);
         console.log('Google token refreshed silently');
         if(callback) callback();
       }
@@ -986,10 +1120,11 @@ document.getElementById('gBtn').onclick=function(){
   lGSI().then(function(){
     var cl=google.accounts.oauth2.initTokenClient({
       client_id:GCI,
-      scope:'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly',
+      scope:'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
       callback:function(resp){
         if(resp.error){btn.textContent='Connect Google Cal';toast('Auth failed');return;}
         gTok=resp.access_token;gConn=true;
+        fbSignIn(gTok);
         btn.textContent='\u2713 Connected';btn.classList.add('conn');
         toast('Google Calendar connected!');
         onConnected();
@@ -1038,7 +1173,9 @@ function pgCal(s,silent){
   if(!gConn||!gTok){if(!silent)toast('Connect Google Calendar first');return;}
   var start=new Date(s.date+'T'+p2(Math.floor(s.startMins/60))+':'+p2(s.startMins%60)+':00');
   var end=new Date(start.getTime()+(s.duration||60)*60000);
-  var ev={summary:'PT: '+s.name,description:(s.rate?'Rate: \u00a3'+s.rate+'/hr':'')+(s.notes?'\nNotes: '+s.notes:''),start:{dateTime:start.toISOString(),timeZone:'Europe/London'},end:{dateTime:end.toISOString(),timeZone:'Europe/London'},colorId:'10'};
+  var desc=(s.rate?'Rate: \u00a3'+s.rate+'/hr':'')+(s.focus?'\nFocus: '+s.focus:'')+(s.phone?'\nPhone: '+s.phone:'')+(s.email?'\nEmail: '+s.email:'')+(s.notes?'\nNotes: '+s.notes:'');
+  var ev={summary:'PT: '+s.name,description:desc,start:{dateTime:start.toISOString(),timeZone:'Europe/London'},end:{dateTime:end.toISOString(),timeZone:'Europe/London'},colorId:'10'};
+  if(s.location)ev.location=s.location;
   var calTarget=(s.type==='crossfit'||s.type==='other')&&selCal2?selCal2:selCal;
   gFetch('https://www.googleapis.com/calendar/v3/calendars/'+encodeURIComponent(calTarget)+'/events',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(ev)})
   .then(function(r){return r.ok?r.json():null;})
@@ -1067,8 +1204,9 @@ function deleteFromGCal(gcalId,calId){
 }
 
 function expCSV(){
-  var rows=['Date,Day,Client,Start Time,Duration (mins),Rate/hr,Earnings,Notes,Recurring'];
-  Object.keys(sess).sort().forEach(function(k){var s=sess[k];var d=new Date(s.date+'T12:00:00');rows.push([s.date,DF[d.getDay()],'"'+s.name+'"',m2t(s.startMins),s.duration||60,s.rate||0,ef(s),'"'+(s.notes||'')+'"',s.recurring?'Yes':'No'].join(','));});
+  var rows=['Date,Day,Client,Start Time,Duration (mins),Rate/hr,Earnings,Type,Location,Focus,Phone,Email,Notes,Recurring'];
+  function q(v){return '"'+String(v||'').replace(/"/g,'""')+'"';}
+  Object.keys(sess).sort().forEach(function(k){var s=sess[k];var d=new Date(s.date+'T12:00:00');rows.push([s.date,DF[d.getDay()],q(s.name),m2t(s.startMins),s.duration||60,s.rate||0,ef(s),s.type||'pt',q(s.location),q(s.focus),q(s.phone),q(s.email),q(s.notes),s.recurring?'Yes':'No'].join(','));});
   var blob=new Blob([rows.join('\n')],{type:'text/csv'});
   var url=URL.createObjectURL(blob);
   var a=document.createElement('a');a.href=url;a.download='coaching-by-craig.csv';a.click();URL.revokeObjectURL(url);toast('CSV exported');
@@ -1103,15 +1241,21 @@ document.getElementById('addMo').onclick=function(e){if(e.target===this)cAdd();}
 document.getElementById('viewMo').onclick=function(e){if(e.target===this)cView();};
 document.onkeydown=function(e){if(e.key==='Escape'){cAdd();cView();}if(e.key==='Enter'&&document.getElementById('addMo').classList.contains('open'))svSess();};
 
-document.getElementById('tCal').onclick=function(){
-  document.getElementById('tCal').classList.add('active');document.getElementById('tAna').classList.remove('active');
-  document.getElementById('pCal').classList.add('active');document.getElementById('pAna').classList.remove('active');
-};
-document.getElementById('tAna').onclick=function(){
-  document.getElementById('tAna').classList.add('active');document.getElementById('tCal').classList.remove('active');
-  document.getElementById('pAna').classList.add('active');document.getElementById('pCal').classList.remove('active');
-  rAna();
-};
+function showTab(which){
+  ['Cal','Sum','Ana'].forEach(function(t){
+    document.getElementById('t'+t).classList.toggle('active',t===which);
+    document.getElementById('p'+t).classList.toggle('active',t===which);
+  });
+  if(which==='Ana')rAna();
+  if(which==='Sum')rSummary();
+}
+document.getElementById('tCal').onclick=function(){showTab('Cal');};
+document.getElementById('tSum').onclick=function(){showTab('Sum');};
+document.getElementById('tAna').onclick=function(){showTab('Ana');};
+document.getElementById('sPrev').onclick=function(){sumMonth.setMonth(sumMonth.getMonth()-1);rSummary();};
+document.getElementById('sNext').onclick=function(){sumMonth.setMonth(sumMonth.getMonth()+1);rSummary();};
+document.getElementById('sToday').onclick=function(){var d=new Date();sumMonth=new Date(d.getFullYear(),d.getMonth(),1);rSummary();};
+document.getElementById('sumGrid').onclick=function(e){var ev=e.target.closest('.sumev');if(!ev)return;var k=ev.getAttribute('data-key');if(k&&sess[k])oView(k);};
 document.getElementById('ptg').onclick=function(e){
   var b=e.target.closest('.ptb');if(!b)return;
   document.querySelectorAll('.ptb').forEach(function(x){x.classList.remove('active');});
@@ -1145,11 +1289,12 @@ function tryAutoConnect(){
     if(typeof google==='undefined'||!google.accounts){showBanner(true);return;}
     var client=google.accounts.oauth2.initTokenClient({
       client_id:GCI,
-      scope:'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly',
+      scope:'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
       prompt:'none',
       callback:function(resp){
         if(resp.error){showBanner(true);return;}
         gTok=resp.access_token; gConn=true;
+        fbSignIn(gTok);
         onConnected();
       }
     });
