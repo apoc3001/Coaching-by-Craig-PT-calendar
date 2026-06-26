@@ -360,33 +360,37 @@ var firebaseConfig={
   messagingSenderId:"4708848171",
   appId:"1:4708848171:web:234be6db656cbe3043106e"
 };
-var fbDb=null,fbReady=false,fbSuppressNextWrite=false,fbUser=null,fbListening=false;
+var fbDb=null,fbReady=false,fbSuppressNextWrite=false,fbUser=null,fbUnsub=null;
 function fbInit(){
   firebase.initializeApp(firebaseConfig);
   fbDb=firebase.firestore();
   // Auth is tied to your Google account (same one you connect for Calendar).
-  // The Firestore listener only starts once you're signed in.
   firebase.auth().onAuthStateChanged(function(user){
     fbUser=user||null;
-    if(user&&!fbListening){
-      fbListening=true;
-      fbDb.collection('cbc').doc('sessions').onSnapshot(function(doc){
-        if(fbSuppressNextWrite){fbSuppressNextWrite=false;return;}
-        if(doc.exists){
-          sess=doc.data().data||{};
-          localStorage.setItem('cbc6',JSON.stringify(sess));
-          render();
-          if(document.getElementById('pAna').classList.contains('active'))rAna();
-          if(document.getElementById('pSum').classList.contains('active'))rSummary();
-        } else if(!fbReady&&Object.keys(sess).length){
-          // First time signed in and the cloud doc doesn't exist yet -
-          // migrate this device's existing local sessions up.
-          sd();
-          toast('Existing sessions migrated to cloud');
-        }
-        fbReady=true;
-      },function(e){console.log('Firestore listen error:',e);toast('Cloud sync unavailable - check sign-in');});
-    }
+    // Tear down any previous listener (e.g. when upgrading anonymous -> Google).
+    if(fbUnsub){fbUnsub();fbUnsub=null;}
+    if(!user) return;
+    fbUnsub=fbDb.collection('cbc').doc('sessions').onSnapshot(function(doc){
+      if(fbSuppressNextWrite){fbSuppressNextWrite=false;return;}
+      if(doc.exists){
+        sess=doc.data().data||{};
+        localStorage.setItem('cbc6',JSON.stringify(sess));
+        render();
+        if(document.getElementById('pAna').classList.contains('active'))rAna();
+        if(document.getElementById('pSum').classList.contains('active'))rSummary();
+      } else if(!fbReady&&Object.keys(sess).length){
+        // First time signed in and the cloud doc doesn't exist yet - migrate local up.
+        sd();
+        toast('Existing sessions migrated to cloud');
+      }
+      fbReady=true;
+    },function(e){
+      console.log('Firestore listen error:',e);
+      // An anonymous session left over from the old version can't read the locked data -
+      // that's expected; prompt a Google connect to upgrade it.
+      if(user.isAnonymous){showBanner(true);}
+      else toast('Cloud sync blocked - check sign-in');
+    });
   });
 }
 fbInit();
@@ -394,10 +398,14 @@ fbInit();
 // Sign Firebase in using the Google access token we already get for Calendar -
 // no separate login needed. Persisted by Firebase across reloads.
 function fbSignIn(accessToken){
-  if(!accessToken||fbUser||!firebase||!firebase.auth) return;
+  if(!accessToken||!firebase||!firebase.auth) return;
+  // If already signed in with a real (Google) account, nothing to do.
+  if(fbUser&&!fbUser.isAnonymous) return;
   try{
     var cred=firebase.auth.GoogleAuthProvider.credential(null,accessToken);
-    firebase.auth().signInWithCredential(cred).catch(function(e){console.log('Firebase sign-in error:',e);});
+    firebase.auth().signInWithCredential(cred).then(function(){
+      console.log('Firebase signed in via Google');
+    }).catch(function(e){console.log('Firebase sign-in error:',e);toast('Cloud sign-in failed: '+(e.code||e.message||'error'));});
   }catch(e){console.log('fbSignIn error:',e);}
 }
 
