@@ -346,6 +346,17 @@ header{padding-top:env(safe-area-inset-top);}
     <div class="ma" id="viewActs"></div>
   </div>
 </div>
+<!-- CLOUD SIGN-IN MODAL -->
+<div class="mo" id="authMo">
+  <div class="md" style="width:380px">
+    <div class="mt">CLOUD SIGN-IN</div>
+    <div class="ms">Sign in once on this device to sync your calendar everywhere.</div>
+    <div class="fr"><label class="fl" for="aEmail">Email</label><input class="fi" id="aEmail" type="email" autocomplete="username" autocapitalize="off"></div>
+    <div class="fr"><label class="fl" for="aPass">Password</label><input class="fi" id="aPass" type="password" autocomplete="current-password"></div>
+    <div id="authErr" style="color:var(--danger);font-size:12px;margin-bottom:10px;display:none"></div>
+    <div class="ma"><button class="bp" id="authBtn">SIGN IN</button><button class="bs" id="authLater">Later</button></div>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -364,12 +375,14 @@ var fbDb=null,fbReady=false,fbSuppressNextWrite=false,fbUser=null,fbUnsub=null;
 function fbInit(){
   firebase.initializeApp(firebaseConfig);
   fbDb=firebase.firestore();
-  // Auth is tied to your Google account (same one you connect for Calendar).
+  // Cloud data uses its own Email/Password login (entered once per device, then remembered).
   firebase.auth().onAuthStateChanged(function(user){
+    // Clear any leftover anonymous session from an older version.
+    if(user&&user.isAnonymous){firebase.auth().signOut();return;}
     fbUser=user||null;
-    // Tear down any previous listener (e.g. when upgrading anonymous -> Google).
     if(fbUnsub){fbUnsub();fbUnsub=null;}
-    if(!user) return;
+    if(!user){showAuthModal(true);return;}
+    showAuthModal(false);
     fbUnsub=fbDb.collection('cbc').doc('sessions').onSnapshot(function(doc){
       if(fbSuppressNextWrite){fbSuppressNextWrite=false;return;}
       if(doc.exists){
@@ -384,29 +397,24 @@ function fbInit(){
         toast('Existing sessions migrated to cloud');
       }
       fbReady=true;
-    },function(e){
-      console.log('Firestore listen error:',e);
-      // An anonymous session left over from the old version can't read the locked data -
-      // that's expected; prompt a Google connect to upgrade it.
-      if(user.isAnonymous){showBanner(true);}
-      else toast('Cloud sync blocked - check sign-in');
-    });
+    },function(e){console.log('Firestore listen error:',e);toast('Cloud sync blocked - check sign-in');});
   });
 }
 fbInit();
 
-// Sign Firebase in using the Google access token we already get for Calendar -
-// no separate login needed. Persisted by Firebase across reloads.
-function fbSignIn(accessToken){
-  if(!accessToken||!firebase||!firebase.auth) return;
-  // If already signed in with a real (Google) account, nothing to do.
-  if(fbUser&&!fbUser.isAnonymous) return;
-  try{
-    var cred=firebase.auth.GoogleAuthProvider.credential(null,accessToken);
-    firebase.auth().signInWithCredential(cred).then(function(){
-      console.log('Firebase signed in via Google');
-    }).catch(function(e){console.log('Firebase sign-in error:',e);toast('Cloud sign-in failed: '+(e.code||e.message||'error'));});
-  }catch(e){console.log('fbSignIn error:',e);}
+function fbAuthErr(e){
+  var c=e&&e.code||'';
+  if(c==='auth/wrong-password'||c==='auth/invalid-credential') return 'Wrong email or password.';
+  if(c==='auth/user-not-found') return 'No account found — create it in Firebase first.';
+  if(c==='auth/invalid-email') return 'That email doesn’t look right.';
+  if(c==='auth/too-many-requests') return 'Too many attempts — wait a moment and retry.';
+  if(c==='auth/network-request-failed') return 'No connection — check internet.';
+  return e&&e.message||'Sign-in failed.';
+}
+function showAuthModal(show){
+  var m=document.getElementById('authMo');if(!m)return;
+  if(show){var em=document.getElementById('aEmail');if(em&&!em.value)em.value='apoc3001@gmail.com';m.classList.add('open');}
+  else m.classList.remove('open');
 }
 
 var GCI='25101030281-stnunhc7qks2fnfjqj3nnf4afilvlvee.apps.googleusercontent.com';
@@ -1084,7 +1092,7 @@ function refreshToken(callback){
   lGSI().then(function(){
     var client=google.accounts.oauth2.initTokenClient({
       client_id:GCI,
-      scope:'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
+      scope:'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly',
       prompt:'none', // SILENT only - no popup
       callback:function(resp){
         if(resp.error){
@@ -1094,7 +1102,6 @@ function refreshToken(callback){
           return;
         }
         gTok=resp.access_token; gConn=true;
-        fbSignIn(gTok);
         console.log('Google token refreshed silently');
         if(callback) callback();
       }
@@ -1128,11 +1135,10 @@ document.getElementById('gBtn').onclick=function(){
   lGSI().then(function(){
     var cl=google.accounts.oauth2.initTokenClient({
       client_id:GCI,
-      scope:'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
+      scope:'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly',
       callback:function(resp){
         if(resp.error){btn.textContent='Connect Google Cal';toast('Auth failed');return;}
         gTok=resp.access_token;gConn=true;
-        fbSignIn(gTok);
         btn.textContent='\u2713 Connected';btn.classList.add('conn');
         toast('Google Calendar connected!');
         onConnected();
@@ -1238,6 +1244,18 @@ document.getElementById('fST').addEventListener('change', function(){
   }
 });
 document.getElementById('expBtn').onclick=expCSV;
+document.getElementById('authBtn').onclick=function(){
+  var em=document.getElementById('aEmail').value.trim();
+  var pw=document.getElementById('aPass').value;
+  var er=document.getElementById('authErr');er.style.display='none';
+  if(!em||!pw){er.textContent='Enter your email and password.';er.style.display='block';return;}
+  var btn=this;btn.textContent='Signing in...';
+  firebase.auth().signInWithEmailAndPassword(em,pw).then(function(){
+    btn.textContent='SIGN IN';document.getElementById('aPass').value='';toast('Signed in to cloud');
+  }).catch(function(e){btn.textContent='SIGN IN';er.textContent=fbAuthErr(e);er.style.display='block';});
+};
+document.getElementById('authLater').onclick=function(){showAuthModal(false);toast('Working offline on this device');};
+document.getElementById('aPass').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('authBtn').click();});
 document.getElementById('reconnectBtn').onclick=function(){
   document.getElementById('gBtn').classList.remove('conn');
   document.getElementById('gBtn').textContent='Connect Google Cal';
@@ -1297,12 +1315,11 @@ function tryAutoConnect(){
     if(typeof google==='undefined'||!google.accounts){showBanner(true);return;}
     var client=google.accounts.oauth2.initTokenClient({
       client_id:GCI,
-      scope:'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
+      scope:'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly',
       prompt:'none',
       callback:function(resp){
         if(resp.error){showBanner(true);return;}
         gTok=resp.access_token; gConn=true;
-        fbSignIn(gTok);
         onConnected();
       }
     });
