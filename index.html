@@ -68,6 +68,13 @@ header{background:var(--dark);border-bottom:1px solid var(--border);padding:0 20
 .sumev:hover{text-decoration:underline;}
 .sumtot{font-family:Bebas Neue,sans-serif;font-size:13px;color:var(--lime);margin-top:auto;padding-top:3px;border-top:1px solid var(--border);}
 @media(max-width:600px){.sumwrap{padding:0 8px 80px;}.sumg{min-width:680px;gap:3px;}.sumc{min-height:88px;padding:4px;}}
+/* Clients view */
+.clic{background:var(--card);border:1px solid var(--border);padding:14px 16px;margin-bottom:10px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:12px;transition:border-color .15s;}
+.clic:hover{border-color:var(--lime);}
+.clin{font-family:Bebas Neue,sans-serif;font-size:18px;letter-spacing:1px;}
+.clim{font-size:11px;color:var(--muted);margin-top:2px;}
+.clie{font-family:Bebas Neue,sans-serif;font-size:20px;color:var(--lime);}
+.cliflag{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#f0a020;margin-top:2px;display:block;}
 .cg{display:grid;grid-template-columns:52px repeat(7,1fr);min-width:820px;border-top:1px solid var(--border);border-left:1px solid var(--border);}
 .tc{background:var(--dark);border-right:1px solid var(--border);border-bottom:1px solid var(--border);}
 .dh{background:var(--dark);border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:8px 4px;text-align:center;}
@@ -233,6 +240,7 @@ header{padding-top:env(safe-area-inset-top);}
 <div class="tabs">
   <div class="tab active" id="tCal">Calendar</div>
   <div class="tab" id="tSum">Month</div>
+  <div class="tab" id="tCli">Clients</div>
   <div class="tab" id="tAna">Analytics</div>
 </div>
 <div id="reconnectBanner" style="display:none;background:#1a1000;border-bottom:1px solid #f0a020;padding:8px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px">
@@ -275,6 +283,25 @@ header{padding-top:env(safe-area-inset-top);}
     <div class="ag" id="aStats"></div>
     <div class="cc"><div class="ct">MONTHLY EARNINGS</div><div class="ca"><canvas id="echart"></canvas></div></div>
     <div class="cc"><div class="ct">SESSIONS PER MONTH</div><div class="ca"><canvas id="schart"></canvas></div></div>
+  </div>
+</div>
+<!-- CLIENTS PAGE -->
+<div class="page" id="pCli">
+  <div class="aw">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+      <div class="ah">CLIENTS</div>
+      <input class="fi" id="cliSearch" placeholder="Search clients" autocomplete="off" style="max-width:220px">
+    </div>
+    <div id="cliList"></div>
+  </div>
+</div>
+<!-- CLIENT DETAIL MODAL -->
+<div class="mo" id="cliMo">
+  <div class="md">
+    <button class="mc" id="cliX">×</button>
+    <div class="mt" id="cliTit"></div>
+    <div class="ms" id="cliSub"></div>
+    <div id="cliBody"></div>
   </div>
 </div>
 <!-- MONTH SUMMARY PAGE -->
@@ -391,6 +418,7 @@ function fbInit(){
         render();
         if(document.getElementById('pAna').classList.contains('active'))rAna();
         if(document.getElementById('pSum').classList.contains('active'))rSummary();
+        if(document.getElementById('pCli').classList.contains('active'))rClients();
       } else if(!fbReady&&Object.keys(sess).length){
         // First time signed in and the cloud doc doesn't exist yet - migrate local up.
         sd();
@@ -1085,6 +1113,56 @@ function rSummary(){
   }
 }
 
+var cliFilter='';
+function rClients(){
+  var nowIso=iso(new Date());
+  var nowD=new Date();nowD.setHours(0,0,0,0);
+  var map={};
+  Object.keys(sess).forEach(function(k){
+    var s=sess[k];
+    if((s.type||'pt')!=='pt')return; // only PT clients (skip Crossfit/Other)
+    var name=s.name;if(!name)return;
+    if(!map[name])map[name]={name:name,count:0,earn:0,last:null,next:null,phone:'',email:'',location:'',focus:''};
+    var c=map[name];c.count++;c.earn+=ef(s);
+    if(s.date<=nowIso){if(!c.last||s.date>c.last)c.last=s.date;}
+    if(s.date>=nowIso){if(!c.next||s.date<c.next)c.next=s.date;}
+    if(s.phone)c.phone=s.phone;if(s.email)c.email=s.email;
+    if(s.location)c.location=s.location;if(s.focus)c.focus=s.focus;
+  });
+  var list=Object.keys(map).map(function(n){return map[n];});
+  if(cliFilter){var f=cliFilter.toLowerCase();list=list.filter(function(c){return c.name.toLowerCase().indexOf(f)!==-1;});}
+  list.sort(function(a,b){if(!!a.next!==!!b.next)return a.next?-1:1;return b.count-a.count;});
+  var el=document.getElementById('cliList');
+  if(!list.length){el.innerHTML='<div style="color:var(--muted);font-size:13px">'+(cliFilter?'No matching clients.':'No clients yet.')+'</div>';return;}
+  el.innerHTML=list.map(function(c){
+    var sub='';
+    if(c.next){sub='<span class="clim">Next: '+fd(c.next)+'</span>';}
+    else if(c.last){
+      var days=Math.round((nowD-new Date(c.last+'T12:00:00'))/86400000);
+      sub=days>21?'<span class="cliflag">No upcoming · last seen '+days+'d ago</span>':'<span class="clim">Last seen '+fd(c.last)+'</span>';
+    }
+    return '<div class="clic" data-cli="'+esc(c.name)+'"><div><div class="clin">'+esc(c.name)+'</div><div class="clim">'+c.count+' session'+(c.count>1?'s':'')+(c.phone?' · '+esc(c.phone):'')+'</div>'+sub+'</div><div style="text-align:right"><div class="clie">&pound;'+c.earn.toLocaleString()+'</div></div></div>';
+  }).join('');
+}
+
+function oCli(name){
+  var nowIso=iso(new Date());
+  var items=[],c={phone:'',email:'',location:''},total=0;
+  Object.keys(sess).forEach(function(k){var s=sess[k];if((s.type||'pt')==='pt'&&s.name===name){items.push(s);total+=ef(s);if(s.phone)c.phone=s.phone;if(s.email)c.email=s.email;if(s.location)c.location=s.location;}});
+  items.sort(function(a,b){return a.date<b.date?1:a.date>b.date?-1:b.startMins-a.startMins;});
+  document.getElementById('cliTit').textContent=name.toUpperCase();
+  document.getElementById('cliSub').textContent=items.length+' session'+(items.length>1?'s':'')+'  ·  £'+total.toLocaleString()+' total';
+  var body='';
+  if(c.phone)body+='<div class="vf"><div class="vfl">Phone</div><div class="vfv"><a href="tel:'+esc(c.phone)+'" style="color:var(--lime);text-decoration:none">'+esc(c.phone)+'</a></div></div>';
+  if(c.email)body+='<div class="vf"><div class="vfl">Email</div><div class="vfv"><a href="mailto:'+esc(c.email)+'" style="color:var(--lime);text-decoration:none">'+esc(c.email)+'</a></div></div>';
+  if(c.location)body+='<div class="vf"><div class="vfl">Usual location</div><div class="vfv">'+esc(c.location)+'</div></div>';
+  body+='<div class="vfl" style="margin:14px 0 6px">Session history</div>';
+  body+=items.map(function(s){var fut=s.date>=nowIso;return '<div class="ur"><div><div class="ucl">'+fd(s.date)+'</div><div class="um2">'+m2t(s.startMins)+(s.focus?' &middot; '+esc(s.focus):'')+(fut?' &middot; upcoming':'')+'</div></div><div class="ue">'+(ef(s)?'&pound;'+ef(s):'&mdash;')+'</div></div>';}).join('');
+  document.getElementById('cliBody').innerHTML=body;
+  document.getElementById('cliMo').classList.add('open');
+}
+function cCli(){document.getElementById('cliMo').classList.remove('open');}
+
 function lGSI(){return new Promise(function(res,rej){if(typeof google!=='undefined'&&google.accounts){res();return;}var s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.onload=res;s.onerror=rej;document.head.appendChild(s);});}
 
 // Cache the Google access token until it expires so refreshes within the hour reconnect instantly.
@@ -1280,19 +1358,25 @@ document.getElementById('reconnectBtn').onclick=function(){
 document.getElementById('fRec').onchange=function(){document.getElementById('rOpts').style.display=this.checked?'block':'none';};
 document.getElementById('addMo').onclick=function(e){if(e.target===this)cAdd();};
 document.getElementById('viewMo').onclick=function(e){if(e.target===this)cView();};
-document.onkeydown=function(e){if(e.key==='Escape'){cAdd();cView();}if(e.key==='Enter'&&document.getElementById('addMo').classList.contains('open'))svSess();};
+document.onkeydown=function(e){if(e.key==='Escape'){cAdd();cView();cCli();}if(e.key==='Enter'&&document.getElementById('addMo').classList.contains('open'))svSess();};
 
 function showTab(which){
-  ['Cal','Sum','Ana'].forEach(function(t){
+  ['Cal','Sum','Cli','Ana'].forEach(function(t){
     document.getElementById('t'+t).classList.toggle('active',t===which);
     document.getElementById('p'+t).classList.toggle('active',t===which);
   });
   if(which==='Ana')rAna();
   if(which==='Sum')rSummary();
+  if(which==='Cli')rClients();
 }
 document.getElementById('tCal').onclick=function(){showTab('Cal');};
 document.getElementById('tSum').onclick=function(){showTab('Sum');};
+document.getElementById('tCli').onclick=function(){showTab('Cli');};
 document.getElementById('tAna').onclick=function(){showTab('Ana');};
+document.getElementById('cliList').onclick=function(e){var c=e.target.closest('.clic');if(!c)return;var n=c.getAttribute('data-cli');if(n)oCli(n);};
+document.getElementById('cliSearch').oninput=function(){cliFilter=this.value;rClients();};
+document.getElementById('cliX').onclick=cCli;
+document.getElementById('cliMo').onclick=function(e){if(e.target===this)cCli();};
 document.getElementById('sPrev').onclick=function(){sumMonth.setMonth(sumMonth.getMonth()-1);rSummary();};
 document.getElementById('sNext').onclick=function(){sumMonth.setMonth(sumMonth.getMonth()+1);rSummary();};
 document.getElementById('sToday').onclick=function(){var d=new Date();sumMonth=new Date(d.getFullYear(),d.getMonth(),1);rSummary();};
