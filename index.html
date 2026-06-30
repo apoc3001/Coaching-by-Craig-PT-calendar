@@ -339,6 +339,12 @@ header{padding-top:env(safe-area-inset-top);}
       <div><label class="fl" for="ceStatus">Status</label><select class="fi" id="ceStatus"><option value="active">Active</option><option value="lapsed">Lapsed</option></select></div>
     </div>
     <div class="fr"><label class="fl" for="ceGoals">Goals <span style="color:var(--muted);text-transform:none;letter-spacing:0">(shows on calendar)</span></label><input class="fi" id="ceGoals" placeholder="e.g. Ultramarathon - complete"></div>
+    <div class="fr2">
+      <div><label class="fl" for="ceBilling">Billing</label><select class="fi" id="ceBilling" onchange="onBillingChange(this.value)"><option value="">—</option><option value="dd">Direct debit (monthly)</option><option value="block">Prepaid block</option></select></div>
+      <div id="ceFeeWrap" style="display:none"><label class="fl" for="ceFee">Monthly fee (£)</label><input class="fi" id="ceFee" type="number" min="0" placeholder="e.g. 160"></div>
+      <div id="ceBlockWrap" style="display:none"><label class="fl" for="ceBlockTotal">Block size</label><input class="fi" id="ceBlockTotal" type="number" min="0" placeholder="e.g. 10"></div>
+    </div>
+    <div id="ceBlockStartWrap" style="display:none" class="fr"><label class="fl" for="ceBlockStart">Block start date</label><input class="fi" id="ceBlockStart" type="date"></div>
     <div class="fr"><label class="fl" for="ceNotes">Notes</label><input class="fi" id="ceNotes" placeholder="Optional"></div>
     <div class="ma"><button class="bp" id="ceSave">SAVE</button><button class="bs" id="ceCancel">Cancel</button></div>
   </div>
@@ -672,7 +678,10 @@ function bBlock(key,s,past,bh){
   // PT sessions: colour the block by the client's training type.
   var cl=(!isCF&&!isOth)?clientOf(s):null;
   if(cl){var col=tagColor(cl.tag);blk.style.borderLeftColor=col;blk.style.background=col+'22';}
-  var nm=mk('div','bn');nm.textContent=s.name;blk.appendChild(nm);
+  var est=(!isCF&&!isOth)?effStatus(s):'';
+  if(est==='cancelled'){blk.style.opacity='.5';blk.style.borderLeftColor='#888780';blk.style.background='#88878018';}
+  var nm=mk('div','bn');nm.textContent=s.name;if(est==='cancelled')nm.style.textDecoration='line-through';blk.appendChild(nm);
+  if(est==='noshow'){var nsb=mk('div','bb');nsb.textContent='NO-SHOW';nsb.style.color='#e05555';nsb.style.borderColor='rgba(224,85,85,0.4)';nsb.style.background='rgba(224,85,85,0.15)';blk.appendChild(nsb);}
   if(cl&&cl.goals&&bh>=40){var gl=mk('div','bgoal');gl.textContent=cl.goals;blk.appendChild(gl);}
   if(isCF){var cfbdg=mk('div','bb');cfbdg.textContent='CF';cfbdg.style.color='#f0a020';cfbdg.style.borderColor='rgba(240,160,32,0.4)';cfbdg.style.background='rgba(240,160,32,0.15)';blk.appendChild(cfbdg);}
   if(isOth){var othbdg=mk('div','bb');othbdg.textContent='AWAY';othbdg.style.color='#b060b0';othbdg.style.borderColor='rgba(176,96,176,0.4)';othbdg.style.background='rgba(176,96,176,0.15)';blk.appendChild(othbdg);}
@@ -887,6 +896,11 @@ function svSess(){
 function oView(key){
   var s=sess[key];if(!s)return;
   var earned=ef(s);
+  var isPT=(s.type||'pt')==='pt';
+  var eff=effStatus(s);
+  var stLbl={scheduled:'Scheduled',completed:'Completed',cancelled:'Cancelled',noshow:'No-show'};
+  var statusRow=isPT?('<div class="vfl" style="margin:12px 0 5px">Attendance</div><div style="display:flex;gap:6px;flex-wrap:wrap" id="stRow">'+
+    ['scheduled','completed','cancelled','noshow'].map(function(v){var on=eff===v;return '<button class="bs stbtn" data-st="'+v+'" style="flex:1;min-width:72px'+(on?';border-color:var(--lime);color:var(--lime)':'')+'">'+stLbl[v]+'</button>';}).join('')+'</div>'):'';
   document.getElementById('viewTit').textContent=s.name.toUpperCase();
   document.getElementById('viewSub').textContent=fd(s.date)+'  \u00b7  '+m2t(s.startMins)+' \u2013 '+m2t(s.startMins+(s.duration||60));
   document.getElementById('viewBody').innerHTML=
@@ -899,7 +913,9 @@ function oView(key){
     (s.phone?'<div class="vf"><div class="vfl">Phone</div><div class="vfv"><a href="tel:'+s.phone+'" style="color:var(--lime);text-decoration:none">'+s.phone+'</a></div></div>':'')+
     (s.email?'<div class="vf"><div class="vfl">Email</div><div class="vfv"><a href="mailto:'+s.email+'" style="color:var(--lime);text-decoration:none">'+s.email+'</a></div></div>':'')+
     (s.notes?vf('Notes',s.notes,''):'')+
+    statusRow+
     '<button class="gb" id="gpBtn"'+(gConn?'':' disabled')+'>'+gSVG()+' Add to Google Calendar</button>';
+  if(isPT){document.getElementById('stRow').onclick=function(e){var b=e.target.closest('.stbtn');if(!b)return;sess[key].status=b.getAttribute('data-st');sd();render();oView(key);};}
   document.getElementById('gpBtn').onclick=function(){pgCal(s);};
   var acts=document.getElementById('viewActs');acts.innerHTML='';
   var eb=mk('button','bs');eb.textContent='Edit';eb.style.flex='1';
@@ -1267,6 +1283,28 @@ function tagColor(t){
   return '#888780';
 }
 function clientOf(s){return clients[s.clientId]||findClientByName(s.name)||null;}
+// Effective session status: explicit if set, else past auto-completes, future is scheduled.
+function effStatus(s){
+  if(s.status)return s.status;
+  var st=new Date(s.date+'T'+p2(Math.floor(s.startMins/60))+':'+p2(s.startMins%60)+':00');
+  return st<new Date()?'completed':'scheduled';
+}
+// A session "uses up" a block if it was delivered or no-showed (not cancelled).
+function usesBlock(s){var e=effStatus(s);return e==='completed'||e==='noshow';}
+function blockRemaining(c){
+  if(!c||c.billing!=='block')return null;
+  var total=c.blockTotal||0,start=c.blockStart||'',used=0;
+  Object.keys(sess).forEach(function(k){var s=sess[k];if((s.type||'pt')!=='pt')return;if(s.clientId!==c.id&&normName(s.name)!==normName(c.name))return;if(start&&s.date<start)return;if(usesBlock(s))used++;});
+  return {total:total,used:used,left:total-used};
+}
+function ddKey(d){return (d||iso(new Date())).slice(0,7);}
+function ddReceived(c,monthKey){return !!(c&&c.ddReceived&&c.ddReceived[monthKey]);}
+function toggleDD(id,monthKey){
+  var c=clients[id];if(!c)return;
+  if(!c.ddReceived)c.ddReceived={};
+  if(c.ddReceived[monthKey])delete c.ddReceived[monthKey];else c.ddReceived[monthKey]=true;
+  sdc();
+}
 function tagChip(t){if(!t)return '';var c=tagColor(t);return '<span style="font-size:9px;text-transform:uppercase;letter-spacing:1px;padding:1px 6px;border:1px solid '+c+';color:'+c+';border-radius:3px;margin-left:6px">'+esc(t)+'</span>';}
 function rClients(){
   var nowIso=iso(new Date());var nowD=new Date();nowD.setHours(0,0,0,0);
@@ -1313,11 +1351,21 @@ function oCli(id,name){
   if(c&&c.goals)body+='<div class="vf"><div class="vfl">Goals</div><div class="vfv" style="color:var(--lime)">'+esc(c.goals)+'</div></div>';
   if(ph)body+='<div class="vf"><div class="vfl">Phone</div><div class="vfv"><a href="tel:'+esc(ph)+'" style="color:var(--lime);text-decoration:none">'+esc(ph)+'</a></div></div>';
   if(em)body+='<div class="vf"><div class="vfl">Email</div><div class="vfv"><a href="mailto:'+esc(em)+'" style="color:var(--lime);text-decoration:none">'+esc(em)+'</a></div></div>';
+  if(c&&c.billing==='dd'){
+    var mk3=ddKey(),rec=ddReceived(c,mk3);
+    body+='<div class="vf"><div class="vfl">Billing</div><div class="vfv">Direct debit &middot; &pound;'+(c.monthlyFee||0)+'/mo</div></div>';
+    body+='<button class="bs" id="ddBtn" style="margin:4px 0 4px;border-color:'+(rec?'#1D9E75':'var(--danger)')+';color:'+(rec?'#1D9E75':'var(--danger)')+'">'+(rec?'✓ '+MS[new Date(mk3+'-01T12:00:00').getMonth()]+' DD received':'Mark '+MS[new Date(mk3+'-01T12:00:00').getMonth()]+' DD received')+'</button>';
+  } else if(c&&c.billing==='block'){
+    var br=blockRemaining(c);
+    var lowcol=br.left<=2?'var(--danger)':'var(--lime)';
+    body+='<div class="vf"><div class="vfl">Billing</div><div class="vfv">Prepaid block &middot; <span style="color:'+lowcol+'">'+br.left+' of '+br.total+' left</span></div></div>';
+  }
   body+='<button class="bs" id="cliEditBtn" style="margin:8px 0 4px">Edit client details</button>';
   body+='<div class="vfl" style="margin:14px 0 6px">Session history</div>';
   body+=items.length?items.map(function(s){var fut=s.date>=nowIso;return '<div class="ur"><div><div class="ucl">'+fd(s.date)+'</div><div class="um2">'+m2t(s.startMins)+(s.focus?' &middot; '+esc(s.focus):'')+(fut?' &middot; upcoming':'')+'</div></div><div class="ue">'+(ef(s)?'&pound;'+ef(s):'&mdash;')+'</div></div>';}).join(''):'<div style="color:var(--muted);font-size:12px">No sessions yet.</div>';
   document.getElementById('cliBody').innerHTML=body;
   document.getElementById('cliEditBtn').onclick=function(){oCliEdit(dispName);};
+  var ddb=document.getElementById('ddBtn');if(ddb&&c)ddb.onclick=function(){toggleDD(c.id,ddKey());oCli(c.id,c.name);};
   document.getElementById('cliMo').classList.add('open');
 }
 function cCli(){document.getElementById('cliMo').classList.remove('open');}
@@ -1332,8 +1380,18 @@ function oCliEdit(name){
   document.getElementById('ceTag').value=c.tag||'';
   document.getElementById('ceStatus').value=c.status||'active';
   document.getElementById('ceGoals').value=c.goals||'';
+  document.getElementById('ceBilling').value=c.billing||'';
+  document.getElementById('ceFee').value=c.monthlyFee||'';
+  document.getElementById('ceBlockTotal').value=c.blockTotal||'';
+  document.getElementById('ceBlockStart').value=c.blockStart||'';
+  onBillingChange(c.billing||'');
   document.getElementById('ceNotes').value=c.notes||'';
   document.getElementById('cliEditMo').classList.add('open');
+}
+function onBillingChange(v){
+  document.getElementById('ceFeeWrap').style.display=v==='dd'?'block':'none';
+  document.getElementById('ceBlockWrap').style.display=v==='block'?'block':'none';
+  document.getElementById('ceBlockStartWrap').style.display=v==='block'?'block':'none';
 }
 function saveCliEdit(){
   var c=clients[curCli];if(!c)return;
@@ -1345,6 +1403,10 @@ function saveCliEdit(){
   c.tag=document.getElementById('ceTag').value;
   c.status=document.getElementById('ceStatus').value;
   c.goals=document.getElementById('ceGoals').value.trim();
+  c.billing=document.getElementById('ceBilling').value;
+  c.monthlyFee=parseFloat(document.getElementById('ceFee').value)||0;
+  c.blockTotal=parseInt(document.getElementById('ceBlockTotal').value,10)||0;
+  c.blockStart=document.getElementById('ceBlockStart').value||'';
   c.notes=document.getElementById('ceNotes').value.trim();
   var changedS=false;
   Object.keys(sess).forEach(function(k){var s=sess[k];if((s.type||'pt')!=='pt')return;if(s.clientId===c.id||normName(s.name)===normName(oldName)){if(s.clientId!==c.id){s.clientId=c.id;changedS=true;}if(s.name!==newName){s.name=newName;changedS=true;}}});
