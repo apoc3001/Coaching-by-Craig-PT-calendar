@@ -948,7 +948,7 @@ function svSess(){
   var cid=(type==='pt')?ensureClient(name,{phone:xt.phone,email:xt.email,rate:rate,date:date}):'';
   if(aEk){
     var old=sess[aEk];delete sess[aEk];
-    sess[sk(date,sm)]=Object.assign({name:name,type:type,date:date,startMins:sm,duration:dur,rate:rate,notes:notes,clientId:cid,recurring:old.recurring,recurringId:old.recurringId,gcalId:old.gcalId},xt);
+    sess[sk(date,sm)]=Object.assign({name:name,type:type,date:date,startMins:sm,duration:dur,rate:rate,notes:notes,clientId:cid,makeup:old.makeup||false,status:old.status,recurring:old.recurring,recurringId:old.recurringId,gcalId:old.gcalId},xt);
     sd();render();cAdd();toast('Session updated');return;
   }
   if(rec){
@@ -1093,7 +1093,10 @@ function oView(key){
       var s2=sess[key];
       var gcalId=s2&&s2.gcalId;
       var sType=s2&&s2.type;
-      delete sess[key];sd();render();cView();toast('Session cancelled');
+      var wasMakeup=s2&&s2.makeup,cid2=s2&&s2.clientId;
+      delete sess[key];
+      if(wasMakeup&&cid2&&clients[cid2]){addBankedCredit(clients[cid2]);sdc();}
+      sd();render();cView();toast(wasMakeup?'Cancelled — make-up credit returned':'Session cancelled');
       var delCal=calForType(sType);
       if(gcalId)deleteFromGCal(gcalId,delCal);
     };
