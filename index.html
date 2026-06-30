@@ -386,6 +386,7 @@ header{padding-top:env(safe-area-inset-top);}
       <div id="ceBlockWrap" style="display:none"><label class="fl" for="ceBlockTotal">Block size</label><input class="fi" id="ceBlockTotal" type="number" min="0" placeholder="e.g. 10"></div>
     </div>
     <div id="ceBlockStartWrap" style="display:none" class="fr"><label class="fl" for="ceBlockStart">Block start date</label><input class="fi" id="ceBlockStart" type="date"></div>
+    <div class="fr"><label class="fl" for="ceProg">Programme link <span style="color:var(--muted);text-transform:none;letter-spacing:0">(Excel / Drive URL)</span></label><input class="fi" id="ceProg" type="url" placeholder="Paste their programme link" autocomplete="off"></div>
     <div class="fr"><label class="fl" for="ceNotes">Notes</label><input class="fi" id="ceNotes" placeholder="Optional"></div>
     <div class="ma"><button class="bp" id="ceSave">SAVE</button><button class="bs" id="ceCancel">Cancel</button><button class="bd" id="ceDelete">Delete</button></div>
   </div>
@@ -1503,6 +1504,41 @@ function rClients(){
   }).join('');
 }
 
+// Coach's Brain: per-client flags + a single suggested next action.
+function clientAlerts(c){
+  var warns=[],oks=[],action='';
+  if(!c)return {warns:warns,oks:oks,action:action};
+  var now=new Date(),today=iso(now),monthKey=today.slice(0,7);
+  var last=null,next=null,noShow=0,completed=0,cancelled=0;
+  var cut=iso(aD(now,-56));
+  Object.keys(sess).forEach(function(k){var s=sess[k];if((s.type||'pt')!=='pt')return;if(s.clientId!==c.id&&normName(s.name)!==normName(c.name))return;
+    if(s.date<=today){if(!last||s.date>last)last=s.date;}
+    if(s.date>=today){if(!next||s.date<next)next=s.date;}
+    if(s.date>=cut&&s.date<=today){var e=effStatus(s);if(e==='completed')completed++;else if(e==='noshow')noShow++;else if(e==='cancelled')cancelled++;}
+  });
+  var ddDue=(c.billing==='dd'&&c.status!=='lapsed'&&now.getDate()>=7&&!ddReceived(c,monthKey));
+  if(ddDue)warns.push('This month’s DD not received');
+  var br=c.billing==='block'?blockRemaining(c):null;
+  if(br){if(br.left<=0)warns.push('Block used up');else if(br.left<=2)warns.push('Block running low — '+br.left+' left');}
+  var owed=bankedCount(c);
+  if(owed>0)warns.push('Owes '+owed+' make-up session'+(owed>1?'s':''));
+  var daysSince=last?Math.round((now-new Date(last+'T12:00:00'))/86400000):null;
+  if(last&&!next&&daysSince>=28)warns.push('Not seen in '+daysSince+' days, nothing booked');
+  else if(!next&&last)warns.push('No upcoming session booked');
+  if(noShow>0)warns.push(noShow+' no-show'+(noShow>1?'s':'')+' in last 8 weeks');
+  if(!c.programmeUrl)warns.push('No programme link saved');
+  if(completed>0&&noShow===0&&cancelled===0)oks.push('Attendance 100% (last 8 weeks)');
+  if(next)oks.push('Next session '+fd(next));
+  if(c.billing==='dd'&&ddReceived(c,monthKey))oks.push(MS[now.getMonth()]+' DD received');
+  if(ddDue)action='Chase this month’s payment';
+  else if(owed>0)action='Book their make-up session';
+  else if(br&&br.left<=2)action='Prompt a block renewal';
+  else if(last&&!next&&daysSince>=28)action='Reach out to re-book';
+  else if(!next)action='Book their next session';
+  else if(!c.programmeUrl)action='Add their programme link';
+  return {warns:warns,oks:oks,action:action};
+}
+
 function oCli(id,name){
   var c=(id&&clients[id])?clients[id]:findClientByName(name);
   curCli=c?c.id:null;
@@ -1515,6 +1551,15 @@ function oCli(id,name){
   var ph=c?c.phone:'',em=c?c.email:'';
   if(!ph||!em){items.forEach(function(s){if(!ph&&s.phone)ph=s.phone;if(!em&&s.email)em=s.email;});}
   var body='';
+  var cb=clientAlerts(c);
+  if(cb.warns.length||cb.oks.length||cb.action){
+    body+='<div style="border:1px solid var(--border);border-left:3px solid var(--lime);background:var(--card);padding:12px 14px;margin-bottom:14px">';
+    body+='<div style="font-family:Bebas Neue,sans-serif;font-size:14px;letter-spacing:1.5px;color:var(--lime);margin-bottom:8px">COACH’S BRAIN</div>';
+    cb.warns.forEach(function(w){body+='<div style="font-size:12px;color:#f0a020;margin:3px 0">⚠ '+esc(w)+'</div>';});
+    cb.oks.forEach(function(o){body+='<div style="font-size:12px;color:#1D9E75;margin:3px 0">✓ '+esc(o)+'</div>';});
+    if(cb.action)body+='<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:12px"><span style="color:var(--muted)">Suggested: </span><span style="color:var(--lime);font-weight:600">'+esc(cb.action)+'</span></div>';
+    body+='</div>';
+  }
   if(c&&c.tag)body+='<div class="vf"><div class="vfl">Type</div><div class="vfv">'+esc(c.tag)+(c.status==='lapsed'?' · lapsed':'')+'</div></div>';
   if(c&&c.goals)body+='<div class="vf"><div class="vfl">Goals</div><div class="vfv" style="color:var(--lime)">'+esc(c.goals)+'</div></div>';
   if(c&&bankedCount(c)>0)body+='<div class="vf"><div class="vfl">Make-up sessions owed</div><div class="vfv" style="color:var(--lime)">+'+bankedCount(c)+' <span style="font-size:11px;color:var(--muted)">(tick "use make-up credit" when booking it)</span></div></div>';
@@ -1529,11 +1574,13 @@ function oCli(id,name){
     var lowcol=br.left<=2?'var(--danger)':'var(--lime)';
     body+='<div class="vf"><div class="vfl">Billing</div><div class="vfv">Prepaid block &middot; <span style="color:'+lowcol+'">'+br.left+' of '+br.total+' left</span></div></div>';
   }
+  if(c&&c.programmeUrl)body+='<button class="bp" id="cliProgBtn" style="width:100%;margin:10px 0 4px">📂 Open Programme</button>';
   body+='<button class="bs" id="cliEditBtn" style="margin:8px 0 4px">Edit client details</button>';
   body+='<div class="vfl" style="margin:14px 0 6px">Session history</div>';
   body+=items.length?items.map(function(s){var fut=s.date>=nowIso;return '<div class="ur"><div><div class="ucl">'+fd(s.date)+'</div><div class="um2">'+m2t(s.startMins)+(s.focus?' &middot; '+esc(s.focus):'')+(fut?' &middot; upcoming':'')+'</div></div><div class="ue">'+(ef(s)?'&pound;'+ef(s):'&mdash;')+'</div></div>';}).join(''):'<div style="color:var(--muted);font-size:12px">No sessions yet.</div>';
   document.getElementById('cliBody').innerHTML=body;
   document.getElementById('cliEditBtn').onclick=function(){oCliEdit(dispName);};
+  var pb=document.getElementById('cliProgBtn');if(pb&&c)pb.onclick=function(){window.open(c.programmeUrl,'_blank');};
   var ddb=document.getElementById('ddBtn');if(ddb&&c)ddb.onclick=function(){toggleDD(c.id,ddKey());oCli(c.id,c.name);};
   document.getElementById('cliMo').classList.add('open');
 }
@@ -1549,6 +1596,7 @@ function oCliEdit(name){
   document.getElementById('ceTag').value=c.tag||'';
   document.getElementById('ceStatus').value=c.status||'active';
   document.getElementById('ceGoals').value=c.goals||'';
+  document.getElementById('ceProg').value=c.programmeUrl||'';
   document.getElementById('ceBilling').value=c.billing||'';
   document.getElementById('ceFee').value=c.monthlyFee||'';
   document.getElementById('ceBlockTotal').value=c.blockTotal||'';
@@ -1572,6 +1620,7 @@ function saveCliEdit(){
   c.tag=document.getElementById('ceTag').value;
   c.status=document.getElementById('ceStatus').value;
   c.goals=document.getElementById('ceGoals').value.trim();
+  var pu=document.getElementById('ceProg').value.trim();if(pu&&!/^https?:\/\//i.test(pu))pu='https://'+pu;c.programmeUrl=pu;
   c.billing=document.getElementById('ceBilling').value;
   c.monthlyFee=parseFloat(document.getElementById('ceFee').value)||0;
   c.blockTotal=parseInt(document.getElementById('ceBlockTotal').value,10)||0;
