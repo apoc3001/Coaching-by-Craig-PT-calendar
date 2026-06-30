@@ -101,6 +101,7 @@ header{background:var(--dark);border-bottom:1px solid var(--border);padding:0 20
 .blk.isp{opacity:.45;cursor:default;}
 .bn{font-size:10px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;line-height:1.3;}
 .bt{font-size:9px;color:var(--muted);pointer-events:none;}
+.bgoal{font-size:9px;font-style:italic;color:#dcdcdc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;line-height:1.25;}
 .br{font-family:Bebas Neue,sans-serif;font-size:12px;color:var(--lime);pointer-events:none;}
 .bb{position:absolute;top:2px;right:3px;font-size:7px;letter-spacing:1px;font-weight:700;text-transform:uppercase;padding:1px 3px;background:rgba(16,112,160,.2);color:#40b4f0;border:1px solid rgba(16,112,160,.3);pointer-events:none;}
 .mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:200;align-items:center;justify-content:center;}
@@ -304,6 +305,44 @@ header{padding-top:env(safe-area-inset-top);}
     <div id="cliBody"></div>
   </div>
 </div>
+<!-- CLIENT EDIT MODAL -->
+<div class="mo" id="cliEditMo">
+  <div class="md" style="width:400px">
+    <button class="mc" id="ceX">×</button>
+    <div class="mt">EDIT CLIENT</div>
+    <div class="ms">Saved once, used everywhere this client appears.</div>
+    <div class="fr"><label class="fl" for="ceName">Name</label><input class="fi" id="ceName" autocomplete="off"></div>
+    <div class="fr2">
+      <div><label class="fl" for="cePh">Phone</label><input class="fi" id="cePh" type="tel" autocomplete="off"></div>
+      <div><label class="fl" for="ceEm">Email</label><input class="fi" id="ceEm" type="email" autocomplete="off"></div>
+    </div>
+    <div class="fr2">
+      <div><label class="fl" for="ceTag">Type</label><select class="fi" id="ceTag">
+        <option value="">—</option>
+        <optgroup label="In person">
+          <option value="General PT">General PT</option>
+          <option value="Muscle Building">Muscle Building</option>
+          <option value="Running">Running</option>
+          <option value="Fat Loss">Fat Loss</option>
+          <option value="General Health">General Health</option>
+          <option value="Performance">Performance</option>
+        </optgroup>
+        <optgroup label="Online">
+          <option value="Online - General PT">Online - General PT</option>
+          <option value="Online - Muscle Building">Online - Muscle Building</option>
+          <option value="Online - Running">Online - Running</option>
+          <option value="Online - Fat Loss">Online - Fat Loss</option>
+          <option value="Online - General Health">Online - General Health</option>
+          <option value="Online - Performance">Online - Performance</option>
+        </optgroup>
+      </select></div>
+      <div><label class="fl" for="ceStatus">Status</label><select class="fi" id="ceStatus"><option value="active">Active</option><option value="lapsed">Lapsed</option></select></div>
+    </div>
+    <div class="fr"><label class="fl" for="ceGoals">Goals <span style="color:var(--muted);text-transform:none;letter-spacing:0">(shows on calendar)</span></label><input class="fi" id="ceGoals" placeholder="e.g. Ultramarathon - complete"></div>
+    <div class="fr"><label class="fl" for="ceNotes">Notes</label><input class="fi" id="ceNotes" placeholder="Optional"></div>
+    <div class="ma"><button class="bp" id="ceSave">SAVE</button><button class="bs" id="ceCancel">Cancel</button></div>
+  </div>
+</div>
 <!-- MONTH SUMMARY PAGE -->
 <div class="page" id="pSum">
   <div class="wn">
@@ -328,7 +367,7 @@ header{padding-top:env(safe-area-inset-top);}
     <button class="mc" id="addX">×</button>
     <div class="mt" id="addTit">BOOK SESSION</div>
     <div class="ms" id="addSub"></div>
-    <div class="fr"><label class="fl" for="fN">Client Name</label><input class="fi" id="fN" placeholder="e.g. Sarah Johnson" autocomplete="off"></div>
+    <div class="fr"><label class="fl" for="fN">Client Name</label><input class="fi" id="fN" placeholder="e.g. Sarah Johnson" autocomplete="off" list="clientNames"><datalist id="clientNames"></datalist></div>
     <div class="fr"><label class="fl" for="fType">Session Type</label><select class="fi" id="fType" onchange="onTypeChange(this.value)"><option value="pt">PT Session</option><option value="crossfit">Crossfit</option><option value="other">Other</option></select></div>
     <div class="fr3">
       <div><label class="fl" for="fST">Start Time</label><input class="fi" id="fST" type="time" step="1800"></div>
@@ -398,7 +437,7 @@ var firebaseConfig={
   messagingSenderId:"4708848171",
   appId:"1:4708848171:web:234be6db656cbe3043106e"
 };
-var fbDb=null,fbReady=false,fbSuppressNextWrite=false,fbUser=null,fbUnsub=null;
+var fbDb=null,fbReady=false,fbSuppressNextWrite=false,fbUser=null,fbUnsub=null,fbUnsubC=null,fbSuppressClients=false,fbReadyC=false;
 function fbInit(){
   firebase.initializeApp(firebaseConfig);
   fbDb=firebase.firestore();
@@ -425,7 +464,19 @@ function fbInit(){
         toast('Existing sessions migrated to cloud');
       }
       fbReady=true;
+      migrateClients();
     },function(e){console.log('Firestore listen error:',e);toast('Cloud sync blocked - check sign-in');});
+    if(fbUnsubC){fbUnsubC();fbUnsubC=null;}
+    fbUnsubC=fbDb.collection('cbc').doc('clients').onSnapshot(function(doc){
+      if(fbSuppressClients){fbSuppressClients=false;return;}
+      if(doc.exists){
+        clients=doc.data().data||{};
+        localStorage.setItem('cbc6_clients',JSON.stringify(clients));
+        if(document.getElementById('pCli').classList.contains('active'))rClients();
+      }
+      fbReadyC=true;
+      migrateClients();
+    },function(e){console.log('Clients listen error:',e);});
   });
 }
 fbInit();
@@ -452,6 +503,8 @@ var DF=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 var MS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 var ws=gMon(new Date()),sess=ld(),aSlot=null,aEk=null,gConn=false,gTok=null,selCal='primary',selCal2='',aPer=6,uView='all',mView='1w',syncInProgress=false;
 var sumMonth=(function(){var d=new Date();d.setDate(1);d.setHours(0,0,0,0);return d;})();
+function ldc(){try{return JSON.parse(localStorage.getItem('cbc6_clients')||'{}');}catch(e){return {};}}
+var clients=ldc();
 
 function ld(){try{return JSON.parse(localStorage.getItem('cbc6')||'{}');}catch(e){return {};}}
 function sd(){
@@ -464,6 +517,69 @@ function sd(){
       toast('Could not save to cloud - check connection');
     });
   }
+}
+function sdc(){
+  localStorage.setItem('cbc6_clients',JSON.stringify(clients));
+  if(fbDb&&fbUser){
+    fbSuppressClients=true;
+    fbDb.collection('cbc').doc('clients').set({data:clients}).catch(function(e){
+      console.log('Clients save error:',e);
+      fbSuppressClients=false;
+      toast('Could not save client - check connection');
+    });
+  }
+}
+// --- Client records (first-class, shared) ---
+function normName(n){return (n||'').trim().toLowerCase().replace(/\s+/g,' ');}
+function findClientByName(name){
+  var key=normName(name);if(!key)return null;
+  var ids=Object.keys(clients);
+  for(var i=0;i<ids.length;i++){if(normName(clients[ids[i]].name)===key)return clients[ids[i]];}
+  return null;
+}
+// Returns a client id for the given name, creating/updating the record from supplied details.
+function ensureClient(name,details){
+  details=details||{};
+  var c=findClientByName(name);
+  if(!c){
+    var id='c'+Date.now()+Math.floor(Math.random()*1000);
+    c={id:id,name:(name||'').trim(),phone:'',email:'',tag:'',goals:'',defaultRate:0,status:'active',startDate:details.date||iso(new Date()),notes:'',createdAt:Date.now()};
+    clients[id]=c;
+  }
+  // Latest-wins update of contact details from the booking (so editing once updates the client).
+  var changed=false;
+  if(details.phone&&details.phone!==c.phone){c.phone=details.phone;changed=true;}
+  if(details.email&&details.email!==c.email){c.email=details.email;changed=true;}
+  if(details.rate&&!c.defaultRate){c.defaultRate=details.rate;changed=true;}
+  if(c.status!=='active'){c.status='active';changed=true;}
+  sdc();
+  return c.id;
+}
+// One-time link of legacy sessions to client records; runs after both stores have loaded.
+var _cliMigrated=false;
+function migrateClients(){
+  if(_cliMigrated)return;
+  if(!fbReady||!fbReadyC)return; // wait until both cloud docs have reported
+  _cliMigrated=true;
+  var changedS=false;
+  Object.keys(sess).forEach(function(k){
+    var s=sess[k];
+    if((s.type||'pt')!=='pt'||!s.name)return;
+    if(s.clientId&&clients[s.clientId])return;
+    var c=findClientByName(s.name);
+    if(!c){
+      var id='c'+Date.now()+Math.floor(Math.random()*100000);
+      c={id:id,name:s.name.trim(),phone:s.phone||'',email:s.email||'',tag:'',goals:'',defaultRate:s.rate||0,status:'active',startDate:s.date,notes:'',createdAt:Date.now()};
+      clients[id]=c;
+    } else {
+      if(!c.phone&&s.phone)c.phone=s.phone;
+      if(!c.email&&s.email)c.email=s.email;
+    }
+    s.clientId=c.id;changedS=true;
+  });
+  if(Object.keys(clients).length)sdc();
+  if(changedS)sd();
+  if(document.getElementById('pCli').classList.contains('active'))rClients();
 }
 function sk(d,m){return d+'_'+m;}
 function gMon(d){var dt=new Date(d);dt.setHours(0,0,0,0);var day=dt.getDay();dt.setDate(dt.getDate()-(day===0?6:day-1));return dt;}
@@ -553,7 +669,11 @@ function bBlock(key,s,past,bh){
   var blockCls=isCF?'tcf':isOth?'toth':(s.recurring?'tr':'tb2');
   var blk=mk('div','blk '+blockCls+(past?' isp':''));
   blk.style.height=bh+'px';
+  // PT sessions: colour the block by the client's training type.
+  var cl=(!isCF&&!isOth)?clientOf(s):null;
+  if(cl){var col=tagColor(cl.tag);blk.style.borderLeftColor=col;blk.style.background=col+'22';}
   var nm=mk('div','bn');nm.textContent=s.name;blk.appendChild(nm);
+  if(cl&&cl.goals&&bh>=40){var gl=mk('div','bgoal');gl.textContent=cl.goals;blk.appendChild(gl);}
   if(isCF){var cfbdg=mk('div','bb');cfbdg.textContent='CF';cfbdg.style.color='#f0a020';cfbdg.style.borderColor='rgba(240,160,32,0.4)';cfbdg.style.background='rgba(240,160,32,0.15)';blk.appendChild(cfbdg);}
   if(isOth){var othbdg=mk('div','bb');othbdg.textContent='AWAY';othbdg.style.color='#b060b0';othbdg.style.borderColor='rgba(176,96,176,0.4)';othbdg.style.background='rgba(176,96,176,0.15)';blk.appendChild(othbdg);}
   var tm=mk('div','bt');tm.textContent=m2t(s.startMins)+' - '+m2t(s.startMins+(s.duration||60));blk.appendChild(tm);
@@ -608,8 +728,27 @@ function getDuration(){
   return parseInt(document.getElementById('fD').value,10)||60;
 }
 
+function fillClientList(){
+  var dl=document.getElementById('clientNames');if(!dl)return;
+  var names={};
+  Object.keys(clients).forEach(function(id){if(clients[id].name)names[clients[id].name]=1;});
+  // include any session names not yet promoted to a client record
+  Object.keys(sess).forEach(function(k){var s=sess[k];if((s.type||'pt')==='pt'&&s.name)names[s.name]=1;});
+  dl.innerHTML=Object.keys(names).sort().map(function(n){return '<option value="'+esc(n)+'">';}).join('');
+}
+// When a known client's name is entered, prefill their saved contact + default rate.
+function prefillFromClient(){
+  if(document.getElementById('fType').value!=='pt')return;
+  var c=findClientByName(document.getElementById('fN').value);
+  if(!c)return;
+  if(c.phone&&!document.getElementById('fPh').value)document.getElementById('fPh').value=c.phone;
+  if(c.email&&!document.getElementById('fEm').value)document.getElementById('fEm').value=c.email;
+  if(c.defaultRate&&!document.getElementById('fR').value)document.getElementById('fR').value=c.defaultRate;
+}
+
 function oAdd(date,sm){
   aSlot={date:date,sm:sm};aEk=null;
+  fillClientList();
   document.getElementById('addTit').textContent='BOOK SESSION';
   document.getElementById('addSub').textContent=fd(date)+'  \u00b7  '+m2t(sm);
   document.getElementById('fN').value='';
@@ -634,6 +773,7 @@ function oAdd(date,sm){
 
 function oEdit(key){
   var s=sess[key];if(!s)return;
+  fillClientList();
   aSlot={date:s.date,sm:s.startMins};aEk=key;
   document.getElementById('addTit').textContent='EDIT SESSION';
   document.getElementById('addSub').textContent=fd(s.date)+'  \u00b7  '+m2t(s.startMins);
@@ -684,9 +824,11 @@ function svSess(){
   var xt=fExtra();
   var rec=document.getElementById('fRec').checked;
   var date=aSlot.date;
+  // Link PT sessions to a client record (creating/updating it); other types aren't clients.
+  var cid=(type==='pt')?ensureClient(name,{phone:xt.phone,email:xt.email,rate:rate,date:date}):'';
   if(aEk){
     var old=sess[aEk];delete sess[aEk];
-    sess[sk(date,sm)]=Object.assign({name:name,type:type,date:date,startMins:sm,duration:dur,rate:rate,notes:notes,recurring:old.recurring,recurringId:old.recurringId,gcalId:old.gcalId},xt);
+    sess[sk(date,sm)]=Object.assign({name:name,type:type,date:date,startMins:sm,duration:dur,rate:rate,notes:notes,clientId:cid,recurring:old.recurring,recurringId:old.recurringId,gcalId:old.gcalId},xt);
     sd();render();cAdd();toast('Session updated');return;
   }
   if(rec){
@@ -696,7 +838,7 @@ function svSess(){
     for(var w=0;w<wks;w+=intv){
       var dt=new Date(date+'T12:00:00');dt.setDate(dt.getDate()+w*7);
       var d2=iso(dt);var k=sk(d2,sm);
-      if(!sess[k]){sess[k]=Object.assign({name:name,type:type,date:d2,startMins:sm,duration:dur,rate:rate,notes:notes,recurring:true,recurringId:rid},xt);cnt++;}
+      if(!sess[k]){sess[k]=Object.assign({name:name,type:type,date:d2,startMins:sm,duration:dur,rate:rate,notes:notes,clientId:cid,recurring:true,recurringId:rid},xt);cnt++;}
     }
     sd();render();cAdd();toast(cnt+' recurring sessions added');
     if(gConn&&gTok){Object.keys(sess).forEach(function(k){if(sess[k].recurringId===rid)pgCal(sess[k],true);});}
@@ -735,7 +877,7 @@ function svSess(){
       toast(cnt2>1?name+' blocked '+cnt2+' days':name+' blocked');
     } else {
       var newKey=sk(date,sm);
-      sess[newKey]=Object.assign({name:name,type:type,date:date,startMins:sm,duration:dur,rate:rate,notes:notes,recurring:false},xt);
+      sess[newKey]=Object.assign({name:name,type:type,date:date,startMins:sm,duration:dur,rate:rate,notes:notes,clientId:cid,recurring:false},xt);
       sd();render();cAdd();toast('Session booked');
       if(gConn&&gTok) pgCal(sess[newKey],true);
     }
@@ -839,7 +981,7 @@ function oExtend(key){
   for(var w=intervalWeeks;w<=more;w+=intervalWeeks){
     var dt=new Date(lastDt);dt.setDate(dt.getDate()+w*7);
     var d2=iso(dt),k2=sk(d2,s.startMins);
-    if(!sess[k2]){sess[k2]={name:s.name,type:s.type,date:d2,startMins:s.startMins,duration:s.duration,rate:s.rate,notes:s.notes,location:s.location,focus:s.focus,phone:s.phone,email:s.email,recurring:true,recurringId:rid};cnt++;}
+    if(!sess[k2]){sess[k2]={name:s.name,type:s.type,date:d2,startMins:s.startMins,duration:s.duration,rate:s.rate,notes:s.notes,location:s.location,focus:s.focus,phone:s.phone,email:s.email,clientId:s.clientId||'',recurring:true,recurringId:rid};cnt++;}
   }
   if(!cnt){toast('No new sessions added');return;}
   sd();render();cView();toast(cnt+' more session'+(cnt>1?'s':'')+' added');
@@ -1113,23 +1255,34 @@ function rSummary(){
   }
 }
 
-var cliFilter='';
+var cliFilter='',curCli=null;
+function tagColor(t){
+  t=(t||'').toLowerCase().replace(/^online\s*-\s*/,'');
+  if(t.indexOf('muscle')!==-1)return '#e0653c';
+  if(t.indexOf('running')!==-1)return '#1D9E75';
+  if(t.indexOf('fat')!==-1)return '#f0a020';
+  if(t.indexOf('general health')!==-1)return '#30c0b0';
+  if(t.indexOf('performance')!==-1)return '#b060b0';
+  if(t.indexOf('general pt')!==-1)return '#4090d0';
+  return '#888780';
+}
+function clientOf(s){return clients[s.clientId]||findClientByName(s.name)||null;}
+function tagChip(t){if(!t)return '';var c=tagColor(t);return '<span style="font-size:9px;text-transform:uppercase;letter-spacing:1px;padding:1px 6px;border:1px solid '+c+';color:'+c+';border-radius:3px;margin-left:6px">'+esc(t)+'</span>';}
 function rClients(){
-  var nowIso=iso(new Date());
-  var nowD=new Date();nowD.setHours(0,0,0,0);
+  var nowIso=iso(new Date());var nowD=new Date();nowD.setHours(0,0,0,0);
   var map={};
+  Object.keys(clients).forEach(function(id){var c=clients[id];map[id]={id:id,name:c.name,phone:c.phone||'',email:c.email||'',tag:c.tag||'',status:c.status||'active',count:0,earn:0,last:null,next:null};});
   Object.keys(sess).forEach(function(k){
-    var s=sess[k];
-    if((s.type||'pt')!=='pt')return; // only PT clients (skip Crossfit/Other)
-    var name=s.name;if(!name)return;
-    if(!map[name])map[name]={name:name,count:0,earn:0,last:null,next:null,phone:'',email:'',location:'',focus:''};
-    var c=map[name];c.count++;c.earn+=ef(s);
-    if(s.date<=nowIso){if(!c.last||s.date>c.last)c.last=s.date;}
-    if(s.date>=nowIso){if(!c.next||s.date<c.next)c.next=s.date;}
-    if(s.phone)c.phone=s.phone;if(s.email)c.email=s.email;
-    if(s.location)c.location=s.location;if(s.focus)c.focus=s.focus;
+    var s=sess[k];if((s.type||'pt')!=='pt'||!s.name)return;
+    var key=(s.clientId&&map[s.clientId])?s.clientId:null;
+    if(!key){var c=findClientByName(s.name);if(c&&map[c.id])key=c.id;}
+    if(!key){key='n:'+normName(s.name);if(!map[key])map[key]={id:null,name:s.name,phone:s.phone||'',email:s.email||'',tag:'',status:'active',count:0,earn:0,last:null,next:null};}
+    var a=map[key];a.count++;a.earn+=ef(s);
+    if(s.date<=nowIso){if(!a.last||s.date>a.last)a.last=s.date;}
+    if(s.date>=nowIso){if(!a.next||s.date<a.next)a.next=s.date;}
+    if(!a.phone&&s.phone)a.phone=s.phone;if(!a.email&&s.email)a.email=s.email;
   });
-  var list=Object.keys(map).map(function(n){return map[n];});
+  var list=Object.keys(map).map(function(k){return map[k];});
   if(cliFilter){var f=cliFilter.toLowerCase();list=list.filter(function(c){return c.name.toLowerCase().indexOf(f)!==-1;});}
   list.sort(function(a,b){if(!!a.next!==!!b.next)return a.next?-1:1;return b.count-a.count;});
   var el=document.getElementById('cliList');
@@ -1137,31 +1290,70 @@ function rClients(){
   el.innerHTML=list.map(function(c){
     var sub='';
     if(c.next){sub='<span class="clim">Next: '+fd(c.next)+'</span>';}
-    else if(c.last){
-      var days=Math.round((nowD-new Date(c.last+'T12:00:00'))/86400000);
-      sub=days>21?'<span class="cliflag">No upcoming · last seen '+days+'d ago</span>':'<span class="clim">Last seen '+fd(c.last)+'</span>';
-    }
-    return '<div class="clic" data-cli="'+esc(c.name)+'"><div><div class="clin">'+esc(c.name)+'</div><div class="clim">'+c.count+' session'+(c.count>1?'s':'')+(c.phone?' · '+esc(c.phone):'')+'</div>'+sub+'</div><div style="text-align:right"><div class="clie">&pound;'+c.earn.toLocaleString()+'</div></div></div>';
+    else if(c.last){var days=Math.round((nowD-new Date(c.last+'T12:00:00'))/86400000);sub=days>21?'<span class="cliflag">No upcoming · last seen '+days+'d ago</span>':'<span class="clim">Last seen '+fd(c.last)+'</span>';}
+    else{sub='<span class="clim">No sessions yet</span>';}
+    var lapsed=c.status==='lapsed'?'<span style="font-size:9px;color:#888780;letter-spacing:1px;margin-left:6px">LAPSED</span>':'';
+    return '<div class="clic" data-cid="'+esc(c.id||'')+'" data-cli="'+esc(c.name)+'"><div><div class="clin">'+esc(c.name)+tagChip(c.tag)+lapsed+'</div><div class="clim">'+c.count+' session'+(c.count===1?'':'s')+(c.phone?' · '+esc(c.phone):'')+'</div>'+sub+'</div><div style="text-align:right"><div class="clie">&pound;'+c.earn.toLocaleString()+'</div></div></div>';
   }).join('');
 }
 
-function oCli(name){
-  var nowIso=iso(new Date());
-  var items=[],c={phone:'',email:'',location:''},total=0;
-  Object.keys(sess).forEach(function(k){var s=sess[k];if((s.type||'pt')==='pt'&&s.name===name){items.push(s);total+=ef(s);if(s.phone)c.phone=s.phone;if(s.email)c.email=s.email;if(s.location)c.location=s.location;}});
+function oCli(id,name){
+  var c=(id&&clients[id])?clients[id]:findClientByName(name);
+  curCli=c?c.id:null;
+  var dispName=c?c.name:name;
+  var nowIso=iso(new Date());var items=[],total=0;
+  Object.keys(sess).forEach(function(k){var s=sess[k];if((s.type||'pt')!=='pt')return;var match=(c&&s.clientId===c.id)||(normName(s.name)===normName(dispName));if(match){items.push(s);total+=ef(s);}});
   items.sort(function(a,b){return a.date<b.date?1:a.date>b.date?-1:b.startMins-a.startMins;});
-  document.getElementById('cliTit').textContent=name.toUpperCase();
-  document.getElementById('cliSub').textContent=items.length+' session'+(items.length>1?'s':'')+'  ·  £'+total.toLocaleString()+' total';
+  document.getElementById('cliTit').textContent=(dispName||'').toUpperCase();
+  document.getElementById('cliSub').textContent=items.length+' session'+(items.length===1?'':'s')+'  ·  £'+total.toLocaleString()+' total';
+  var ph=c?c.phone:'',em=c?c.email:'';
+  if(!ph||!em){items.forEach(function(s){if(!ph&&s.phone)ph=s.phone;if(!em&&s.email)em=s.email;});}
   var body='';
-  if(c.phone)body+='<div class="vf"><div class="vfl">Phone</div><div class="vfv"><a href="tel:'+esc(c.phone)+'" style="color:var(--lime);text-decoration:none">'+esc(c.phone)+'</a></div></div>';
-  if(c.email)body+='<div class="vf"><div class="vfl">Email</div><div class="vfv"><a href="mailto:'+esc(c.email)+'" style="color:var(--lime);text-decoration:none">'+esc(c.email)+'</a></div></div>';
-  if(c.location)body+='<div class="vf"><div class="vfl">Usual location</div><div class="vfv">'+esc(c.location)+'</div></div>';
+  if(c&&c.tag)body+='<div class="vf"><div class="vfl">Type</div><div class="vfv">'+esc(c.tag)+(c.status==='lapsed'?' · lapsed':'')+'</div></div>';
+  if(c&&c.goals)body+='<div class="vf"><div class="vfl">Goals</div><div class="vfv" style="color:var(--lime)">'+esc(c.goals)+'</div></div>';
+  if(ph)body+='<div class="vf"><div class="vfl">Phone</div><div class="vfv"><a href="tel:'+esc(ph)+'" style="color:var(--lime);text-decoration:none">'+esc(ph)+'</a></div></div>';
+  if(em)body+='<div class="vf"><div class="vfl">Email</div><div class="vfv"><a href="mailto:'+esc(em)+'" style="color:var(--lime);text-decoration:none">'+esc(em)+'</a></div></div>';
+  body+='<button class="bs" id="cliEditBtn" style="margin:8px 0 4px">Edit client details</button>';
   body+='<div class="vfl" style="margin:14px 0 6px">Session history</div>';
-  body+=items.map(function(s){var fut=s.date>=nowIso;return '<div class="ur"><div><div class="ucl">'+fd(s.date)+'</div><div class="um2">'+m2t(s.startMins)+(s.focus?' &middot; '+esc(s.focus):'')+(fut?' &middot; upcoming':'')+'</div></div><div class="ue">'+(ef(s)?'&pound;'+ef(s):'&mdash;')+'</div></div>';}).join('');
+  body+=items.length?items.map(function(s){var fut=s.date>=nowIso;return '<div class="ur"><div><div class="ucl">'+fd(s.date)+'</div><div class="um2">'+m2t(s.startMins)+(s.focus?' &middot; '+esc(s.focus):'')+(fut?' &middot; upcoming':'')+'</div></div><div class="ue">'+(ef(s)?'&pound;'+ef(s):'&mdash;')+'</div></div>';}).join(''):'<div style="color:var(--muted);font-size:12px">No sessions yet.</div>';
   document.getElementById('cliBody').innerHTML=body;
+  document.getElementById('cliEditBtn').onclick=function(){oCliEdit(dispName);};
   document.getElementById('cliMo').classList.add('open');
 }
 function cCli(){document.getElementById('cliMo').classList.remove('open');}
+
+function oCliEdit(name){
+  var c=(curCli&&clients[curCli])?clients[curCli]:findClientByName(name);
+  if(!c){var id=ensureClient(name||'New client',{});c=clients[id];}
+  curCli=c.id;
+  document.getElementById('ceName').value=c.name||'';
+  document.getElementById('cePh').value=c.phone||'';
+  document.getElementById('ceEm').value=c.email||'';
+  document.getElementById('ceTag').value=c.tag||'';
+  document.getElementById('ceStatus').value=c.status||'active';
+  document.getElementById('ceGoals').value=c.goals||'';
+  document.getElementById('ceNotes').value=c.notes||'';
+  document.getElementById('cliEditMo').classList.add('open');
+}
+function saveCliEdit(){
+  var c=clients[curCli];if(!c)return;
+  var oldName=c.name;
+  var newName=document.getElementById('ceName').value.trim()||c.name;
+  c.name=newName;
+  c.phone=document.getElementById('cePh').value.trim();
+  c.email=document.getElementById('ceEm').value.trim();
+  c.tag=document.getElementById('ceTag').value;
+  c.status=document.getElementById('ceStatus').value;
+  c.goals=document.getElementById('ceGoals').value.trim();
+  c.notes=document.getElementById('ceNotes').value.trim();
+  var changedS=false;
+  Object.keys(sess).forEach(function(k){var s=sess[k];if((s.type||'pt')!=='pt')return;if(s.clientId===c.id||normName(s.name)===normName(oldName)){if(s.clientId!==c.id){s.clientId=c.id;changedS=true;}if(s.name!==newName){s.name=newName;changedS=true;}}});
+  sdc();if(changedS)sd();
+  document.getElementById('cliEditMo').classList.remove('open');
+  document.getElementById('cliMo').classList.remove('open');
+  render();rClients();toast('Client updated');
+}
+function cCliEdit(){document.getElementById('cliEditMo').classList.remove('open');}
 
 function lGSI(){return new Promise(function(res,rej){if(typeof google!=='undefined'&&google.accounts){res();return;}var s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.onload=res;s.onerror=rej;document.head.appendChild(s);});}
 
@@ -1356,9 +1548,11 @@ document.getElementById('reconnectBtn').onclick=function(){
   document.getElementById('gBtn').click();
 };
 document.getElementById('fRec').onchange=function(){document.getElementById('rOpts').style.display=this.checked?'block':'none';};
+document.getElementById('fN').addEventListener('change',prefillFromClient);
+document.getElementById('fN').addEventListener('blur',prefillFromClient);
 document.getElementById('addMo').onclick=function(e){if(e.target===this)cAdd();};
 document.getElementById('viewMo').onclick=function(e){if(e.target===this)cView();};
-document.onkeydown=function(e){if(e.key==='Escape'){cAdd();cView();cCli();}if(e.key==='Enter'&&document.getElementById('addMo').classList.contains('open'))svSess();};
+document.onkeydown=function(e){if(e.key==='Escape'){cAdd();cView();cCli();cCliEdit();}if(e.key==='Enter'&&document.getElementById('addMo').classList.contains('open'))svSess();};
 
 function showTab(which){
   ['Cal','Sum','Cli','Ana'].forEach(function(t){
@@ -1373,10 +1567,14 @@ document.getElementById('tCal').onclick=function(){showTab('Cal');};
 document.getElementById('tSum').onclick=function(){showTab('Sum');};
 document.getElementById('tCli').onclick=function(){showTab('Cli');};
 document.getElementById('tAna').onclick=function(){showTab('Ana');};
-document.getElementById('cliList').onclick=function(e){var c=e.target.closest('.clic');if(!c)return;var n=c.getAttribute('data-cli');if(n)oCli(n);};
+document.getElementById('cliList').onclick=function(e){var c=e.target.closest('.clic');if(!c)return;oCli(c.getAttribute('data-cid'),c.getAttribute('data-cli'));};
 document.getElementById('cliSearch').oninput=function(){cliFilter=this.value;rClients();};
 document.getElementById('cliX').onclick=cCli;
 document.getElementById('cliMo').onclick=function(e){if(e.target===this)cCli();};
+document.getElementById('ceX').onclick=cCliEdit;
+document.getElementById('ceCancel').onclick=cCliEdit;
+document.getElementById('ceSave').onclick=saveCliEdit;
+document.getElementById('cliEditMo').onclick=function(e){if(e.target===this)cCliEdit();};
 document.getElementById('sPrev').onclick=function(){sumMonth.setMonth(sumMonth.getMonth()-1);rSummary();};
 document.getElementById('sNext').onclick=function(){sumMonth.setMonth(sumMonth.getMonth()+1);rSummary();};
 document.getElementById('sToday').onclick=function(){var d=new Date();sumMonth=new Date(d.getFullYear(),d.getMonth(),1);rSummary();};
