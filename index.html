@@ -248,6 +248,7 @@ header{padding-top:env(safe-area-inset-top);}
   <div class="tab" id="tSum">Month</div>
   <div class="tab" id="tCli">Clients</div>
   <div class="tab" id="tFin">Finance</div>
+  <div class="tab" id="tTask">Tasks</div>
   <div class="tab" id="tAna">Analytics</div>
 </div>
 <div id="reconnectBanner" style="display:none;background:#1a1000;border-bottom:1px solid #f0a020;padding:8px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px">
@@ -299,6 +300,13 @@ header{padding-top:env(safe-area-inset-top);}
     <div class="ag" id="aStats"></div>
     <div class="cc"><div class="ct">MONTHLY EARNINGS</div><div class="ca"><canvas id="echart"></canvas></div></div>
     <div class="cc"><div class="ct">SESSIONS PER MONTH</div><div class="ca"><canvas id="schart"></canvas></div></div>
+  </div>
+</div>
+<!-- TASKS PAGE -->
+<div class="page" id="pTask">
+  <div class="aw">
+    <div class="ah" style="margin-bottom:16px">TASKS</div>
+    <div id="taskList"></div>
   </div>
 </div>
 <!-- FINANCE PAGE -->
@@ -474,7 +482,7 @@ var firebaseConfig={
   messagingSenderId:"4708848171",
   appId:"1:4708848171:web:234be6db656cbe3043106e"
 };
-var fbDb=null,fbReady=false,fbSuppressNextWrite=false,fbUser=null,fbUnsub=null,fbUnsubC=null,fbSuppressClients=false,fbReadyC=false;
+var fbDb=null,fbReady=false,fbSuppressNextWrite=false,fbUser=null,fbUnsub=null,fbUnsubC=null,fbSuppressClients=false,fbReadyC=false,fbUnsubT=null,fbSuppressTasks=false;
 function fbInit(){
   firebase.initializeApp(firebaseConfig);
   fbDb=firebase.firestore();
@@ -496,6 +504,7 @@ function fbInit(){
         if(document.getElementById('pSum').classList.contains('active'))rSummary();
         if(document.getElementById('pCli').classList.contains('active'))rClients();
         if(document.getElementById('pFin').classList.contains('active'))rFinance();
+        if(document.getElementById('pTask').classList.contains('active'))rTasks();
       } else if(!fbReady&&Object.keys(sess).length){
         // First time signed in and the cloud doc doesn't exist yet - migrate local up.
         sd();
@@ -512,10 +521,16 @@ function fbInit(){
         localStorage.setItem('cbc6_clients',JSON.stringify(clients));
         if(document.getElementById('pCli').classList.contains('active'))rClients();
         if(document.getElementById('pFin').classList.contains('active'))rFinance();
+        if(document.getElementById('pTask').classList.contains('active'))rTasks();
       }
       fbReadyC=true;
       migrateClients();
     },function(e){console.log('Clients listen error:',e);});
+    if(fbUnsubT){fbUnsubT();fbUnsubT=null;}
+    fbUnsubT=fbDb.collection('cbc').doc('tasks').onSnapshot(function(doc){
+      if(fbSuppressTasks){fbSuppressTasks=false;return;}
+      if(doc.exists){var d=doc.data().data||{};tasksStore={manual:d.manual||[],dismissed:d.dismissed||[]};localStorage.setItem('cbc6_tasks',JSON.stringify(tasksStore));if(document.getElementById('pTask').classList.contains('active'))rTasks();}
+    },function(e){console.log('Tasks listen error:',e);});
   });
 }
 fbInit();
@@ -545,6 +560,8 @@ var sumMonth=(function(){var d=new Date();d.setDate(1);d.setHours(0,0,0,0);retur
 function ldc(){try{return JSON.parse(localStorage.getItem('cbc6_clients')||'{}');}catch(e){return {};}}
 var clients=ldc();
 var draggingKey=null;
+function ldt(){try{var o=JSON.parse(localStorage.getItem('cbc6_tasks')||'null');if(o&&typeof o==='object')return {manual:o.manual||[],dismissed:o.dismissed||[]};}catch(e){}return {manual:[],dismissed:[]};}
+var tasksStore=ldt();
 
 function ld(){try{return JSON.parse(localStorage.getItem('cbc6')||'{}');}catch(e){return {};}}
 function sd(){
@@ -566,6 +583,15 @@ function sdc(){
       console.log('Clients save error:',e);
       fbSuppressClients=false;
       toast('Could not save client - check connection');
+    });
+  }
+}
+function sdt(){
+  localStorage.setItem('cbc6_tasks',JSON.stringify(tasksStore));
+  if(fbDb&&fbUser){
+    fbSuppressTasks=true;
+    fbDb.collection('cbc').doc('tasks').set({data:tasksStore}).catch(function(e){
+      console.log('Tasks save error:',e);fbSuppressTasks=false;
     });
   }
 }
@@ -1528,6 +1554,48 @@ function deleteClient(){
   curCli=null;render();rClients();toast('Client removed');
 }
 
+// Auto-generated tasks from existing data (unpaid DD, low blocks, no-shows, not-seen).
+function genAutoTasks(){
+  var out=[],dismissed=tasksStore.dismissed||[];
+  function add(key,text){if(dismissed.indexOf(key)===-1)out.push({key:key,text:text});}
+  var now=new Date(),today=iso(now),monthKey=today.slice(0,7);
+  if(now.getDate()>=7){
+    Object.keys(clients).forEach(function(id){var c=clients[id];if(c.billing==='dd'&&c.status!=='lapsed'&&!ddReceived(c,monthKey))add('dd:'+id+':'+monthKey,'Chase DD — '+c.name+' ('+MS[now.getMonth()]+')');});
+  }
+  Object.keys(clients).forEach(function(id){var c=clients[id];if(c.billing==='block'){var br=blockRemaining(c);if(br&&br.left<=2)add('block:'+id,'Rebook block — '+c.name+' ('+br.left+' left)');}});
+  var lastMap={},nextMap={};
+  Object.keys(sess).forEach(function(k){var s=sess[k];if((s.type||'pt')!=='pt'||!s.clientId)return;if(s.date<=today){if(!lastMap[s.clientId]||s.date>lastMap[s.clientId])lastMap[s.clientId]=s.date;}if(s.date>=today){if(!nextMap[s.clientId]||s.date<nextMap[s.clientId])nextMap[s.clientId]=s.date;}});
+  var cut=iso(aD(now,-14));
+  Object.keys(sess).forEach(function(k){var s=sess[k];if((s.type||'pt')!=='pt')return;if(s.date<cut||s.date>today)return;if(effStatus(s)==='noshow')add('noshow:'+k,'Follow up no-show — '+s.name+' ('+fd(s.date)+')');});
+  Object.keys(clients).forEach(function(id){var c=clients[id];if(c.status==='lapsed')return;var last=lastMap[id],next=nextMap[id];if(last&&!next){var days=Math.round((now-new Date(last+'T12:00:00'))/86400000);if(days>=28)add('notseen:'+id,'Re-engage — '+c.name+' (not seen '+days+'d)');}});
+  return out;
+}
+function todoistUrl(text){return 'https://todoist.com/add?content='+encodeURIComponent(text);}
+function rTasks(){
+  var auto=genAutoTasks(),manual=tasksStore.manual||[];
+  var tdBtn='style="font-size:10px;font-weight:600;letter-spacing:.5px;padding:4px 8px;background:transparent;border:1px solid #e44332;color:#e44332;cursor:pointer;white-space:nowrap"';
+  var html='<div class="cc"><div class="ct">SUGGESTED — FROM YOUR DATA</div>';
+  if(auto.length){
+    html+=auto.map(function(t){return '<div class="ur"><div class="ucl" style="flex:1">'+esc(t.text)+'</div><div style="display:flex;gap:6px;align-items:center"><button class="taskTd" data-td="'+esc(t.text)+'" '+tdBtn+'>→ Todoist</button><button class="taskDismiss" data-dk="'+esc(t.key)+'" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;line-height:1;padding:0 4px">×</button></div></div>';}).join('');
+  } else html+='<div style="color:var(--muted);font-size:12px">Nothing flagged right now ✓</div>';
+  html+='</div>';
+  html+='<div class="cc"><div class="ct">MY TASKS</div>';
+  html+='<div style="display:flex;gap:8px;margin-bottom:12px"><input class="fi" id="taskInput" placeholder="Add a task" autocomplete="off" style="flex:1"><button class="bp" id="taskAdd" style="flex:0 0 auto;padding:0 18px;font-size:14px">Add</button></div>';
+  if(manual.length){
+    html+=manual.map(function(t){return '<div class="ur"><div style="display:flex;align-items:center;gap:8px;flex:1"><input type="checkbox" class="taskDone" data-id="'+t.id+'"'+(t.done?' checked':'')+' style="width:16px;height:16px;cursor:pointer"><span class="ucl"'+(t.done?' style="text-decoration:line-through;color:var(--muted)"':'')+'>'+esc(t.text)+'</span></div><div style="display:flex;gap:6px;align-items:center"><button class="taskTd" data-td="'+esc(t.text)+'" '+tdBtn+'>→ Todoist</button><button class="taskDel" data-id="'+t.id+'" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;line-height:1;padding:0 4px">×</button></div></div>';}).join('');
+  } else html+='<div style="color:var(--muted);font-size:12px">No tasks yet — add one above.</div>';
+  html+='</div>';
+  var el=document.getElementById('taskList');el.innerHTML=html;
+  document.getElementById('taskAdd').onclick=function(){var inp=document.getElementById('taskInput');var v=inp.value.trim();if(!v)return;tasksStore.manual=tasksStore.manual||[];tasksStore.manual.unshift({id:'t'+Date.now(),text:v,done:false});sdt();rTasks();};
+  document.getElementById('taskInput').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('taskAdd').click();});
+  el.onclick=function(e){
+    var td=e.target.closest('.taskTd');if(td){window.open(todoistUrl(td.getAttribute('data-td')),'_blank');return;}
+    var dm=e.target.closest('.taskDismiss');if(dm){tasksStore.dismissed=tasksStore.dismissed||[];tasksStore.dismissed.push(dm.getAttribute('data-dk'));sdt();rTasks();return;}
+    var del=e.target.closest('.taskDel');if(del){var did=del.getAttribute('data-id');tasksStore.manual=(tasksStore.manual||[]).filter(function(t){return t.id!==did;});sdt();rTasks();return;}
+  };
+  el.onchange=function(e){var cb=e.target.closest('.taskDone');if(!cb)return;var tid=cb.getAttribute('data-id');(tasksStore.manual||[]).forEach(function(t){if(t.id===tid)t.done=cb.checked;});sdt();rTasks();};
+}
+
 function lGSI(){return new Promise(function(res,rej){if(typeof google!=='undefined'&&google.accounts){res();return;}var s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.onload=res;s.onerror=rej;document.head.appendChild(s);});}
 
 // Cache the Google access token until it expires so refreshes within the hour reconnect instantly.
@@ -1755,7 +1823,7 @@ document.getElementById('viewMo').onclick=function(e){if(e.target===this)cView()
 document.onkeydown=function(e){if(e.key==='Escape'){cAdd();cView();cCli();cCliEdit();}if(e.key==='Enter'&&document.getElementById('addMo').classList.contains('open'))svSess();};
 
 function showTab(which){
-  ['Cal','Sum','Cli','Fin','Ana'].forEach(function(t){
+  ['Cal','Sum','Cli','Fin','Task','Ana'].forEach(function(t){
     document.getElementById('t'+t).classList.toggle('active',t===which);
     document.getElementById('p'+t).classList.toggle('active',t===which);
   });
@@ -1763,11 +1831,13 @@ function showTab(which){
   if(which==='Sum')rSummary();
   if(which==='Cli')rClients();
   if(which==='Fin')rFinance();
+  if(which==='Task')rTasks();
 }
 document.getElementById('tCal').onclick=function(){showTab('Cal');};
 document.getElementById('tSum').onclick=function(){showTab('Sum');};
 document.getElementById('tCli').onclick=function(){showTab('Cli');};
 document.getElementById('tFin').onclick=function(){showTab('Fin');};
+document.getElementById('tTask').onclick=function(){showTab('Task');};
 document.getElementById('tAna').onclick=function(){showTab('Ana');};
 document.getElementById('fPrev').onclick=function(){finMonth.setMonth(finMonth.getMonth()-1);rFinance();};
 document.getElementById('fNext').onclick=function(){finMonth.setMonth(finMonth.getMonth()+1);rFinance();};
