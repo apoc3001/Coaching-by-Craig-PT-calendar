@@ -334,6 +334,7 @@ header{padding-top:env(safe-area-inset-top);}
       <div class="ah">CLIENTS</div>
       <input class="fi" id="cliSearch" placeholder="Search clients" autocomplete="off" style="max-width:220px">
     </div>
+    <div id="cliBrain"></div>
     <div id="cliList"></div>
   </div>
 </div>
@@ -1491,6 +1492,22 @@ function rClients(){
   var list=Object.keys(map).map(function(k){return map[k];});
   if(cliFilter){var f=cliFilter.toLowerCase();list=list.filter(function(c){return c.name.toLowerCase().indexOf(f)!==-1;});}
   list.sort(function(a,b){if(!!a.next!==!!b.next)return a.next?-1:1;return b.count-a.count;});
+  // Consolidated Coach's Brain board — every client needing attention, at a glance.
+  var bEl=document.getElementById('cliBrain'),brain=[];
+  Object.keys(clients).forEach(function(id){var c=clients[id];if(c.status==='lapsed')return;var cb=clientAlerts(c);if(cb.flags.length)brain.push({c:c,cb:cb});});
+  brain.sort(function(a,b){return b.cb.flags.length-a.cb.flags.length;});
+  if(brain.length){
+    var bh='<div class="cc" style="border-left:3px solid var(--lime)"><div class="ct">COACH’S BRAIN — NEEDS ATTENTION ('+brain.length+')</div>';
+    brain.forEach(function(o){
+      bh+='<div style="padding:7px 0;border-bottom:1px solid var(--border)">';
+      bh+='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="brainOpen" data-openc="'+esc(o.c.id)+'" style="cursor:pointer;color:var(--lime);font-weight:600;font-size:13px">'+esc(o.c.name)+'</span>'+(o.cb.action?'<span style="font-size:11px;color:var(--muted)">'+esc(o.cb.action)+'</span>':'')+'</div>';
+      o.cb.flags.forEach(function(fl){bh+='<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#f0a020;margin-top:3px"><span>⚠ '+esc(fl.text)+'</span><button class="brainDismiss" data-dk="'+esc(fl.key)+'" title="Dismiss" style="background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;line-height:1;padding:0 4px">×</button></div>';});
+      bh+='</div>';
+    });
+    bh+='</div>';
+    bEl.innerHTML=bh;
+    bEl.onclick=function(e){var dm=e.target.closest('.brainDismiss');if(dm){dismissAlert(dm.getAttribute('data-dk'));rClients();return;}var oc=e.target.closest('.brainOpen');if(oc){oCli(oc.getAttribute('data-openc'),'');}};
+  } else bEl.innerHTML='';
   var el=document.getElementById('cliList');
   if(!list.length){el.innerHTML='<div style="color:var(--muted);font-size:13px">'+(cliFilter?'No matching clients.':'No clients yet.')+'</div>';return;}
   el.innerHTML=list.map(function(c){
@@ -1504,10 +1521,11 @@ function rClients(){
   }).join('');
 }
 
-// Coach's Brain: per-client flags + a single suggested next action.
+// Coach's Brain: per-client dismissible flags + a single suggested next action.
 function clientAlerts(c){
-  var warns=[],oks=[],action='';
-  if(!c)return {warns:warns,oks:oks,action:action};
+  var flags=[],oks=[],action='';
+  if(!c)return {flags:flags,oks:oks,action:action};
+  var dismissed=(tasksStore&&tasksStore.dismissed)||[];
   var now=new Date(),today=iso(now),monthKey=today.slice(0,7);
   var last=null,next=null,noShow=0,completed=0,cancelled=0;
   var cut=iso(aD(now,-56));
@@ -1516,28 +1534,27 @@ function clientAlerts(c){
     if(s.date>=today){if(!next||s.date<next)next=s.date;}
     if(s.date>=cut&&s.date<=today){var e=effStatus(s);if(e==='completed')completed++;else if(e==='noshow')noShow++;else if(e==='cancelled')cancelled++;}
   });
-  var ddDue=(c.billing==='dd'&&c.status!=='lapsed'&&now.getDate()>=7&&!ddReceived(c,monthKey));
-  if(ddDue)warns.push('This month’s DD not received');
+  function f(type,key,text){if(dismissed.indexOf(key)===-1)flags.push({type:type,key:key,text:text});}
+  if(c.billing==='dd'&&c.status!=='lapsed'&&now.getDate()>=7&&!ddReceived(c,monthKey))f('dd','dd:'+c.id+':'+monthKey,'This month’s DD not received');
   var br=c.billing==='block'?blockRemaining(c):null;
-  if(br){if(br.left<=0)warns.push('Block used up');else if(br.left<=2)warns.push('Block running low — '+br.left+' left');}
+  if(br&&br.left<=0)f('block','block:'+c.id+':'+(c.blockStart||''),'Block used up');
+  else if(br&&br.left<=2)f('block','block:'+c.id+':'+(c.blockStart||''),'Block running low — '+br.left+' left');
   var owed=bankedCount(c);
-  if(owed>0)warns.push('Owes '+owed+' make-up session'+(owed>1?'s':''));
+  if(owed>0)f('makeup','makeup:'+c.id+':'+owed,'Owes '+owed+' make-up session'+(owed>1?'s':''));
   var daysSince=last?Math.round((now-new Date(last+'T12:00:00'))/86400000):null;
-  if(last&&!next&&daysSince>=28)warns.push('Not seen in '+daysSince+' days, nothing booked');
-  else if(!next&&last)warns.push('No upcoming session booked');
-  if(noShow>0)warns.push(noShow+' no-show'+(noShow>1?'s':'')+' in last 8 weeks');
-  if(!c.programmeUrl)warns.push('No programme link saved');
+  if(last&&!next&&daysSince>=28)f('notseen','notseen:'+c.id+':'+last,'Not seen in '+daysSince+' days, nothing booked');
+  else if(!next&&last)f('noupcoming','noupcoming:'+c.id+':'+last,'No upcoming session booked');
+  if(noShow>0)f('noshow','noshow:'+c.id+':'+noShow,noShow+' no-show'+(noShow>1?'s':'')+' in last 8 weeks');
+  if(!c.programmeUrl)f('noprog','noprog:'+c.id,'No programme link saved');
   if(completed>0&&noShow===0&&cancelled===0)oks.push('Attendance 100% (last 8 weeks)');
   if(next)oks.push('Next session '+fd(next));
   if(c.billing==='dd'&&ddReceived(c,monthKey))oks.push(MS[now.getMonth()]+' DD received');
-  if(ddDue)action='Chase this month’s payment';
-  else if(owed>0)action='Book their make-up session';
-  else if(br&&br.left<=2)action='Prompt a block renewal';
-  else if(last&&!next&&daysSince>=28)action='Reach out to re-book';
-  else if(!next)action='Book their next session';
-  else if(!c.programmeUrl)action='Add their programme link';
-  return {warns:warns,oks:oks,action:action};
+  var actMap={dd:'Chase this month’s payment',makeup:'Book their make-up session',block:'Prompt a block renewal',notseen:'Reach out to re-book',noupcoming:'Book their next session',noshow:'Follow up the no-show',noprog:'Add their programme link'};
+  var prio=['dd','makeup','block','notseen','noupcoming','noshow','noprog'];
+  for(var i=0;i<prio.length;i++){if(flags.some(function(fl){return fl.type===prio[i];})){action=actMap[prio[i]];break;}}
+  return {flags:flags,oks:oks,action:action};
 }
+function dismissAlert(key){tasksStore.dismissed=tasksStore.dismissed||[];if(tasksStore.dismissed.indexOf(key)===-1)tasksStore.dismissed.push(key);sdt();}
 
 function oCli(id,name){
   var c=(id&&clients[id])?clients[id]:findClientByName(name);
@@ -1552,10 +1569,10 @@ function oCli(id,name){
   if(!ph||!em){items.forEach(function(s){if(!ph&&s.phone)ph=s.phone;if(!em&&s.email)em=s.email;});}
   var body='';
   var cb=clientAlerts(c);
-  if(cb.warns.length||cb.oks.length||cb.action){
+  if(cb.flags.length||cb.oks.length){
     body+='<div style="border:1px solid var(--border);border-left:3px solid var(--lime);background:var(--card);padding:12px 14px;margin-bottom:14px">';
     body+='<div style="font-family:Bebas Neue,sans-serif;font-size:14px;letter-spacing:1.5px;color:var(--lime);margin-bottom:8px">COACH’S BRAIN</div>';
-    cb.warns.forEach(function(w){body+='<div style="font-size:12px;color:#f0a020;margin:3px 0">⚠ '+esc(w)+'</div>';});
+    cb.flags.forEach(function(fl){body+='<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#f0a020;margin:3px 0"><span>⚠ '+esc(fl.text)+'</span><button class="cbDismiss" data-dk="'+esc(fl.key)+'" title="Dismiss" style="background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;line-height:1;padding:0 4px">×</button></div>';});
     cb.oks.forEach(function(o){body+='<div style="font-size:12px;color:#1D9E75;margin:3px 0">✓ '+esc(o)+'</div>';});
     if(cb.action)body+='<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:12px"><span style="color:var(--muted)">Suggested: </span><span style="color:var(--lime);font-weight:600">'+esc(cb.action)+'</span></div>';
     body+='</div>';
@@ -1574,11 +1591,12 @@ function oCli(id,name){
     var lowcol=br.left<=2?'var(--danger)':'var(--lime)';
     body+='<div class="vf"><div class="vfl">Billing</div><div class="vfv">Prepaid block &middot; <span style="color:'+lowcol+'">'+br.left+' of '+br.total+' left</span></div></div>';
   }
-  if(c&&c.programmeUrl)body+='<button class="bp" id="cliProgBtn" style="width:100%;margin:10px 0 4px">📂 Open Programme</button>';
+  if(c&&c.programmeUrl)body+='<button class="bp" id="cliProgBtn" style="width:100%;margin:10px 0 2px">📂 Open Programme (Excel app)</button><div style="text-align:center;margin-bottom:6px"><a href="#" id="cliProgWeb" style="font-size:11px;color:var(--muted)">or open in browser</a></div>';
   body+='<button class="bs" id="cliEditBtn" style="margin:8px 0 4px">Edit client details</button>';
   body+='<div class="vfl" style="margin:14px 0 6px">Session history</div>';
   body+=items.length?items.map(function(s){var fut=s.date>=nowIso;return '<div class="ur"><div><div class="ucl">'+fd(s.date)+'</div><div class="um2">'+m2t(s.startMins)+(s.focus?' &middot; '+esc(s.focus):'')+(fut?' &middot; upcoming':'')+'</div></div><div class="ue">'+(ef(s)?'&pound;'+ef(s):'&mdash;')+'</div></div>';}).join(''):'<div style="color:var(--muted);font-size:12px">No sessions yet.</div>';
   document.getElementById('cliBody').innerHTML=body;
+  document.getElementById('cliBody').onclick=function(e){var dm=e.target.closest('.cbDismiss');if(!dm)return;dismissAlert(dm.getAttribute('data-dk'));oCli(curCli,dispName);};
   document.getElementById('cliEditBtn').onclick=function(){oCliEdit(dispName);};
   var pb=document.getElementById('cliProgBtn');if(pb&&c)pb.onclick=function(){window.open(c.programmeUrl,'_blank');};
   var ddb=document.getElementById('ddBtn');if(ddb&&c)ddb.onclick=function(){toggleDD(c.id,ddKey());oCli(c.id,c.name);};
