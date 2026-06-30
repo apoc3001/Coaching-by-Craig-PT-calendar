@@ -235,6 +235,7 @@ header{padding-top:env(safe-area-inset-top);}
     <div id="gcalStatus">● Cal Connected</div>
     <div id="cpw"><span>PT Cal:</span><select id="cp"></select></div>
     <div id="cpw2" style="display:none;align-items:center;gap:8px"><span style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">CF/Other:</span><select id="cp2" style="background:var(--card);border:1px solid #f0a020;color:#f0a020;font-family:&#39;DM Sans&#39;,sans-serif;font-size:11px;font-weight:600;padding:5px 8px;outline:none;cursor:pointer;max-width:160px"></select></div>
+    <button class="hbtn" id="syncAllBtn" style="display:none">↻ Sync all</button>
     <button class="hbtn" id="expBtn">Export CSV</button>
     <button class="hbtn" id="gBtn">Connect Google Cal</button>
   </div>
@@ -911,7 +912,7 @@ function svSess(){
       var newKey=sk(date,sm);
       sess[newKey]=Object.assign({name:name,type:type,date:date,startMins:sm,duration:dur,rate:rate,notes:notes,clientId:cid,recurring:false},xt);
       sd();render();cAdd();toast('Session booked');
-      if(gConn&&gTok&&type!=='personal') pgCal(sess[newKey],true);
+      if(gConn&&gTok) pgCal(sess[newKey],true);
     }
   }
 }
@@ -952,7 +953,7 @@ function oView(key){
       var gcalId=s2&&s2.gcalId;
       var sType=s2&&s2.type;
       delete sess[key];sd();render();cView();toast('Session removed');
-      var delCal=(sType==='crossfit'||sType==='other')&&selCal2?selCal2:selCal;
+      var delCal=calForType(sType);
       if(gcalId)deleteFromGCal(gcalId,delCal);
     };
     var da=mk('button','bd');da.textContent='Remove all';
@@ -993,7 +994,7 @@ function oView(key){
       var gcalId=s2&&s2.gcalId;
       var sType=s2&&s2.type;
       delete sess[key];sd();render();cView();toast('Session cancelled');
-      var delCal=(sType==='crossfit'||sType==='other')&&selCal2?selCal2:selCal;
+      var delCal=calForType(sType);
       if(gcalId)deleteFromGCal(gcalId,delCal);
     };
     acts.appendChild(db);
@@ -1592,26 +1593,52 @@ function fCals(){
   }).catch(function(e){console.error('fCals error:',e);toast('Could not load calendars');});
 }
 
+// Push every not-yet-synced session to Google Calendar, one at a time (avoids rate limits).
+function syncAllUnsynced(){
+  if(!gConn||!gTok){toast('Connect Google Calendar first');return;}
+  var keys=Object.keys(sess).filter(function(k){var s=sess[k];return !s.gcalId&&effStatus(s)!=='cancelled';});
+  if(!keys.length){toast('Everything already synced ✓');return;}
+  toast('Syncing '+keys.length+' session'+(keys.length===1?'':'s')+'…');
+  var i=0,ok=0;
+  function next(){
+    if(i>=keys.length){toast('Synced '+ok+' of '+keys.length+' ✓');render();return;}
+    var s=sess[keys[i]];i++;
+    var p=pgCal(s,true);
+    if(p&&p.then)p.then(function(){ok++;setTimeout(next,200);},function(){setTimeout(next,200);});
+    else setTimeout(next,200);
+  }
+  next();
+}
+function calName(id){
+  var sels=['cp','cp2'];
+  for(var i=0;i<sels.length;i++){var sel=document.getElementById(sels[i]);if(sel){for(var j=0;j<sel.options.length;j++){if(sel.options[j].value===id)return sel.options[j].text;}}}
+  return id==='primary'?'your main calendar':id;
+}
+// Which Google calendar a session type belongs on.
+function calForType(type){
+  if(type==='personal')return 'primary';
+  if((type==='crossfit'||type==='other')&&selCal2)return selCal2;
+  return selCal;
+}
 function pgCal(s,silent){
   if(!gConn||!gTok){if(!silent)toast('Connect Google Calendar first');return;}
   var start=new Date(s.date+'T'+p2(Math.floor(s.startMins/60))+':'+p2(s.startMins%60)+':00');
   var end=new Date(start.getTime()+(s.duration||60)*60000);
-  var desc=(s.rate?'Rate: \u00a3'+s.rate+'/hr':'')+(s.focus?'\nFocus: '+s.focus:'')+(s.phone?'\nPhone: '+s.phone:'')+(s.email?'\nEmail: '+s.email:'')+(s.notes?'\nNotes: '+s.notes:'');
-  var ev={summary:'PT: '+s.name,description:desc,start:{dateTime:start.toISOString(),timeZone:'Europe/London'},end:{dateTime:end.toISOString(),timeZone:'Europe/London'},colorId:'10'};
+  var desc=(s.rate?'Fee: \u00a3'+s.rate:'')+(s.focus?'\nFocus: '+s.focus:'')+(s.phone?'\nPhone: '+s.phone:'')+(s.email?'\nEmail: '+s.email:'')+(s.notes?'\nNotes: '+s.notes:'');
+  var summary=s.type==='personal'?('Training: '+s.name):s.type==='crossfit'?('CF: '+s.name):s.type==='other'?s.name:('PT: '+s.name);
+  var ev={summary:summary,description:desc,start:{dateTime:start.toISOString(),timeZone:'Europe/London'},end:{dateTime:end.toISOString(),timeZone:'Europe/London'},colorId:'10'};
   if(s.location)ev.location=s.location;
-  var calTarget=(s.type==='crossfit'||s.type==='other')&&selCal2?selCal2:selCal;
-  gFetch('https://www.googleapis.com/calendar/v3/calendars/'+encodeURIComponent(calTarget)+'/events',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(ev)})
-  .then(function(r){return r.ok?r.json():null;})
+  var calTarget=calForType(s.type);
+  return gFetch('https://www.googleapis.com/calendar/v3/calendars/'+encodeURIComponent(calTarget)+'/events',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(ev)})
+  .then(function(r){if(r.ok)return r.json();return r.text().then(function(t){throw new Error('HTTP '+r.status+(t?' \u2014 '+t.slice(0,140):''));});})
   .then(function(data){
     if(data&&data.id){
       var key=sk(s.date,s.startMins);
       if(sess[key]){sess[key].gcalId=data.id;sd();}
-      if(!silent)toast('Added to Google Calendar \u2713');
-    } else {
-      if(!silent)toast('Google Calendar error');
-    }
+      if(!silent)toast('Synced to '+calName(calTarget)+' \u2713');
+    } else if(!silent)toast('Google Calendar: no event returned');
   })
-  .catch(function(){if(!silent)toast('Could not reach Google Calendar');});
+  .catch(function(e){console.log('pgCal error:',e);if(!silent)toast('Sync failed: '+(e.message||'error'));});
 }
 
 function deleteFromGCal(gcalId,calId){
@@ -1653,6 +1680,7 @@ document.getElementById('fST').addEventListener('change', function(){
   }
 });
 document.getElementById('expBtn').onclick=expCSV;
+document.getElementById('syncAllBtn').onclick=syncAllUnsynced;
 document.getElementById('authBtn').onclick=function(){
   var em=document.getElementById('aEmail').value.trim();
   var pw=document.getElementById('aPass').value;
@@ -1733,6 +1761,7 @@ function onConnected(){
   var btn=document.getElementById('gBtn');
   btn.textContent='✓ Connected'; btn.classList.add('conn');
   document.getElementById('gcalStatus').style.display='block';
+  document.getElementById('syncAllBtn').style.display='block';
   var savedCal=localStorage.getItem('cbc_selCal');
   if(savedCal) selCal=savedCal;
   showBanner(false);
