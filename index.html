@@ -98,7 +98,7 @@ header{background:var(--dark);border-bottom:1px solid var(--border);padding:0 20
 .blk.tr{background:var(--rec-bg);border:1px solid var(--rec-border);border-left:3px solid var(--rec-accent);}
 .blk.tcf{background:#1a1200;border:1px solid #6b4c00;border-left:3px solid #f0a020;}
 .blk.toth{background:#1a0a1a;border:1px solid #6b3a6b;border-left:3px solid #b060b0;}
-.blk.isp{opacity:.45;cursor:default;}
+.blk.isp{opacity:.5;cursor:pointer;}
 .bn{font-size:10px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;line-height:1.3;}
 .bt{font-size:9px;color:var(--muted);pointer-events:none;}
 .bgoal{font-size:9px;font-style:italic;color:#dcdcdc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;line-height:1.25;}
@@ -242,6 +242,7 @@ header{padding-top:env(safe-area-inset-top);}
   <div class="tab active" id="tCal">Calendar</div>
   <div class="tab" id="tSum">Month</div>
   <div class="tab" id="tCli">Clients</div>
+  <div class="tab" id="tFin">Finance</div>
   <div class="tab" id="tAna">Analytics</div>
 </div>
 <div id="reconnectBanner" style="display:none;background:#1a1000;border-bottom:1px solid #f0a020;padding:8px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px">
@@ -284,6 +285,22 @@ header{padding-top:env(safe-area-inset-top);}
     <div class="ag" id="aStats"></div>
     <div class="cc"><div class="ct">MONTHLY EARNINGS</div><div class="ca"><canvas id="echart"></canvas></div></div>
     <div class="cc"><div class="ct">SESSIONS PER MONTH</div><div class="ca"><canvas id="schart"></canvas></div></div>
+  </div>
+</div>
+<!-- FINANCE PAGE -->
+<div class="page" id="pFin">
+  <div class="wn">
+    <div id="finLbl" style="font-family:Bebas Neue,sans-serif;font-size:24px;letter-spacing:2px"></div>
+    <div class="nbs">
+      <button class="nb" id="fPrev">←</button>
+      <button class="tb" id="fToday">This Month</button>
+      <button class="nb" id="fNext">→</button>
+    </div>
+  </div>
+  <div class="sb" id="finStats"></div>
+  <div class="aw">
+    <div class="cc" id="finDD"></div>
+    <div class="cc" id="finBlocks"></div>
   </div>
 </div>
 <!-- CLIENTS PAGE -->
@@ -383,7 +400,7 @@ header{padding-top:env(safe-area-inset-top);}
       <div id="endTimeWrap" style="display:none"><label class="fl" for="fET">End Time</label>
         <input class="fi" id="fET" type="time" step="1800">
       </div>
-      <div><label class="fl" for="fR">Rate (£/hr)</label><input class="fi" id="fR" type="number" placeholder="60" min="0"></div>
+      <div><label class="fl" for="fR" id="fRlabel">Session fee (£)</label><input class="fi" id="fR" type="number" placeholder="20" min="0"></div>
     </div>
     <div id="endDateWrap" style="display:none" class="fr"><label class="fl" for="fED">End Date</label><input class="fi" id="fED" type="date"></div>
     <div class="fr2">
@@ -464,6 +481,7 @@ function fbInit(){
         if(document.getElementById('pAna').classList.contains('active'))rAna();
         if(document.getElementById('pSum').classList.contains('active'))rSummary();
         if(document.getElementById('pCli').classList.contains('active'))rClients();
+        if(document.getElementById('pFin').classList.contains('active'))rFinance();
       } else if(!fbReady&&Object.keys(sess).length){
         // First time signed in and the cloud doc doesn't exist yet - migrate local up.
         sd();
@@ -479,6 +497,7 @@ function fbInit(){
         clients=doc.data().data||{};
         localStorage.setItem('cbc6_clients',JSON.stringify(clients));
         if(document.getElementById('pCli').classList.contains('active'))rClients();
+        if(document.getElementById('pFin').classList.contains('active'))rFinance();
       }
       fbReadyC=true;
       migrateClients();
@@ -600,7 +619,7 @@ function t2m(t){var p=t.split(':');return parseInt(p[0],10)*60+parseInt(p[1],10)
 function m2i(m){return p2(Math.floor(m/60))+':'+p2(m%60);}
 function m2r(m){return(m-SH*60)/30;}
 function r2m(r){return SH*60+r*30;}
-function ef(s){return s.rate?Math.round(s.rate*(s.duration||60)/60):0;}
+function ef(s){if(!s.rate)return 0;if(effStatus(s)==='cancelled')return 0;if((s.type||'pt')==='crossfit')return Math.round(s.rate*(s.duration||60)/60);return Math.round(s.rate);}
 function fd(ds){var d=new Date(ds+'T12:00:00');return DF[d.getDay()]+' '+d.getDate()+' '+MS[d.getMonth()];}
 
 function render(){rWL();rSum();rGrid();}
@@ -688,7 +707,7 @@ function bBlock(key,s,past,bh){
   var tm=mk('div','bt');tm.textContent=m2t(s.startMins)+' - '+m2t(s.startMins+(s.duration||60));blk.appendChild(tm);
   if(s.rate){var rt=mk('div','br');rt.textContent='\u00a3'+ef(s);blk.appendChild(rt);}
   if(s.recurring){var bd=mk('div','bb');bd.textContent='REC';blk.appendChild(bd);}
-  if(!past){(function(k){blk.onclick=function(e){e.stopPropagation();oView(k);};})(key);}
+  (function(k){blk.onclick=function(e){e.stopPropagation();oView(k);};})(key);
   return blk;
 }
 
@@ -699,6 +718,7 @@ function onTypeChange(type){
   var etWrap=document.getElementById('endTimeWrap');
   var edWrap=document.getElementById('endDateWrap');
   var stRow=document.getElementById('fST').closest?document.getElementById('fST').parentElement:null;
+  var rl=document.getElementById('fRlabel');if(rl)rl.textContent=(type==='crossfit')?'Rate (£/hr)':'Session fee (£)';
   if(type==='crossfit'){
     durWrap.style.display='none';
     etWrap.style.display='block';
@@ -904,8 +924,8 @@ function oView(key){
   document.getElementById('viewTit').textContent=s.name.toUpperCase();
   document.getElementById('viewSub').textContent=fd(s.date)+'  \u00b7  '+m2t(s.startMins)+' \u2013 '+m2t(s.startMins+(s.duration||60));
   document.getElementById('viewBody').innerHTML=
-    vf('Rate',s.rate?'\u00a3'+s.rate+'/hr':'\u2014',s.rate?'vfl2':'')+
-    vf('Session Earnings',earned?'\u00a3'+earned:'\u2014','')+
+    vf(s.type==='crossfit'?'Rate':'Session fee',s.rate?('\u00a3'+s.rate+(s.type==='crossfit'?'/hr':'')):'\u2014',s.rate?'vfl2':'')+
+    (s.type==='crossfit'?vf('Session Earnings',earned?'\u00a3'+earned:'\u2014',''):'')+
     vf('Duration',(s.duration||60)+' mins','')+
     vf('Type',(s.type==='crossfit'?'Crossfit':s.type==='other'?'Other':'PT Session')+(s.recurring?' (Recurring)':' (One-off)'),'')+
     (s.location?vf('Location',s.location,''):'')+
@@ -1152,7 +1172,7 @@ function rMissed(){
 
   document.getElementById('mCard').innerHTML=
     '<div class="mt2">AVAILABLE CAPACITY</div>'+
-    '<div class="ms2">Forward-looking gaps &middot; target '+MAX+' sessions/day &middot; avg rate &pound;'+ar+'/hr</div>'+
+    '<div class="ms2">Forward-looking gaps &middot; target '+MAX+' sessions/day &middot; avg &pound;'+ar+'/session</div>'+
     tabs+
     '<div style="display:flex;gap:20px;margin-bottom:16px">'+
     '<div><div class="sl">Available Slots</div><div class="sv" style="color:var(--danger)">'+tms+'</div></div>'+
@@ -1211,9 +1231,9 @@ function rUpcoming(){
     '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">'+
     '<div class="utt">&pound;'+visTot.toLocaleString()+'<span> total booked</span></div>'+
     '<div style="display:flex;gap:14px;margin-top:2px;flex-wrap:wrap">'+
-    '<div style="text-align:right"><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Regular (£20-£70/hr)</div>'+
+    '<div style="text-align:right"><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Regular (£20-£70)</div>'+
     '<div style="font-family:Bebas Neue,sans-serif;font-size:18px;color:var(--lime)">&pound;'+regTot.toLocaleString()+'</div></div>'+
-    '<div style="text-align:right"><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Premium (above £70/hr)</div>'+
+    '<div style="text-align:right"><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Premium (above £70)</div>'+
     '<div style="font-family:Bebas Neue,sans-serif;font-size:18px;color:#f0a020">&pound;'+premTot.toLocaleString()+'</div></div>'+
     (cfTot>0?'<div style="text-align:right"><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Crossfit</div>'+
     '<div style="font-family:Bebas Neue,sans-serif;font-size:18px;color:#f0a020">&pound;'+cfTot.toLocaleString()+'</div></div>':'')+
@@ -1272,6 +1292,32 @@ function rSummary(){
 }
 
 var cliFilter='',curCli=null;
+var finMonth=(function(){var d=new Date();d.setDate(1);d.setHours(0,0,0,0);return d;})();
+function rFinance(){
+  var y=finMonth.getFullYear(),mo=finMonth.getMonth(),mkey=y+'-'+p2(mo+1);
+  document.getElementById('finLbl').innerHTML=MS[mo].toUpperCase()+' <span style="color:var(--lime)">'+y+'</span>';
+  var ddClients=Object.keys(clients).map(function(id){return clients[id];}).filter(function(c){return c.billing==='dd'&&c.status!=='lapsed';});
+  var ddExp=0,ddCol=0;
+  ddClients.forEach(function(c){var fee=c.monthlyFee||0;ddExp+=fee;if(ddReceived(c,mkey))ddCol+=fee;});
+  var ddOut=ddExp-ddCol;
+  var sessVal=0,sessCount=0;
+  Object.keys(sess).forEach(function(k){var s=sess[k];if(s.date.slice(0,7)!==mkey)return;if(effStatus(s)==='cancelled')return;var cl=clientOf(s);if(cl&&cl.billing==='dd')return;var e=ef(s);if(e>0){sessVal+=e;sessCount++;}});
+  document.getElementById('finStats').innerHTML=
+    pl('Recurring (DD)','&pound;'+ddExp.toLocaleString(),'var(--lime)')+
+    pl('Collected','&pound;'+ddCol.toLocaleString(),'var(--lime)')+
+    pl('Outstanding','&pound;'+ddOut.toLocaleString(),ddOut>0?'var(--danger)':'var(--muted)')+
+    pl('Session income','&pound;'+sessVal.toLocaleString(),'var(--text)');
+  var ddHtml;
+  if(ddClients.length){
+    ddClients.sort(function(a,b){return (ddReceived(a,mkey)?1:0)-(ddReceived(b,mkey)?1:0)||a.name.localeCompare(b.name);});
+    ddHtml=ddClients.map(function(c){var rec=ddReceived(c,mkey);return '<div class="ur" data-ddid="'+esc(c.id)+'" style="cursor:pointer"><div><div class="ucl">'+esc(c.name)+'</div><div class="um2">&pound;'+(c.monthlyFee||0)+'/mo</div></div><div class="ue" style="color:'+(rec?'#1D9E75':'var(--danger)')+'">'+(rec?'✓ Paid':'Tap if paid')+'</div></div>';}).join('');
+  } else ddHtml='<div style="color:var(--muted);font-size:12px">No direct-debit clients yet.</div>';
+  document.getElementById('finDD').innerHTML='<div class="ct">DIRECT DEBIT — '+MS[mo].toUpperCase()+' '+y+'</div>'+ddHtml;
+  var lowBlocks=Object.keys(clients).map(function(id){return clients[id];}).filter(function(c){return c.billing==='block';}).map(function(c){return {c:c,br:blockRemaining(c)};}).filter(function(o){return o.br&&o.br.left<=2;});
+  lowBlocks.sort(function(a,b){return a.br.left-b.br.left;});
+  var blkHtml=lowBlocks.length?lowBlocks.map(function(o){return '<div class="ur" data-cid="'+esc(o.c.id)+'" style="cursor:pointer"><div><div class="ucl">'+esc(o.c.name)+'</div><div class="um2">Prepaid block</div></div><div class="ue" style="color:'+(o.br.left<=0?'var(--danger)':'#f0a020')+'">'+o.br.left+' of '+o.br.total+' left</div></div>';}).join(''):'<div style="color:var(--muted);font-size:12px">No blocks running low.</div>';
+  document.getElementById('finBlocks').innerHTML='<div class="ct">BLOCKS RUNNING LOW</div>'+blkHtml;
+}
 function tagColor(t){
   t=(t||'').toLowerCase().replace(/^online\s*-\s*/,'');
   if(t.indexOf('muscle')!==-1)return '#e0653c';
@@ -1617,18 +1663,25 @@ document.getElementById('viewMo').onclick=function(e){if(e.target===this)cView()
 document.onkeydown=function(e){if(e.key==='Escape'){cAdd();cView();cCli();cCliEdit();}if(e.key==='Enter'&&document.getElementById('addMo').classList.contains('open'))svSess();};
 
 function showTab(which){
-  ['Cal','Sum','Cli','Ana'].forEach(function(t){
+  ['Cal','Sum','Cli','Fin','Ana'].forEach(function(t){
     document.getElementById('t'+t).classList.toggle('active',t===which);
     document.getElementById('p'+t).classList.toggle('active',t===which);
   });
   if(which==='Ana')rAna();
   if(which==='Sum')rSummary();
   if(which==='Cli')rClients();
+  if(which==='Fin')rFinance();
 }
 document.getElementById('tCal').onclick=function(){showTab('Cal');};
 document.getElementById('tSum').onclick=function(){showTab('Sum');};
 document.getElementById('tCli').onclick=function(){showTab('Cli');};
+document.getElementById('tFin').onclick=function(){showTab('Fin');};
 document.getElementById('tAna').onclick=function(){showTab('Ana');};
+document.getElementById('fPrev').onclick=function(){finMonth.setMonth(finMonth.getMonth()-1);rFinance();};
+document.getElementById('fNext').onclick=function(){finMonth.setMonth(finMonth.getMonth()+1);rFinance();};
+document.getElementById('fToday').onclick=function(){var d=new Date();finMonth=new Date(d.getFullYear(),d.getMonth(),1);rFinance();};
+document.getElementById('finDD').onclick=function(e){var r=e.target.closest('[data-ddid]');if(!r)return;toggleDD(r.getAttribute('data-ddid'),finMonth.getFullYear()+'-'+p2(finMonth.getMonth()+1));rFinance();};
+document.getElementById('finBlocks').onclick=function(e){var r=e.target.closest('[data-cid]');if(!r)return;oCli(r.getAttribute('data-cid'),'');};
 document.getElementById('cliList').onclick=function(e){var c=e.target.closest('.clic');if(!c)return;oCli(c.getAttribute('data-cid'),c.getAttribute('data-cli'));};
 document.getElementById('cliSearch').oninput=function(){cliFilter=this.value;rClients();};
 document.getElementById('cliX').onclick=cCli;
