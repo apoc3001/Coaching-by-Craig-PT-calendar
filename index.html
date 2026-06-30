@@ -98,6 +98,7 @@ header{background:var(--dark);border-bottom:1px solid var(--border);padding:0 20
 .blk.tr{background:var(--rec-bg);border:1px solid var(--rec-border);border-left:3px solid var(--rec-accent);}
 .blk.tcf{background:#1a1200;border:1px solid #6b4c00;border-left:3px solid #f0a020;}
 .blk.toth{background:#1a0a1a;border:1px solid #6b3a6b;border-left:3px solid #b060b0;}
+.blk.tpers{background:#06201d;border:1px solid #1f6b62;border-left:3px solid #30c0b0;}
 .blk.isp{opacity:.5;cursor:pointer;}
 .bn{font-size:10px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;line-height:1.3;}
 .bt{font-size:9px;color:var(--muted);pointer-events:none;}
@@ -363,7 +364,7 @@ header{padding-top:env(safe-area-inset-top);}
     </div>
     <div id="ceBlockStartWrap" style="display:none" class="fr"><label class="fl" for="ceBlockStart">Block start date</label><input class="fi" id="ceBlockStart" type="date"></div>
     <div class="fr"><label class="fl" for="ceNotes">Notes</label><input class="fi" id="ceNotes" placeholder="Optional"></div>
-    <div class="ma"><button class="bp" id="ceSave">SAVE</button><button class="bs" id="ceCancel">Cancel</button></div>
+    <div class="ma"><button class="bp" id="ceSave">SAVE</button><button class="bs" id="ceCancel">Cancel</button><button class="bd" id="ceDelete">Delete</button></div>
   </div>
 </div>
 <!-- MONTH SUMMARY PAGE -->
@@ -391,7 +392,7 @@ header{padding-top:env(safe-area-inset-top);}
     <div class="mt" id="addTit">BOOK SESSION</div>
     <div class="ms" id="addSub"></div>
     <div class="fr"><label class="fl" for="fN">Client Name</label><input class="fi" id="fN" placeholder="e.g. Sarah Johnson" autocomplete="off" list="clientNames"><datalist id="clientNames"></datalist></div>
-    <div class="fr"><label class="fl" for="fType">Session Type</label><select class="fi" id="fType" onchange="onTypeChange(this.value)"><option value="pt">PT Session</option><option value="crossfit">Crossfit</option><option value="other">Other</option></select></div>
+    <div class="fr"><label class="fl" for="fType">Session Type</label><select class="fi" id="fType" onchange="onTypeChange(this.value)"><option value="pt">PT Session</option><option value="personal">Personal (my training)</option><option value="crossfit">Crossfit</option><option value="other">Other</option></select></div>
     <div class="fr3">
       <div><label class="fl" for="fST">Start Time</label><input class="fi" id="fST" type="time" step="1800"></div>
       <div id="durSelectWrap"><label class="fl">Duration</label>
@@ -669,7 +670,7 @@ function rGrid(){
 
 function bCell(col,row,mins,isH,csm,g){
   var ds=iso(aD(ws,col)),past=isPM(ds,mins);
-  var cls='sc'+(isH?' sch':'')+(past?' scp':'')+(past?'':' sck');
+  var cls='sc'+(isH?' sch':'')+(past?' scp':'')+' sck';
   var cell=mk('div',cls);
   if(csm[row]!==undefined){
     var k=csm[row],s=sess[k];
@@ -681,29 +682,31 @@ function bCell(col,row,mins,isH,csm,g){
       cell.style.zIndex='10';
     }
   }
-  if(!past){
-    var ph=mk('div','ph');ph.textContent='+';cell.appendChild(ph);
-    (function(ds2,m2){cell.onclick=function(){oAdd(ds2,m2);};})(ds,mins);
-  }
+  // Empty cells (incl. past, for retrospective entry) open the add modal.
+  var ph=mk('div','ph');ph.textContent='+';cell.appendChild(ph);
+  (function(ds2,m2){cell.onclick=function(){oAdd(ds2,m2);};})(ds,mins);
   g.appendChild(cell);
 }
 
 function bBlock(key,s,past,bh){
   var isCF=s.type==='crossfit';
   var isOth=s.type==='other';
-  var blockCls=isCF?'tcf':isOth?'toth':(s.recurring?'tr':'tb2');
+  var isPers=s.type==='personal';
+  var isClientSess=(!isCF&&!isOth&&!isPers);
+  var blockCls=isCF?'tcf':isOth?'toth':isPers?'tpers':(s.recurring?'tr':'tb2');
   var blk=mk('div','blk '+blockCls+(past?' isp':''));
   blk.style.height=bh+'px';
   // PT sessions: colour the block by the client's training type.
-  var cl=(!isCF&&!isOth)?clientOf(s):null;
+  var cl=isClientSess?clientOf(s):null;
   if(cl){var col=tagColor(cl.tag);blk.style.borderLeftColor=col;blk.style.background=col+'22';}
-  var est=(!isCF&&!isOth)?effStatus(s):'';
+  var est=isClientSess?effStatus(s):'';
   if(est==='cancelled'){blk.style.opacity='.5';blk.style.borderLeftColor='#888780';blk.style.background='#88878018';}
   var nm=mk('div','bn');nm.textContent=s.name;if(est==='cancelled')nm.style.textDecoration='line-through';blk.appendChild(nm);
   if(est==='noshow'){var nsb=mk('div','bb');nsb.textContent='NO-SHOW';nsb.style.color='#e05555';nsb.style.borderColor='rgba(224,85,85,0.4)';nsb.style.background='rgba(224,85,85,0.15)';blk.appendChild(nsb);}
   if(cl&&cl.goals&&bh>=40){var gl=mk('div','bgoal');gl.textContent=cl.goals;blk.appendChild(gl);}
   if(isCF){var cfbdg=mk('div','bb');cfbdg.textContent='CF';cfbdg.style.color='#f0a020';cfbdg.style.borderColor='rgba(240,160,32,0.4)';cfbdg.style.background='rgba(240,160,32,0.15)';blk.appendChild(cfbdg);}
   if(isOth){var othbdg=mk('div','bb');othbdg.textContent='AWAY';othbdg.style.color='#b060b0';othbdg.style.borderColor='rgba(176,96,176,0.4)';othbdg.style.background='rgba(176,96,176,0.15)';blk.appendChild(othbdg);}
+  if(isPers){var pbdg=mk('div','bb');pbdg.textContent='ME';pbdg.style.color='#30c0b0';pbdg.style.borderColor='rgba(48,192,176,0.4)';pbdg.style.background='rgba(48,192,176,0.15)';blk.appendChild(pbdg);}
   var tm=mk('div','bt');tm.textContent=m2t(s.startMins)+' - '+m2t(s.startMins+(s.duration||60));blk.appendChild(tm);
   if(s.rate){var rt=mk('div','br');rt.textContent='\u00a3'+ef(s);blk.appendChild(rt);}
   if(s.recurring){var bd=mk('div','bb');bd.textContent='REC';blk.appendChild(bd);}
@@ -908,7 +911,7 @@ function svSess(){
       var newKey=sk(date,sm);
       sess[newKey]=Object.assign({name:name,type:type,date:date,startMins:sm,duration:dur,rate:rate,notes:notes,clientId:cid,recurring:false},xt);
       sd();render();cAdd();toast('Session booked');
-      if(gConn&&gTok) pgCal(sess[newKey],true);
+      if(gConn&&gTok&&type!=='personal') pgCal(sess[newKey],true);
     }
   }
 }
@@ -927,14 +930,14 @@ function oView(key){
     vf(s.type==='crossfit'?'Rate':'Session fee',s.rate?('\u00a3'+s.rate+(s.type==='crossfit'?'/hr':'')):'\u2014',s.rate?'vfl2':'')+
     (s.type==='crossfit'?vf('Session Earnings',earned?'\u00a3'+earned:'\u2014',''):'')+
     vf('Duration',(s.duration||60)+' mins','')+
-    vf('Type',(s.type==='crossfit'?'Crossfit':s.type==='other'?'Other':'PT Session')+(s.recurring?' (Recurring)':' (One-off)'),'')+
+    vf('Type',(s.type==='crossfit'?'Crossfit':s.type==='other'?'Other':s.type==='personal'?'Personal':'PT Session')+(s.recurring?' (Recurring)':' (One-off)'),'')+
     (s.location?vf('Location',s.location,''):'')+
     (s.focus?vf('Session Focus',s.focus,''):'')+
     (s.phone?'<div class="vf"><div class="vfl">Phone</div><div class="vfv"><a href="tel:'+s.phone+'" style="color:var(--lime);text-decoration:none">'+s.phone+'</a></div></div>':'')+
     (s.email?'<div class="vf"><div class="vfl">Email</div><div class="vfv"><a href="mailto:'+s.email+'" style="color:var(--lime);text-decoration:none">'+s.email+'</a></div></div>':'')+
     (s.notes?vf('Notes',s.notes,''):'')+
     statusRow+
-    '<button class="gb" id="gpBtn"'+(gConn?'':' disabled')+'>'+gSVG()+' Add to Google Calendar</button>';
+    '<button class="gb" id="gpBtn"'+(gConn?'':' disabled')+'>'+gSVG()+(s.gcalId?' Re-sync to Google Calendar':' Sync to Google Calendar')+'</button>';
   if(isPT){document.getElementById('stRow').onclick=function(e){var b=e.target.closest('.stbtn');if(!b)return;sess[key].status=b.getAttribute('data-st');sd();render();oView(key);};}
   document.getElementById('gpBtn').onclick=function(){pgCal(s);};
   var acts=document.getElementById('viewActs');acts.innerHTML='';
@@ -1116,8 +1119,8 @@ function rMissed(){
   for(var d=new Date(now);d<winEnd;d=aD(d,1)){var dy=d.getDay();if(dy!==0&&dy!==6)dm[iso(d)]=0;}
   Object.keys(sess).forEach(function(k){
     var s=sess[k];
-    // Crossfit counts as blocking the slot but not toward PT session target
-    if(dm[s.date]!==undefined&&s.type!=='crossfit') dm[s.date]++;
+    // Crossfit/personal block the slot but don't count toward the PT session target; cancelled doesn't count
+    if(dm[s.date]!==undefined&&s.type!=='crossfit'&&s.type!=='personal'&&effStatus(s)!=='cancelled') dm[s.date]++;
   });
 
   var tms=0,tme=0,days=[];
@@ -1462,6 +1465,19 @@ function saveCliEdit(){
   render();rClients();toast('Client updated');
 }
 function cCliEdit(){document.getElementById('cliEditMo').classList.remove('open');}
+function deleteClient(){
+  var c=clients[curCli];if(!c)return;
+  var keys=Object.keys(sess).filter(function(k){var s=sess[k];return (s.type||'pt')==='pt'&&(s.clientId===c.id||normName(s.name)===normName(c.name));});
+  if(!window.confirm('Delete '+c.name+'?\n\nThis removes the client and their '+keys.length+' session'+(keys.length===1?'':'s')+' (including past earnings). This cannot be undone.'))return;
+  var toDel=[];
+  keys.forEach(function(k){if(sess[k].gcalId)toDel.push(sess[k].gcalId);delete sess[k];});
+  delete clients[curCli];
+  sdc();sd();
+  toDel.forEach(function(id){deleteFromGCal(id);});
+  document.getElementById('cliEditMo').classList.remove('open');
+  document.getElementById('cliMo').classList.remove('open');
+  curCli=null;render();rClients();toast('Client removed');
+}
 
 function lGSI(){return new Promise(function(res,rej){if(typeof google!=='undefined'&&google.accounts){res();return;}var s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.onload=res;s.onerror=rej;document.head.appendChild(s);});}
 
@@ -1689,6 +1705,7 @@ document.getElementById('cliMo').onclick=function(e){if(e.target===this)cCli();}
 document.getElementById('ceX').onclick=cCliEdit;
 document.getElementById('ceCancel').onclick=cCliEdit;
 document.getElementById('ceSave').onclick=saveCliEdit;
+document.getElementById('ceDelete').onclick=deleteClient;
 document.getElementById('cliEditMo').onclick=function(e){if(e.target===this)cCliEdit();};
 document.getElementById('sPrev').onclick=function(){sumMonth.setMonth(sumMonth.getMonth()-1);rSummary();};
 document.getElementById('sNext').onclick=function(){sumMonth.setMonth(sumMonth.getMonth()+1);rSummary();};
