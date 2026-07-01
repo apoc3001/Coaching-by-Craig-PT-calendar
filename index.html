@@ -1500,11 +1500,11 @@ function rClients(){
   Object.keys(clients).forEach(function(id){var c=clients[id];if(c.status==='lapsed')return;var cb=clientAlerts(c);if(cb.flags.length)brain.push({c:c,cb:cb});});
   brain.sort(function(a,b){return b.cb.flags.length-a.cb.flags.length;});
   if(brain.length){
-    var bh='<div class="cc" style="border-left:3px solid var(--lime)"><div class="ct" id="brainToggle" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center">COACH’S BRAIN — NEEDS ATTENTION ('+brain.length+') <span style="font-size:14px">'+(brainCollapsed?'▸':'▾')+'</span></div>';
+    var bh='<div class="cc" style="border-left:3px solid var(--lime)"><div class="ct" id="brainToggle" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;color:var(--lime)">COACH’S BRAIN — NEEDS ATTENTION ('+brain.length+') <span style="font-size:16px">'+(brainCollapsed?'▸':'▾')+'</span></div>';
     if(!brainCollapsed){
       brain.forEach(function(o){
         bh+='<div style="padding:7px 0;border-bottom:1px solid var(--border)">';
-        bh+='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="brainOpen" data-openc="'+esc(o.c.id)+'" style="cursor:pointer;color:var(--lime);font-weight:600;font-size:13px">'+esc(o.c.name)+'</span>'+(o.cb.action?'<span style="font-size:11px;color:var(--muted)">'+esc(o.cb.action)+'</span>':'')+'</div>';
+        bh+='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="brainOpen" data-openc="'+esc(o.c.id)+'" style="cursor:pointer;color:var(--lime);font-weight:600;font-size:13px">'+esc(o.c.name)+'</span>'+(o.cb.action?'<span style="font-size:11px;color:var(--lime);font-weight:600">'+esc(o.cb.action)+'</span>':'')+'</div>';
         o.cb.flags.forEach(function(fl){bh+='<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#f0a020;margin-top:3px"><span>⚠ '+esc(fl.text)+'</span><button class="brainDismiss" data-dk="'+esc(fl.key)+'" title="Dismiss" style="background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;line-height:1;padding:0 4px">×</button></div>';});
         bh+='</div>';
       });
