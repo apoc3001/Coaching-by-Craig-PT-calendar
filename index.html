@@ -484,14 +484,22 @@ header{padding-top:env(safe-area-inset-top);}
       <div><label class="fl" for="setStart">Day starts (hour)</label><input class="fi" id="setStart" type="number" min="0" max="23"></div>
       <div><label class="fl" for="setEnd">Day ends (hour)</label><input class="fi" id="setEnd" type="number" min="1" max="24"></div>
     </div>
+    <div class="fr"><label class="fl">Session target per day</label>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px">
+        <div style="text-align:center"><div style="font-size:9px;color:var(--muted);margin-bottom:3px">Mon</div><input class="fi" id="setT1" type="number" min="0" max="20" style="padding:7px 2px;text-align:center"></div>
+        <div style="text-align:center"><div style="font-size:9px;color:var(--muted);margin-bottom:3px">Tue</div><input class="fi" id="setT2" type="number" min="0" max="20" style="padding:7px 2px;text-align:center"></div>
+        <div style="text-align:center"><div style="font-size:9px;color:var(--muted);margin-bottom:3px">Wed</div><input class="fi" id="setT3" type="number" min="0" max="20" style="padding:7px 2px;text-align:center"></div>
+        <div style="text-align:center"><div style="font-size:9px;color:var(--muted);margin-bottom:3px">Thu</div><input class="fi" id="setT4" type="number" min="0" max="20" style="padding:7px 2px;text-align:center"></div>
+        <div style="text-align:center"><div style="font-size:9px;color:var(--muted);margin-bottom:3px">Fri</div><input class="fi" id="setT5" type="number" min="0" max="20" style="padding:7px 2px;text-align:center"></div>
+        <div style="text-align:center"><div style="font-size:9px;color:var(--muted);margin-bottom:3px">Sat</div><input class="fi" id="setT6" type="number" min="0" max="20" style="padding:7px 2px;text-align:center"></div>
+        <div style="text-align:center"><div style="font-size:9px;color:var(--muted);margin-bottom:3px">Sun</div><input class="fi" id="setT0" type="number" min="0" max="20" style="padding:7px 2px;text-align:center"></div>
+      </div>
+    </div>
     <div class="fr2">
-      <div><label class="fl" for="setTarget">Sessions/day target</label><input class="fi" id="setTarget" type="number" min="1" max="20"></div>
       <div><label class="fl" for="setDur">Default session (min)</label><input class="fi" id="setDur" type="number" min="15" step="15"></div>
-    </div>
-    <div class="fr2">
       <div><label class="fl" for="setMin">Regular rate min (£)</label><input class="fi" id="setMin" type="number" min="0"></div>
-      <div><label class="fl" for="setPrem">Premium above (£)</label><input class="fi" id="setPrem" type="number" min="0"></div>
     </div>
+    <div class="fr"><label class="fl" for="setPrem">Premium above (£)</label><input class="fi" id="setPrem" type="number" min="0"></div>
     <div class="ma"><button class="bp" id="setSave">SAVE</button><button class="bs" id="setCancel">Cancel</button></div>
   </div>
 </div>
@@ -598,12 +606,18 @@ function showAuthModal(show){
 var GCI='25101030281-stnunhc7qks2fnfjqj3nnf4afilvlvee.apps.googleusercontent.com';
 var MAX=7,SH=6,EH=21,RH=30,HR=(EH-SH)*2;
 // --- Settings (editable, synced) ---
-var SET={dayStart:6,dayEnd:21,dailyTarget:7,defaultDur:60,regularMin:20,premiumOver:70};
+// dayTargets is indexed by JS getDay(): [Sun,Mon,Tue,Wed,Thu,Fri,Sat]
+var SET={dayStart:6,dayEnd:21,dayTargets:[0,7,7,7,7,7,0],defaultDur:60,regularMin:20,premiumOver:70};
 function ldSet(){try{var o=JSON.parse(localStorage.getItem('cbc6_settings')||'null');if(o&&typeof o==='object')return o;}catch(e){}return null;}
 function applySettings(o){
-  if(o){['dayStart','dayEnd','dailyTarget','defaultDur','regularMin','premiumOver'].forEach(function(k){if(typeof o[k]==='number'&&!isNaN(o[k]))SET[k]=o[k];});}
-  SH=SET.dayStart;EH=SET.dayEnd;MAX=SET.dailyTarget;HR=(EH-SH)*2;
+  if(o){
+    ['dayStart','dayEnd','defaultDur','regularMin','premiumOver'].forEach(function(k){if(typeof o[k]==='number'&&!isNaN(o[k]))SET[k]=o[k];});
+    if(Array.isArray(o.dayTargets)&&o.dayTargets.length===7)SET.dayTargets=o.dayTargets.map(function(n){return (typeof n==='number'&&!isNaN(n))?n:0;});
+    else if(typeof o.dailyTarget==='number'){var t=o.dailyTarget;SET.dayTargets=[0,t,t,t,t,t,0];} // migrate old single target
+  }
+  SH=SET.dayStart;EH=SET.dayEnd;HR=(EH-SH)*2;
 }
+function targetFor(dow){var t=SET.dayTargets;return (t&&typeof t[dow]==='number')?t[dow]:0;}
 applySettings(ldSet());
 var fbUnsubS=null,fbSuppressSet=false;
 function sdSet(){
@@ -730,9 +744,10 @@ function rWL(){
 }
 
 function rSum(){
-  var earn=0,bk=0;
-  for(var d=0;d<7;d++){var ds=iso(aD(ws,d));Object.keys(sess).forEach(function(k){if(k.indexOf(ds+'_')===0){earn+=ef(sess[k]);bk++;}});}
-  var av=Math.max(0,MAX*7-bk),pct=Math.round(bk/(MAX*7)*100);
+  var earn=0,bk=0,tgtBk=0;
+  for(var d=0;d<7;d++){var ds=iso(aD(ws,d));Object.keys(sess).forEach(function(k){if(k.indexOf(ds+'_')===0){var s=sess[k];earn+=ef(s);bk++;if(s.type!=='crossfit'&&s.type!=='personal'&&s.type!=='consult'&&s.type!=='other'&&effStatus(s)!=='cancelled')tgtBk++;}});}
+  var weekTgt=0;for(var d2=0;d2<7;d2++)weekTgt+=targetFor(aD(ws,d2).getDay());
+  var av=Math.max(0,weekTgt-tgtBk),pct=weekTgt?Math.round(tgtBk/weekTgt*100):0;
   var col=pct>=80?'var(--lime)':pct>=50?'#f0a020':'var(--danger)';
   document.getElementById('sumBar').innerHTML=
     pl('Week Earnings','&pound;'+earn.toLocaleString(),'var(--lime)')+
@@ -1274,7 +1289,7 @@ function rMissed(){
   else if(mView==='2m'){ winEnd=new Date(now); winEnd.setMonth(winEnd.getMonth()+2); }
   else { winEnd=new Date(now); winEnd.setMonth(winEnd.getMonth()+3); }
 
-  for(var d=new Date(now);d<winEnd;d=aD(d,1)){var dy=d.getDay();if(dy!==0&&dy!==6)dm[iso(d)]=0;}
+  for(var d=new Date(now);d<winEnd;d=aD(d,1)){if(targetFor(d.getDay())>0)dm[iso(d)]=0;}
   Object.keys(sess).forEach(function(k){
     var s=sess[k];
     // Crossfit/personal block the slot but don't count toward the PT session target; cancelled doesn't count
@@ -1283,8 +1298,8 @@ function rMissed(){
 
   var tms=0,tme=0,days=[];
   Object.keys(dm).sort().forEach(function(ds){
-    var b=dm[ds],m=Math.max(0,MAX-b);tms+=m;tme+=m*ar;
-    days.push({date:ds,booked:b,missed:m});
+    var b=dm[ds],tgt=targetFor(new Date(ds+'T12:00:00').getDay()),m=Math.max(0,tgt-b);tms+=m;tme+=m*ar;
+    days.push({date:ds,booked:b,missed:m,tgt:tgt});
   });
 
   // Group by month if monthly view
@@ -1310,7 +1325,7 @@ function rMissed(){
         if(d.missed===0)return;
         var dt=new Date(d.date+'T12:00:00');
         contentHtml+='<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border);font-size:11px">'+
-          '<span style="color:var(--muted)">'+DS[dt.getDay()]+' '+dt.getDate()+'&nbsp;<span style="color:#555">'+d.booked+'/'+MAX+'</span></span>'+
+          '<span style="color:var(--muted)">'+DS[dt.getDay()]+' '+dt.getDate()+'&nbsp;<span style="color:#555">'+d.booked+'/'+d.tgt+'</span></span>'+
           '<span style="color:var(--danger);font-family:Bebas Neue,sans-serif;font-size:13px">&pound;'+(d.missed*ar)+'</span></div>';
       });
       contentHtml+='<div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:6px;border-top:1px solid var(--border)">'+
@@ -1322,18 +1337,17 @@ function rMissed(){
   } else {
     contentHtml='<div class="mg">'+days.map(function(d){
       var dt=new Date(d.date+'T12:00:00');
-      var pct=Math.round(d.booked/MAX*100);
       var col=d.missed===0?'var(--lime)':d.missed<=2?'#f0a020':'var(--danger)';
       return '<div class="md2">'+
         '<div class="mdn">'+DS[dt.getDay()]+' '+dt.getDate()+' '+MS[dt.getMonth()]+'</div>'+
         '<div class="mdv" style="color:'+col+'">&pound;'+(d.missed*ar)+'</div>'+
-        '<div class="mds">'+d.booked+'/'+MAX+' booked'+(d.missed===0?' &#10003;':'')+'</div></div>';
+        '<div class="mds">'+d.booked+'/'+d.tgt+' booked'+(d.missed===0?' &#10003;':'')+'</div></div>';
     }).join('')+'</div>';
   }
 
   document.getElementById('mCard').innerHTML=
     '<div class="mt2">AVAILABLE CAPACITY</div>'+
-    '<div class="ms2">Forward-looking gaps &middot; target '+MAX+' sessions/day &middot; avg &pound;'+ar+'/session</div>'+
+    '<div class="ms2">Forward-looking gaps &middot; per-day targets from Settings &middot; avg &pound;'+ar+'/session</div>'+
     tabs+
     '<div style="display:flex;gap:20px;margin-bottom:16px">'+
     '<div><div class="sl">Available Slots</div><div class="sv" style="color:var(--danger)">'+tms+'</div></div>'+
@@ -2033,7 +2047,7 @@ document.getElementById('syncAllBtn').onclick=syncAllUnsynced;
 function openSettings(){
   document.getElementById('setStart').value=SET.dayStart;
   document.getElementById('setEnd').value=SET.dayEnd;
-  document.getElementById('setTarget').value=SET.dailyTarget;
+  for(var i=0;i<7;i++)document.getElementById('setT'+i).value=targetFor(i);
   document.getElementById('setDur').value=SET.defaultDur;
   document.getElementById('setMin').value=SET.regularMin;
   document.getElementById('setPrem').value=SET.premiumOver;
@@ -2041,12 +2055,13 @@ function openSettings(){
 }
 function saveSettings(){
   var ds=parseInt(document.getElementById('setStart').value,10),de=parseInt(document.getElementById('setEnd').value,10);
-  var tg=parseInt(document.getElementById('setTarget').value,10),du=parseInt(document.getElementById('setDur').value,10);
+  var du=parseInt(document.getElementById('setDur').value,10);
   var rm=parseFloat(document.getElementById('setMin').value),po=parseFloat(document.getElementById('setPrem').value);
   if(isNaN(ds)||isNaN(de)||de<=ds){toast('Day end must be after day start');return;}
+  var tgts=[];for(var i=0;i<7;i++){var v=parseInt(document.getElementById('setT'+i).value,10);tgts.push(isNaN(v)||v<0?0:v);}
   SET.dayStart=Math.max(0,Math.min(23,ds));
   SET.dayEnd=Math.max(SET.dayStart+1,Math.min(24,de));
-  SET.dailyTarget=tg>0?tg:7;
+  SET.dayTargets=tgts;
   SET.defaultDur=du>0?du:60;
   SET.regularMin=isNaN(rm)?0:rm;
   SET.premiumOver=isNaN(po)?70:po;
