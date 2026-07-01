@@ -242,6 +242,7 @@ header{padding-top:env(safe-area-inset-top);}
     <div id="cpw"><span>PT Cal:</span><select id="cp"></select></div>
     <div id="cpw2" style="display:none;align-items:center;gap:8px"><span style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">CF/Other:</span><select id="cp2" style="background:var(--card);border:1px solid #f0a020;color:#f0a020;font-family:&#39;DM Sans&#39;,sans-serif;font-size:11px;font-weight:600;padding:5px 8px;outline:none;cursor:pointer;max-width:160px"></select></div>
     <button class="hbtn" id="syncAllBtn" style="display:none">↻ Sync all</button>
+    <button class="hbtn" id="setBtn">⚙ Settings</button>
     <button class="hbtn" id="expBtn">Export CSV</button>
     <button class="hbtn" id="gBtn">Connect Google Cal</button>
   </div>
@@ -473,6 +474,27 @@ header{padding-top:env(safe-area-inset-top);}
     <div class="ma" id="viewActs"></div>
   </div>
 </div>
+<!-- SETTINGS MODAL -->
+<div class="mo" id="setMo">
+  <div class="md" style="width:400px">
+    <button class="mc" id="setX">×</button>
+    <div class="mt">SETTINGS</div>
+    <div class="ms">Applies across all your devices.</div>
+    <div class="fr2">
+      <div><label class="fl" for="setStart">Day starts (hour)</label><input class="fi" id="setStart" type="number" min="0" max="23"></div>
+      <div><label class="fl" for="setEnd">Day ends (hour)</label><input class="fi" id="setEnd" type="number" min="1" max="24"></div>
+    </div>
+    <div class="fr2">
+      <div><label class="fl" for="setTarget">Sessions/day target</label><input class="fi" id="setTarget" type="number" min="1" max="20"></div>
+      <div><label class="fl" for="setDur">Default session (min)</label><input class="fi" id="setDur" type="number" min="15" step="15"></div>
+    </div>
+    <div class="fr2">
+      <div><label class="fl" for="setMin">Regular rate min (£)</label><input class="fi" id="setMin" type="number" min="0"></div>
+      <div><label class="fl" for="setPrem">Premium above (£)</label><input class="fi" id="setPrem" type="number" min="0"></div>
+    </div>
+    <div class="ma"><button class="bp" id="setSave">SAVE</button><button class="bs" id="setCancel">Cancel</button></div>
+  </div>
+</div>
 <!-- CLOUD SIGN-IN MODAL -->
 <div class="mo" id="authMo">
   <div class="md" style="width:380px">
@@ -549,6 +571,11 @@ function fbInit(){
       if(fbSuppressTasks){fbSuppressTasks=false;return;}
       if(doc.exists){var d=doc.data().data||{};tasksStore={manual:d.manual||[],dismissed:d.dismissed||[]};localStorage.setItem('cbc6_tasks',JSON.stringify(tasksStore));if(document.getElementById('pTask').classList.contains('active'))rTasks();if(document.getElementById('pToday').classList.contains('active'))rToday();if(document.getElementById('pCli').classList.contains('active'))rClients();}
     },function(e){console.log('Tasks listen error:',e);});
+    if(fbUnsubS){fbUnsubS();fbUnsubS=null;}
+    fbUnsubS=fbDb.collection('cbc').doc('settings').onSnapshot(function(doc){
+      if(fbSuppressSet){fbSuppressSet=false;return;}
+      if(doc.exists){applySettings(doc.data().data||{});localStorage.setItem('cbc6_settings',JSON.stringify(SET));render();if(document.getElementById('pAna').classList.contains('active'))rAna();if(document.getElementById('pToday').classList.contains('active'))rToday();}
+    },function(e){console.log('Settings listen error:',e);});
   });
 }
 fbInit();
@@ -570,6 +597,19 @@ function showAuthModal(show){
 
 var GCI='25101030281-stnunhc7qks2fnfjqj3nnf4afilvlvee.apps.googleusercontent.com';
 var MAX=7,SH=6,EH=21,RH=30,HR=(EH-SH)*2;
+// --- Settings (editable, synced) ---
+var SET={dayStart:6,dayEnd:21,dailyTarget:7,defaultDur:60,regularMin:20,premiumOver:70};
+function ldSet(){try{var o=JSON.parse(localStorage.getItem('cbc6_settings')||'null');if(o&&typeof o==='object')return o;}catch(e){}return null;}
+function applySettings(o){
+  if(o){['dayStart','dayEnd','dailyTarget','defaultDur','regularMin','premiumOver'].forEach(function(k){if(typeof o[k]==='number'&&!isNaN(o[k]))SET[k]=o[k];});}
+  SH=SET.dayStart;EH=SET.dayEnd;MAX=SET.dailyTarget;HR=(EH-SH)*2;
+}
+applySettings(ldSet());
+var fbUnsubS=null,fbSuppressSet=false;
+function sdSet(){
+  localStorage.setItem('cbc6_settings',JSON.stringify(SET));
+  if(fbDb&&fbUser){fbSuppressSet=true;fbDb.collection('cbc').doc('settings').set({data:SET}).catch(function(e){console.log('Settings save error:',e);fbSuppressSet=false;});}
+}
 var DS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 var DF=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 var MS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -885,7 +925,7 @@ function oAdd(date,sm){
   document.getElementById('addSub').textContent=fd(date)+'  \u00b7  '+m2t(sm);
   document.getElementById('fN').value='';
   document.getElementById('fST').value=m2i(sm);
-  document.getElementById('fD').value='60';
+  document.getElementById('fD').value=''+SET.defaultDur;
   document.getElementById('fR').value='';
   document.getElementById('fNo').value='';
   document.getElementById('fLoc').value='';
@@ -1215,7 +1255,7 @@ function rMissed(){
   var ar=0,rc=0;
   Object.keys(sess).forEach(function(k){
     var s=sess[k];
-    if(s.rate&&s.rate>=20&&s.rate<=70&&s.type!=='crossfit'){ar+=s.rate;rc++;}
+    if(s.rate&&s.rate>=SET.regularMin&&s.rate<=SET.premiumOver&&s.type!=='crossfit'){ar+=s.rate;rc++;}
   });
   ar=rc?Math.round(ar/rc):50;
 
@@ -1333,7 +1373,7 @@ function rUpcoming(){
     var d=new Date(mk2+'-01T12:00:00'),mT=0,rows='';
     mm[mk2].sort(function(a,b){return a.date>b.date?1:a.date<b.date?-1:a.startMins-b.startMins;}).forEach(function(s){
       var e=ef(s);mT+=e;var dt=new Date(s.date+'T12:00:00');
-      var isPrem=s.rate&&s.rate>70;
+      var isPrem=s.rate&&s.rate>SET.premiumOver;
       var sStart=new Date(s.date+'T'+p2(Math.floor(s.startMins/60))+':'+p2(s.startMins%60)+':00');
       var gone=sStart<nowTs;
       rows+='<div class="ur"'+(gone?' style="opacity:.4"':'')+'><div><div class="ucl">'+s.name+(gone?' <span style="font-size:9px;color:var(--muted);letter-spacing:1px">DONE</span>':'')+(isPrem?' <span style="font-size:9px;color:#f0a020;letter-spacing:1px">PREMIUM</span>':'')+'</div><div class="um2">'+DS[dt.getDay()]+' '+dt.getDate()+'&nbsp;&middot;&nbsp;'+m2t(s.startMins)+(s.recurring?'&nbsp;&middot;&nbsp;REC':'')+'</div></div><div class="ue" style="color:'+(gone?'var(--muted)':(isPrem?'#f0a020':'var(--lime)'))+'">'+(e?'&pound;'+e:'&mdash;')+'</div></div>';
@@ -1345,16 +1385,16 @@ function rUpcoming(){
   vis.forEach(function(mk2){mm[mk2].forEach(function(s){
     var e=ef(s);visTot+=e;
     if(s.type==='crossfit') cfTot+=e;
-    else if(s.rate&&s.rate>70) premTot+=e;
+    else if(s.rate&&s.rate>SET.premiumOver) premTot+=e;
     else regTot+=e;
   });});
   card.innerHTML='<div class="uh"><div class="ut">UPCOMING EARNINGS'+(uView!=='all'?' — '+MS[new Date(uView+'-01T12:00:00').getMonth()].toUpperCase():'')+'</div>'+
     '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">'+
     '<div class="utt">&pound;'+visTot.toLocaleString()+'<span> total booked</span></div>'+
     '<div style="display:flex;gap:14px;margin-top:2px;flex-wrap:wrap">'+
-    '<div style="text-align:right"><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Regular (£20-£70)</div>'+
+    '<div style="text-align:right"><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Regular (£'+SET.regularMin+'-£'+SET.premiumOver+')</div>'+
     '<div style="font-family:Bebas Neue,sans-serif;font-size:18px;color:var(--lime)">&pound;'+regTot.toLocaleString()+'</div></div>'+
-    '<div style="text-align:right"><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Premium (above £70)</div>'+
+    '<div style="text-align:right"><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Premium (above £'+SET.premiumOver+')</div>'+
     '<div style="font-family:Bebas Neue,sans-serif;font-size:18px;color:#f0a020">&pound;'+premTot.toLocaleString()+'</div></div>'+
     (cfTot>0?'<div style="text-align:right"><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Crossfit</div>'+
     '<div style="font-family:Bebas Neue,sans-serif;font-size:18px;color:#f0a020">&pound;'+cfTot.toLocaleString()+'</div></div>':'')+
@@ -1748,10 +1788,25 @@ function rToday(){
       var typeLbl=s.type==='consult'?'Consultation':s.type==='personal'?'Personal':s.type==='crossfit'?'Crossfit':s.type==='other'?'Away':(cl&&cl.tag?cl.tag:'PT');
       var stTag=est==='cancelled'?' · cancelled':est==='noshow'?' · no-show':'';
       var extra=cl&&cl.goals?' · '+cl.goals:(s.focus?' · '+s.focus:'');
-      return '<div class="ur" data-openk="'+o.k+'" style="cursor:pointer'+(gone||est==='cancelled'?';opacity:.5':'')+'"><div><div class="ucl">'+m2t(s.startMins)+'&nbsp;&nbsp;'+esc(s.name)+(s.makeup?' <span style="font-size:9px;color:var(--lime)">MAKE-UP</span>':'')+'</div><div class="um2">'+esc(typeLbl)+esc(extra)+stTag+'</div></div><div class="ue">'+(ef(s)?'&pound;'+ef(s):'&mdash;')+'</div></div>';
+      var prep='';
+      if(cl){var lastNote='',lastDate='';Object.keys(sess).forEach(function(k2){var s2=sess[k2];if((s2.type||'pt')!=='pt'||!s2.notes)return;if(s2.clientId!==cl.id&&normName(s2.name)!==normName(cl.name))return;if(s2.date>=today)return;if(!lastDate||s2.date>lastDate){lastDate=s2.date;lastNote=s2.notes;}});
+        if(lastNote)prep='<div style="font-size:11px;color:var(--muted);margin-top:3px">📝 Last: '+esc(lastNote)+'</div>';}
+      return '<div data-openk="'+o.k+'" style="cursor:pointer;border-bottom:1px solid var(--border);padding:8px 0'+(gone||est==='cancelled'?';opacity:.5':'')+'">'+
+        '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><div class="ucl">'+m2t(s.startMins)+'&nbsp;&nbsp;'+esc(s.name)+(s.makeup?' <span style="font-size:9px;color:var(--lime)">MAKE-UP</span>':'')+'</div><div class="ue">'+(ef(s)?'&pound;'+ef(s):'&mdash;')+'</div></div>'+
+        '<div class="um2">'+esc(typeLbl)+esc(extra)+stTag+'</div>'+prep+'</div>';
     }).join('');
   } else html+='<div style="color:var(--muted);font-size:13px">No sessions today.</div>';
   html+='</div>';
+  var wkStart=gMon(new Date()),wkEnd=aD(wkStart,6),weekEarn=0;
+  Object.keys(sess).forEach(function(k){var s=sess[k];var d=new Date(s.date+'T12:00:00');if(d>=wkStart&&d<=wkEnd&&effStatus(s)!=='cancelled')weekEarn+=ef(s);});
+  var mkeyT=today.slice(0,7),ddExp=0,ddCol=0;
+  Object.keys(clients).forEach(function(id){var c=clients[id];if(c.billing==='dd'&&c.status!=='lapsed'){ddExp+=c.monthlyFee||0;if(ddReceived(c,mkeyT))ddCol+=c.monthlyFee||0;}});
+  var ddOut=ddExp-ddCol;
+  html+='<div class="cc"><div class="ct">MONEY</div><div style="display:flex;gap:24px;flex-wrap:wrap">'+
+    '<div><div class="sl">This week</div><div class="sv" style="color:var(--lime)">&pound;'+weekEarn.toLocaleString()+'</div></div>'+
+    '<div><div class="sl">DD in ('+MS[now.getMonth()]+')</div><div class="sv" style="color:var(--lime)">&pound;'+ddCol.toLocaleString()+'</div></div>'+
+    '<div><div class="sl">DD outstanding</div><div class="sv" style="color:'+(ddOut>0?'var(--danger)':'var(--muted)')+'">&pound;'+ddOut.toLocaleString()+'</div></div>'+
+    '</div></div>';
   var brain=[];Object.keys(clients).forEach(function(id){var c=clients[id];if(c.status==='lapsed')return;var cb=clientAlerts(c);if(cb.flags.length)brain.push({c:c,cb:cb});});
   brain.sort(function(a,b){return b.cb.flags.length-a.cb.flags.length;});
   html+='<div class="cc" style="border-left:3px solid var(--lime)"><div class="ct" style="color:var(--lime)">NEEDS ATTENTION ('+brain.length+')</div>';
@@ -1975,6 +2030,35 @@ document.getElementById('fST').addEventListener('change', function(){
 });
 document.getElementById('expBtn').onclick=expCSV;
 document.getElementById('syncAllBtn').onclick=syncAllUnsynced;
+function openSettings(){
+  document.getElementById('setStart').value=SET.dayStart;
+  document.getElementById('setEnd').value=SET.dayEnd;
+  document.getElementById('setTarget').value=SET.dailyTarget;
+  document.getElementById('setDur').value=SET.defaultDur;
+  document.getElementById('setMin').value=SET.regularMin;
+  document.getElementById('setPrem').value=SET.premiumOver;
+  document.getElementById('setMo').classList.add('open');
+}
+function saveSettings(){
+  var ds=parseInt(document.getElementById('setStart').value,10),de=parseInt(document.getElementById('setEnd').value,10);
+  var tg=parseInt(document.getElementById('setTarget').value,10),du=parseInt(document.getElementById('setDur').value,10);
+  var rm=parseFloat(document.getElementById('setMin').value),po=parseFloat(document.getElementById('setPrem').value);
+  if(isNaN(ds)||isNaN(de)||de<=ds){toast('Day end must be after day start');return;}
+  SET.dayStart=Math.max(0,Math.min(23,ds));
+  SET.dayEnd=Math.max(SET.dayStart+1,Math.min(24,de));
+  SET.dailyTarget=tg>0?tg:7;
+  SET.defaultDur=du>0?du:60;
+  SET.regularMin=isNaN(rm)?0:rm;
+  SET.premiumOver=isNaN(po)?70:po;
+  applySettings(SET);sdSet();
+  document.getElementById('setMo').classList.remove('open');
+  render();rToday();toast('Settings saved');
+}
+document.getElementById('setBtn').onclick=openSettings;
+document.getElementById('setX').onclick=function(){document.getElementById('setMo').classList.remove('open');};
+document.getElementById('setCancel').onclick=function(){document.getElementById('setMo').classList.remove('open');};
+document.getElementById('setSave').onclick=saveSettings;
+document.getElementById('setMo').onclick=function(e){if(e.target===this)this.classList.remove('open');};
 document.getElementById('authBtn').onclick=function(){
   var em=document.getElementById('aEmail').value.trim();
   var pw=document.getElementById('aPass').value;
@@ -1998,7 +2082,7 @@ document.getElementById('fN').addEventListener('change',prefillFromClient);
 document.getElementById('fN').addEventListener('blur',prefillFromClient);
 document.getElementById('addMo').onclick=function(e){if(e.target===this)cAdd();};
 document.getElementById('viewMo').onclick=function(e){if(e.target===this)cView();};
-document.onkeydown=function(e){if(e.key==='Escape'){cAdd();cView();cCli();cCliEdit();}if(e.key==='Enter'&&document.getElementById('addMo').classList.contains('open'))svSess();};
+document.onkeydown=function(e){if(e.key==='Escape'){cAdd();cView();cCli();cCliEdit();document.getElementById('setMo').classList.remove('open');}if(e.key==='Enter'&&document.getElementById('addMo').classList.contains('open'))svSess();};
 
 function showTab(which){
   ['Today','Cal','Sum','Cli','Fin','Task','Ana'].forEach(function(t){
