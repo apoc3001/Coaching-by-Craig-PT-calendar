@@ -247,7 +247,8 @@ header{padding-top:env(safe-area-inset-top);}
   </div>
 </header>
 <div class="tabs">
-  <div class="tab active" id="tCal">Calendar</div>
+  <div class="tab active" id="tToday">Today</div>
+  <div class="tab" id="tCal">Calendar</div>
   <div class="tab" id="tSum">Month</div>
   <div class="tab" id="tCli">Clients</div>
   <div class="tab" id="tFin">Finance</div>
@@ -258,8 +259,14 @@ header{padding-top:env(safe-area-inset-top);}
   <span style="font-size:11px;color:#f0a020">⚠ Google Calendar disconnected — sessions won't sync across devices</span>
   <button id="reconnectBtn" style="background:#f0a020;color:#000;border:none;font-family:&#39;DM Sans&#39;,sans-serif;font-size:11px;font-weight:700;padding:5px 12px;cursor:pointer;white-space:nowrap">Reconnect</button>
 </div>
+<!-- TODAY / DASHBOARD PAGE -->
+<div class="page active" id="pToday">
+  <div class="wn"><div id="todayLbl" style="font-family:Bebas Neue,sans-serif;font-size:24px;letter-spacing:2px"></div></div>
+  <div class="sb" id="todayStats"></div>
+  <div class="aw" id="todayBody"></div>
+</div>
 <!-- CALENDAR PAGE -->
-<div class="page active" id="pCal">
+<div class="page" id="pCal">
   <div class="wn">
     <div id="wl">WEEK <span style="color:var(--lime)">20</span><span style="font-family:&#39;DM Sans&#39;,sans-serif;font-size:13px;font-weight:300;color:var(--muted);margin-left:10px">11 May–17 May 2026</span></div>
     <div class="nbs">
@@ -514,6 +521,7 @@ function fbInit(){
         if(document.getElementById('pCli').classList.contains('active'))rClients();
         if(document.getElementById('pFin').classList.contains('active'))rFinance();
         if(document.getElementById('pTask').classList.contains('active'))rTasks();
+        if(document.getElementById('pToday').classList.contains('active'))rToday();
       } else if(!fbReady&&Object.keys(sess).length){
         // First time signed in and the cloud doc doesn't exist yet - migrate local up.
         sd();
@@ -531,6 +539,7 @@ function fbInit(){
         if(document.getElementById('pCli').classList.contains('active'))rClients();
         if(document.getElementById('pFin').classList.contains('active'))rFinance();
         if(document.getElementById('pTask').classList.contains('active'))rTasks();
+        if(document.getElementById('pToday').classList.contains('active'))rToday();
       }
       fbReadyC=true;
       migrateClients();
@@ -538,7 +547,7 @@ function fbInit(){
     if(fbUnsubT){fbUnsubT();fbUnsubT=null;}
     fbUnsubT=fbDb.collection('cbc').doc('tasks').onSnapshot(function(doc){
       if(fbSuppressTasks){fbSuppressTasks=false;return;}
-      if(doc.exists){var d=doc.data().data||{};tasksStore={manual:d.manual||[],dismissed:d.dismissed||[]};localStorage.setItem('cbc6_tasks',JSON.stringify(tasksStore));if(document.getElementById('pTask').classList.contains('active'))rTasks();}
+      if(doc.exists){var d=doc.data().data||{};tasksStore={manual:d.manual||[],dismissed:d.dismissed||[]};localStorage.setItem('cbc6_tasks',JSON.stringify(tasksStore));if(document.getElementById('pTask').classList.contains('active'))rTasks();if(document.getElementById('pToday').classList.contains('active'))rToday();if(document.getElementById('pCli').classList.contains('active'))rClients();}
     },function(e){console.log('Tasks listen error:',e);});
   });
 }
@@ -1718,6 +1727,53 @@ function rTasks(){
   el.onchange=function(e){var cb=e.target.closest('.taskDone');if(!cb)return;var tid=cb.getAttribute('data-id');(tasksStore.manual||[]).forEach(function(t){if(t.id===tid)t.done=cb.checked;});sdt();rTasks();};
 }
 
+function rToday(){
+  var now=new Date(),today=iso(now);
+  document.getElementById('todayLbl').innerHTML=DF[now.getDay()].toUpperCase()+' <span style="color:var(--lime)">'+now.getDate()+' '+MS[now.getMonth()]+'</span>';
+  var todays=[];
+  Object.keys(sess).forEach(function(k){if(sess[k].date===today)todays.push({k:k,s:sess[k]});});
+  todays.sort(function(a,b){return a.s.startMins-b.s.startMins;});
+  var earn=0,appts=0,mins=0;
+  todays.forEach(function(o){var s=o.s;if(effStatus(s)==='cancelled'||s.type==='other')return;appts++;mins+=(s.duration||60);earn+=ef(s);});
+  document.getElementById('todayStats').innerHTML=
+    pl('Sessions today',appts,'var(--text)')+
+    pl('Coaching hours',(mins/60).toFixed(mins%60?1:0),'var(--text)')+
+    pl('Booked today','&pound;'+earn.toLocaleString(),'var(--lime)');
+  var html='<div class="cc"><div class="ct">TODAY’S SCHEDULE</div>';
+  if(todays.length){
+    html+=todays.map(function(o){
+      var s=o.s,est=effStatus(s);
+      var gone=new Date(s.date+'T'+p2(Math.floor(s.startMins/60))+':'+p2(s.startMins%60)+':00')<now;
+      var cl=clientOf(s);
+      var typeLbl=s.type==='consult'?'Consultation':s.type==='personal'?'Personal':s.type==='crossfit'?'Crossfit':s.type==='other'?'Away':(cl&&cl.tag?cl.tag:'PT');
+      var stTag=est==='cancelled'?' · cancelled':est==='noshow'?' · no-show':'';
+      var extra=cl&&cl.goals?' · '+cl.goals:(s.focus?' · '+s.focus:'');
+      return '<div class="ur" data-openk="'+o.k+'" style="cursor:pointer'+(gone||est==='cancelled'?';opacity:.5':'')+'"><div><div class="ucl">'+m2t(s.startMins)+'&nbsp;&nbsp;'+esc(s.name)+(s.makeup?' <span style="font-size:9px;color:var(--lime)">MAKE-UP</span>':'')+'</div><div class="um2">'+esc(typeLbl)+esc(extra)+stTag+'</div></div><div class="ue">'+(ef(s)?'&pound;'+ef(s):'&mdash;')+'</div></div>';
+    }).join('');
+  } else html+='<div style="color:var(--muted);font-size:13px">No sessions today.</div>';
+  html+='</div>';
+  var brain=[];Object.keys(clients).forEach(function(id){var c=clients[id];if(c.status==='lapsed')return;var cb=clientAlerts(c);if(cb.flags.length)brain.push({c:c,cb:cb});});
+  brain.sort(function(a,b){return b.cb.flags.length-a.cb.flags.length;});
+  html+='<div class="cc" style="border-left:3px solid var(--lime)"><div class="ct" style="color:var(--lime)">NEEDS ATTENTION ('+brain.length+')</div>';
+  if(brain.length){
+    html+=brain.slice(0,5).map(function(o){return '<div class="ur" data-openc="'+esc(o.c.id)+'" style="cursor:pointer"><div class="ucl" style="color:var(--lime)">'+esc(o.c.name)+'</div><div class="ue" style="font-size:11px;color:var(--lime)">'+esc(o.cb.action||'')+'</div></div>';}).join('');
+    if(brain.length>5)html+='<div style="font-size:11px;color:var(--muted);margin-top:6px">+'+(brain.length-5)+' more — see Clients tab</div>';
+  } else html+='<div style="color:var(--muted);font-size:13px">All clear ✓</div>';
+  html+='</div>';
+  var auto=genAutoTasks(),manual=(tasksStore.manual||[]).filter(function(t){return !t.done;});
+  var taskItems=auto.map(function(t){return t.text;}).concat(manual.map(function(t){return t.text;}));
+  html+='<div class="cc"><div style="display:flex;justify-content:space-between;align-items:center"><div class="ct" style="margin:0">TASKS ('+taskItems.length+')</div><button class="tb" id="todayTasksBtn">Open Tasks</button></div>';
+  if(taskItems.length)html+='<div style="margin-top:10px">'+taskItems.slice(0,6).map(function(t){return '<div class="ur"><div class="ucl">'+esc(t)+'</div></div>';}).join('')+'</div>';
+  else html+='<div style="color:var(--muted);font-size:13px;margin-top:8px">Nothing outstanding ✓</div>';
+  html+='</div>';
+  var el=document.getElementById('todayBody');el.innerHTML=html;
+  el.onclick=function(e){
+    var ok=e.target.closest('[data-openk]');if(ok){oView(ok.getAttribute('data-openk'));return;}
+    var oc=e.target.closest('[data-openc]');if(oc){oCli(oc.getAttribute('data-openc'),'');return;}
+    if(e.target.closest('#todayTasksBtn'))showTab('Task');
+  };
+}
+
 function lGSI(){return new Promise(function(res,rej){if(typeof google!=='undefined'&&google.accounts){res();return;}var s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.onload=res;s.onerror=rej;document.head.appendChild(s);});}
 
 // Cache the Google access token until it expires so refreshes within the hour reconnect instantly.
@@ -1945,7 +2001,7 @@ document.getElementById('viewMo').onclick=function(e){if(e.target===this)cView()
 document.onkeydown=function(e){if(e.key==='Escape'){cAdd();cView();cCli();cCliEdit();}if(e.key==='Enter'&&document.getElementById('addMo').classList.contains('open'))svSess();};
 
 function showTab(which){
-  ['Cal','Sum','Cli','Fin','Task','Ana'].forEach(function(t){
+  ['Today','Cal','Sum','Cli','Fin','Task','Ana'].forEach(function(t){
     document.getElementById('t'+t).classList.toggle('active',t===which);
     document.getElementById('p'+t).classList.toggle('active',t===which);
   });
@@ -1954,7 +2010,9 @@ function showTab(which){
   if(which==='Cli')rClients();
   if(which==='Fin')rFinance();
   if(which==='Task')rTasks();
+  if(which==='Today')rToday();
 }
+document.getElementById('tToday').onclick=function(){showTab('Today');};
 document.getElementById('tCal').onclick=function(){showTab('Cal');};
 document.getElementById('tSum').onclick=function(){showTab('Sum');};
 document.getElementById('tCli').onclick=function(){showTab('Cli');};
@@ -1988,6 +2046,7 @@ document.getElementById('ptg').onclick=function(e){
 function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2800);}
 console.log("CBC Calendar v6 loaded");
 render();
+rToday();
 // Reuse a cached, still-valid token if we have one; otherwise try a silent reconnect.
 setTimeout(function(){if(!restoreTok())tryAutoConnect();}, 200);
 
