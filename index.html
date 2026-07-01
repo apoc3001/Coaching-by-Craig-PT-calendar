@@ -104,6 +104,7 @@ header{background:var(--dark);border-bottom:1px solid var(--border);padding:0 20
 .blk.tcf{background:#1a1200;border:1px solid #6b4c00;border-left:3px solid #f0a020;}
 .blk.toth{background:#1a0a1a;border:1px solid #6b3a6b;border-left:3px solid #b060b0;}
 .blk.tpers{background:#06201d;border:1px solid #1f6b62;border-left:3px solid #30c0b0;}
+.blk.tcon{background:#0a1428;border:1px solid #3a5488;border-left:3px solid #6a90d0;}
 .blk.isp{opacity:.5;cursor:pointer;}
 .bn{font-size:10px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;line-height:1.3;}
 .bt{font-size:9px;color:var(--muted);pointer-events:none;}
@@ -417,7 +418,7 @@ header{padding-top:env(safe-area-inset-top);}
     <div class="mt" id="addTit">BOOK SESSION</div>
     <div class="ms" id="addSub"></div>
     <div class="fr"><label class="fl" for="fN">Client Name</label><input class="fi" id="fN" placeholder="e.g. Sarah Johnson" autocomplete="off" list="clientNames"><datalist id="clientNames"></datalist></div>
-    <div class="fr"><label class="fl" for="fType">Session Type</label><select class="fi" id="fType" onchange="onTypeChange(this.value)"><option value="pt">PT Session</option><option value="personal">Personal (my training)</option><option value="crossfit">Crossfit</option><option value="other">Other</option></select></div>
+    <div class="fr"><label class="fl" for="fType">Session Type</label><select class="fi" id="fType" onchange="onTypeChange(this.value)"><option value="pt">PT Session</option><option value="consult">Consultation (free)</option><option value="personal">Personal (my training)</option><option value="crossfit">Crossfit</option><option value="other">Other</option></select></div>
     <div class="fr3">
       <div><label class="fl" for="fST">Start Time</label><input class="fi" id="fST" type="time" step="1800"></div>
       <div id="durSelectWrap"><label class="fl">Duration</label>
@@ -745,8 +746,9 @@ function bBlock(key,s,past,bh){
   var isCF=s.type==='crossfit';
   var isOth=s.type==='other';
   var isPers=s.type==='personal';
-  var isClientSess=(!isCF&&!isOth&&!isPers);
-  var blockCls=isCF?'tcf':isOth?'toth':isPers?'tpers':(s.recurring?'tr':'tb2');
+  var isCons=s.type==='consult';
+  var isClientSess=(!isCF&&!isOth&&!isPers&&!isCons);
+  var blockCls=isCF?'tcf':isOth?'toth':isPers?'tpers':isCons?'tcon':(s.recurring?'tr':'tb2');
   var blk=mk('div','blk '+blockCls+(past?' isp':''));
   blk.style.height=bh+'px';
   // PT sessions: colour the block by the client's training type.
@@ -760,6 +762,7 @@ function bBlock(key,s,past,bh){
   if(isCF){var cfbdg=mk('div','bb');cfbdg.textContent='CF';cfbdg.style.color='#f0a020';cfbdg.style.borderColor='rgba(240,160,32,0.4)';cfbdg.style.background='rgba(240,160,32,0.15)';blk.appendChild(cfbdg);}
   if(isOth){var othbdg=mk('div','bb');othbdg.textContent='AWAY';othbdg.style.color='#b060b0';othbdg.style.borderColor='rgba(176,96,176,0.4)';othbdg.style.background='rgba(176,96,176,0.15)';blk.appendChild(othbdg);}
   if(isPers){var pbdg=mk('div','bb');pbdg.textContent='ME';pbdg.style.color='#30c0b0';pbdg.style.borderColor='rgba(48,192,176,0.4)';pbdg.style.background='rgba(48,192,176,0.15)';blk.appendChild(pbdg);}
+  if(isCons){var cnbdg=mk('div','bb');cnbdg.textContent='CONSULT';cnbdg.style.color='#6a90d0';cnbdg.style.borderColor='rgba(106,144,208,0.4)';cnbdg.style.background='rgba(106,144,208,0.15)';blk.appendChild(cnbdg);}
   if(s.makeup){blk.style.borderStyle='dashed';var mub=mk('div','bb');mub.textContent='MAKE-UP';mub.style.color='var(--lime)';mub.style.borderColor='rgba(198,241,53,0.4)';mub.style.background='rgba(198,241,53,0.15)';blk.appendChild(mub);}
   var tm=mk('div','bt');tm.textContent=m2t(s.startMins)+' - '+m2t(s.startMins+(s.duration||60));blk.appendChild(tm);
   if(s.rate){var rt=mk('div','br');rt.textContent='\u00a3'+ef(s);blk.appendChild(rt);}
@@ -1022,7 +1025,7 @@ function oView(key){
     vf(s.type==='crossfit'?'Rate':'Session fee',s.rate?('\u00a3'+s.rate+(s.type==='crossfit'?'/hr':'')):'\u2014',s.rate?'vfl2':'')+
     (s.type==='crossfit'?vf('Session Earnings',earned?'\u00a3'+earned:'\u2014',''):'')+
     vf('Duration',(s.duration||60)+' mins','')+
-    vf('Type',(s.type==='crossfit'?'Crossfit':s.type==='other'?'Other':s.type==='personal'?'Personal':'PT Session')+(s.recurring?' (Recurring)':' (One-off)'),'')+
+    vf('Type',(s.type==='crossfit'?'Crossfit':s.type==='other'?'Other':s.type==='personal'?'Personal':s.type==='consult'?'Consultation':'PT Session')+(s.recurring?' (Recurring)':' (One-off)'),'')+
     (s.location?vf('Location',s.location,''):'')+
     (s.focus?vf('Session Focus',s.focus,''):'')+
     (s.phone?'<div class="vf"><div class="vfl">Phone</div><div class="vfv"><a href="tel:'+s.phone+'" style="color:var(--lime);text-decoration:none">'+s.phone+'</a></div></div>':'')+
@@ -1226,7 +1229,7 @@ function rMissed(){
   Object.keys(sess).forEach(function(k){
     var s=sess[k];
     // Crossfit/personal block the slot but don't count toward the PT session target; cancelled doesn't count
-    if(dm[s.date]!==undefined&&s.type!=='crossfit'&&s.type!=='personal'&&effStatus(s)!=='cancelled') dm[s.date]++;
+    if(dm[s.date]!==undefined&&s.type!=='crossfit'&&s.type!=='personal'&&s.type!=='consult'&&effStatus(s)!=='cancelled') dm[s.date]++;
   });
 
   var tms=0,tme=0,days=[];
@@ -1400,7 +1403,7 @@ function rSummary(){
   }
 }
 
-var cliFilter='',curCli=null;
+var cliFilter='',curCli=null,brainCollapsed=localStorage.getItem('cbc_brainCollapsed')==='1';
 var finMonth=(function(){var d=new Date();d.setDate(1);d.setHours(0,0,0,0);return d;})();
 function rFinance(){
   var y=finMonth.getFullYear(),mo=finMonth.getMonth(),mkey=y+'-'+p2(mo+1);
@@ -1497,16 +1500,22 @@ function rClients(){
   Object.keys(clients).forEach(function(id){var c=clients[id];if(c.status==='lapsed')return;var cb=clientAlerts(c);if(cb.flags.length)brain.push({c:c,cb:cb});});
   brain.sort(function(a,b){return b.cb.flags.length-a.cb.flags.length;});
   if(brain.length){
-    var bh='<div class="cc" style="border-left:3px solid var(--lime)"><div class="ct">COACH’S BRAIN — NEEDS ATTENTION ('+brain.length+')</div>';
-    brain.forEach(function(o){
-      bh+='<div style="padding:7px 0;border-bottom:1px solid var(--border)">';
-      bh+='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="brainOpen" data-openc="'+esc(o.c.id)+'" style="cursor:pointer;color:var(--lime);font-weight:600;font-size:13px">'+esc(o.c.name)+'</span>'+(o.cb.action?'<span style="font-size:11px;color:var(--muted)">'+esc(o.cb.action)+'</span>':'')+'</div>';
-      o.cb.flags.forEach(function(fl){bh+='<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#f0a020;margin-top:3px"><span>⚠ '+esc(fl.text)+'</span><button class="brainDismiss" data-dk="'+esc(fl.key)+'" title="Dismiss" style="background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;line-height:1;padding:0 4px">×</button></div>';});
-      bh+='</div>';
-    });
+    var bh='<div class="cc" style="border-left:3px solid var(--lime)"><div class="ct" id="brainToggle" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center">COACH’S BRAIN — NEEDS ATTENTION ('+brain.length+') <span style="font-size:14px">'+(brainCollapsed?'▸':'▾')+'</span></div>';
+    if(!brainCollapsed){
+      brain.forEach(function(o){
+        bh+='<div style="padding:7px 0;border-bottom:1px solid var(--border)">';
+        bh+='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="brainOpen" data-openc="'+esc(o.c.id)+'" style="cursor:pointer;color:var(--lime);font-weight:600;font-size:13px">'+esc(o.c.name)+'</span>'+(o.cb.action?'<span style="font-size:11px;color:var(--muted)">'+esc(o.cb.action)+'</span>':'')+'</div>';
+        o.cb.flags.forEach(function(fl){bh+='<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#f0a020;margin-top:3px"><span>⚠ '+esc(fl.text)+'</span><button class="brainDismiss" data-dk="'+esc(fl.key)+'" title="Dismiss" style="background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;line-height:1;padding:0 4px">×</button></div>';});
+        bh+='</div>';
+      });
+    }
     bh+='</div>';
     bEl.innerHTML=bh;
-    bEl.onclick=function(e){var dm=e.target.closest('.brainDismiss');if(dm){dismissAlert(dm.getAttribute('data-dk'));rClients();return;}var oc=e.target.closest('.brainOpen');if(oc){oCli(oc.getAttribute('data-openc'),'');}};
+    bEl.onclick=function(e){
+      if(e.target.closest('#brainToggle')){brainCollapsed=!brainCollapsed;localStorage.setItem('cbc_brainCollapsed',brainCollapsed?'1':'0');rClients();return;}
+      var dm=e.target.closest('.brainDismiss');if(dm){dismissAlert(dm.getAttribute('data-dk'));rClients();return;}
+      var oc=e.target.closest('.brainOpen');if(oc){oCli(oc.getAttribute('data-openc'),'');}
+    };
   } else bEl.innerHTML='';
   var el=document.getElementById('cliList');
   if(!list.length){el.innerHTML='<div style="color:var(--muted);font-size:13px">'+(cliFilter?'No matching clients.':'No clients yet.')+'</div>';return;}
@@ -1598,7 +1607,8 @@ function oCli(id,name){
   document.getElementById('cliBody').innerHTML=body;
   document.getElementById('cliBody').onclick=function(e){var dm=e.target.closest('.cbDismiss');if(!dm)return;dismissAlert(dm.getAttribute('data-dk'));oCli(curCli,dispName);};
   document.getElementById('cliEditBtn').onclick=function(){oCliEdit(dispName);};
-  var pb=document.getElementById('cliProgBtn');if(pb&&c)pb.onclick=function(){window.open(c.programmeUrl,'_blank');};
+  var pb=document.getElementById('cliProgBtn');if(pb&&c)pb.onclick=function(){var a=document.createElement('a');a.href='ms-excel:ofe|u|'+c.programmeUrl;document.body.appendChild(a);a.click();document.body.removeChild(a);};
+  var pw=document.getElementById('cliProgWeb');if(pw&&c)pw.onclick=function(e){e.preventDefault();window.open(c.programmeUrl,'_blank');};
   var ddb=document.getElementById('ddBtn');if(ddb&&c)ddb.onclick=function(){toggleDD(c.id,ddKey());oCli(c.id,c.name);};
   document.getElementById('cliMo').classList.add('open');
 }
@@ -1853,7 +1863,7 @@ function pgCal(s,silent){
   var start=new Date(s.date+'T'+p2(Math.floor(s.startMins/60))+':'+p2(s.startMins%60)+':00');
   var end=new Date(start.getTime()+(s.duration||60)*60000);
   var desc=(s.rate?'Fee: \u00a3'+s.rate:'')+(s.focus?'\nFocus: '+s.focus:'')+(s.phone?'\nPhone: '+s.phone:'')+(s.email?'\nEmail: '+s.email:'')+(s.notes?'\nNotes: '+s.notes:'');
-  var summary=s.type==='personal'?('Training: '+s.name):s.type==='crossfit'?('CF: '+s.name):s.type==='other'?s.name:('PT: '+s.name);
+  var summary=s.type==='personal'?('Training: '+s.name):s.type==='crossfit'?('CF: '+s.name):s.type==='consult'?('Consult: '+s.name):s.type==='other'?s.name:('PT: '+s.name);
   var ev={summary:summary,description:desc,start:{dateTime:start.toISOString(),timeZone:'Europe/London'},end:{dateTime:end.toISOString(),timeZone:'Europe/London'},colorId:'10'};
   if(s.location)ev.location=s.location;
   var calTarget=calForType(s.type);
