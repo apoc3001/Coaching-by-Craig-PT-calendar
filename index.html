@@ -646,7 +646,7 @@ applySettings(ldSet());
 var fbUnsubS=null,fbSuppressSet=false;
 function sdSet(){
   localStorage.setItem('cbc6_settings',JSON.stringify(SET));
-  if(fbDb&&fbUser){fbSuppressSet=true;fbDb.collection('cbc').doc('settings').set({data:SET}).catch(function(e){console.log('Settings save error:',e);fbSuppressSet=false;});}
+  if(fbDb&&fbUser){fbSuppressSet=true;fbDb.collection('cbc').doc('settings').set({data:fbClean(SET)}).catch(function(e){console.log('Settings save error:',e);fbSuppressSet=false;});}
 }
 var DS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 var DF=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
@@ -660,11 +660,13 @@ function ldt(){try{var o=JSON.parse(localStorage.getItem('cbc6_tasks')||'null');
 var tasksStore=ldt();
 
 function ld(){try{return JSON.parse(localStorage.getItem('cbc6')||'{}');}catch(e){return {};}}
+// Firestore rejects undefined field values; JSON round-trip strips them cleanly.
+function fbClean(o){return JSON.parse(JSON.stringify(o));}
 function sd(){
   localStorage.setItem('cbc6',JSON.stringify(sess));
   if(fbDb&&fbUser){
     fbSuppressNextWrite=true;
-    fbDb.collection('cbc').doc('sessions').set({data:sess}).catch(function(e){
+    fbDb.collection('cbc').doc('sessions').set({data:fbClean(sess)}).catch(function(e){
       console.log('Firestore save error:',e);
       fbSuppressNextWrite=false;
       toast('Could not save to cloud - check connection');
@@ -675,7 +677,7 @@ function sdc(){
   localStorage.setItem('cbc6_clients',JSON.stringify(clients));
   if(fbDb&&fbUser){
     fbSuppressClients=true;
-    fbDb.collection('cbc').doc('clients').set({data:clients}).catch(function(e){
+    fbDb.collection('cbc').doc('clients').set({data:fbClean(clients)}).catch(function(e){
       console.log('Clients save error:',e);
       fbSuppressClients=false;
       toast('Could not save client - check connection');
@@ -686,7 +688,7 @@ function sdt(){
   localStorage.setItem('cbc6_tasks',JSON.stringify(tasksStore));
   if(fbDb&&fbUser){
     fbSuppressTasks=true;
-    fbDb.collection('cbc').doc('tasks').set({data:tasksStore}).catch(function(e){
+    fbDb.collection('cbc').doc('tasks').set({data:fbClean(tasksStore)}).catch(function(e){
       console.log('Tasks save error:',e);fbSuppressTasks=false;
     });
   }
@@ -1949,7 +1951,7 @@ var WARMUP=[
 ];
 function ldA(){try{return JSON.parse(localStorage.getItem('cbc6_assess')||'{}');}catch(e){return {};}}
 var assessments=ldA(),fbUnsubA=null,fbSuppressA=false,curAssess=null;
-function sdA(){localStorage.setItem('cbc6_assess',JSON.stringify(assessments));if(fbDb&&fbUser){fbSuppressA=true;fbDb.collection('cbc').doc('assessments').set({data:assessments}).catch(function(e){console.log('Assess save error:',e);fbSuppressA=false;});}}
+function sdA(){localStorage.setItem('cbc6_assess',JSON.stringify(assessments));if(fbDb&&fbUser){fbSuppressA=true;fbDb.collection('cbc').doc('assessments').set({data:fbClean(assessments)}).catch(function(e){console.log('Assess save error:',e);fbSuppressA=false;});}}
 function clientAssessments(c){if(!c)return [];var a=[];Object.keys(assessments).forEach(function(id){if(assessments[id].clientId===c.id)a.push(assessments[id]);});a.sort(function(x,y){return x.date<y.date?1:x.date>y.date?-1:0;});return a;}
 function latestAssessment(c){return clientAssessments(c)[0]||null;}
 
