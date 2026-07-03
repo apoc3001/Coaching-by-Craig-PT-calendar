@@ -488,6 +488,15 @@ header{padding-top:env(safe-area-inset-top);}
     <div class="ma"><button class="bp" id="aSave">SAVE</button><button class="bs" id="aCancel">Cancel</button><button class="bd" id="aDelete">Delete</button></div>
   </div>
 </div>
+<!-- CLIENT TIMELINE MODAL -->
+<div class="mo" id="tlMo">
+  <div class="md">
+    <button class="mc" id="tlX">×</button>
+    <div class="mt" id="tlTit">TIMELINE</div>
+    <div class="ms" id="tlSub"></div>
+    <div id="tlBody"></div>
+  </div>
+</div>
 <!-- PROGRESS MODAL -->
 <div class="mo" id="aProgMo">
   <div class="md" style="width:760px;max-width:96vw">
@@ -1714,7 +1723,7 @@ function oCli(id,name){
   }
   if(c&&progWeek(c)!==null)body+='<div class="vf"><div class="vfl">Programme</div><div class="vfv" style="color:var(--lime)">'+esc(progLabel(c))+'</div></div>';
   if(c&&c.programmeUrl)body+='<button class="bp" id="cliProgBtn" style="width:100%;margin:10px 0 2px">📂 Open Programme (Excel app)</button><div style="text-align:center;margin-bottom:6px"><a href="#" id="cliProgWeb" style="font-size:11px;color:var(--muted)">or open in browser</a></div>';
-  body+='<button class="bs" id="cliEditBtn" style="margin:8px 0 4px">Edit client details</button>';
+  body+='<div style="display:flex;gap:8px;margin:8px 0 4px"><button class="bs" id="cliEditBtn" style="flex:1">Edit client details</button><button class="bs" id="cliTimeline" style="flex:0 0 auto">Timeline</button></div>';
   if(c){
     var scr=clientAssessments(c);
     body+='<div style="display:flex;justify-content:space-between;align-items:center;margin:16px 0 6px"><div class="vfl" style="margin:0">Movement screens</div><div style="display:flex;gap:8px"><button class="tb" id="cliNewScreen">＋ New</button>'+(scr.length?'<button class="tb" id="cliProgBtn2">Progress</button>':'')+'</div></div>';
@@ -1727,6 +1736,7 @@ function oCli(id,name){
   document.getElementById('cliBody').innerHTML=body;
   document.getElementById('cliBody').onclick=function(e){
     var dm=e.target.closest('.cbDismiss');if(dm){dismissAlert(dm.getAttribute('data-dk'));oCli(curCli,dispName);return;}
+    if(e.target.closest('#cliTimeline')){if(curCli)openTimeline(curCli);return;}
     if(e.target.closest('#cliNewScreen')){if(curCli)newAssessment(curCli);return;}
     if(e.target.closest('#cliProgBtn2')){if(curCli)openProgress(curCli);return;}
     var os=e.target.closest('[data-openscr]');if(os){openAssessment(os.getAttribute('data-openscr'));return;}
@@ -2062,6 +2072,28 @@ function openProgress(cid){
   document.getElementById('aProgMo').classList.add('open');
 }
 
+// Chronological client history assembled from existing data.
+function buildTimeline(c){
+  var ev=[];
+  if(c.createdAt)ev.push({date:iso(new Date(c.createdAt)),ic:'👤',t:'Client added'});
+  if(c.programmeStart)ev.push({date:c.programmeStart,ic:'🏋',t:'Programme started'+(c.programmeWeeks?' ('+c.programmeWeeks+' wks)':'')});
+  clientAssessments(c).forEach(function(a){var fc=Object.keys(a.flags||{}).length;ev.push({date:a.date,ic:'📋',t:'Movement screen'+(fc?' — '+fc+' flag'+(fc>1?'s':''):' — no flags'),sub:(a.summary&&a.summary.primary)||''});});
+  if(c.ddReceived)Object.keys(c.ddReceived).forEach(function(mk){if(c.ddReceived[mk]){var mo=parseInt(mk.slice(5,7),10)-1;ev.push({date:mk+'-28',ic:'💷',t:'DD received — '+MS[mo]+' '+mk.slice(0,4)});}});
+  Object.keys(sess).forEach(function(k){var s=sess[k];if((s.type||'pt')!=='pt')return;if(s.clientId!==c.id&&normName(s.name)!==normName(c.name))return;var e=effStatus(s);
+    if(e==='cancelled')ev.push({date:s.date,ic:'✕',t:'Session cancelled'+(s.makeup?' (make-up)':'')});
+    else if(e==='noshow')ev.push({date:s.date,ic:'⚠',t:'No-show'});
+    else if(s.notes)ev.push({date:s.date,ic:'📝',t:s.notes+(s.makeup?' (make-up)':'')});});
+  ev.sort(function(a,b){return a.date<b.date?1:a.date>b.date?-1:0;});
+  return ev;
+}
+function openTimeline(cid){
+  var c=clients[cid];if(!c)return;var ev=buildTimeline(c);
+  document.getElementById('tlTit').textContent=(c.name||'').toUpperCase()+' — TIMELINE';
+  document.getElementById('tlSub').textContent=ev.length+' event'+(ev.length===1?'':'s');
+  document.getElementById('tlBody').innerHTML=ev.length?ev.map(function(e){return '<div style="display:flex;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)"><div style="font-size:14px;width:20px;text-align:center">'+e.ic+'</div><div style="flex:1"><div style="font-size:12px">'+esc(e.t)+'</div>'+(e.sub?'<div style="font-size:10px;color:var(--muted)">'+esc(e.sub)+'</div>':'')+'</div><div style="font-size:10px;color:var(--muted);white-space:nowrap">'+fd(e.date).replace(/^[A-Za-z]+ /,'')+'</div></div>';}).join(''):'<div style="color:var(--muted);font-size:13px">Nothing logged yet.</div>';
+  document.getElementById('tlMo').classList.add('open');
+}
+
 function lGSI(){return new Promise(function(res,rej){if(typeof google!=='undefined'&&google.accounts){res();return;}var s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.onload=res;s.onerror=rej;document.head.appendChild(s);});}
 
 // Cache the Google access token until it expires so refreshes within the hour reconnect instantly.
@@ -2300,6 +2332,8 @@ document.getElementById('aDelete').onclick=deleteAssessment;
 document.getElementById('aMo').onclick=function(e){if(e.target===this)cAssess();};
 document.getElementById('aProgX').onclick=function(){document.getElementById('aProgMo').classList.remove('open');};
 document.getElementById('aProgMo').onclick=function(e){if(e.target===this)this.classList.remove('open');};
+document.getElementById('tlX').onclick=function(){document.getElementById('tlMo').classList.remove('open');};
+document.getElementById('tlMo').onclick=function(e){if(e.target===this)this.classList.remove('open');};
 document.getElementById('authBtn').onclick=function(){
   var em=document.getElementById('aEmail').value.trim();
   var pw=document.getElementById('aPass').value;
@@ -2323,7 +2357,7 @@ document.getElementById('fN').addEventListener('change',prefillFromClient);
 document.getElementById('fN').addEventListener('blur',prefillFromClient);
 document.getElementById('addMo').onclick=function(e){if(e.target===this)cAdd();};
 document.getElementById('viewMo').onclick=function(e){if(e.target===this)cView();};
-document.onkeydown=function(e){if(e.key==='Escape'){cAdd();cView();cCli();cCliEdit();cAssess();document.getElementById('setMo').classList.remove('open');document.getElementById('aProgMo').classList.remove('open');}if(e.key==='Enter'&&document.getElementById('addMo').classList.contains('open'))svSess();};
+document.onkeydown=function(e){if(e.key==='Escape'){cAdd();cView();cCli();cCliEdit();cAssess();document.getElementById('setMo').classList.remove('open');document.getElementById('aProgMo').classList.remove('open');document.getElementById('tlMo').classList.remove('open');}if(e.key==='Enter'&&document.getElementById('addMo').classList.contains('open'))svSess();};
 
 function showTab(which){
   ['Today','Cal','Sum','Cli','Fin','Task','Ana'].forEach(function(t){
