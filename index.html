@@ -474,6 +474,25 @@ header{padding-top:env(safe-area-inset-top);}
     <div class="ma" id="viewActs"></div>
   </div>
 </div>
+<!-- MOVEMENT SCREEN MODAL -->
+<div class="mo" id="aMo">
+  <div class="md" style="width:560px;max-width:96vw">
+    <button class="mc" id="aX">×</button>
+    <div class="mt" id="aTit">MOVEMENT SCREEN</div>
+    <div class="ms" id="aSub"></div>
+    <div id="aBody"></div>
+    <div class="ma"><button class="bp" id="aSave">SAVE</button><button class="bs" id="aCancel">Cancel</button><button class="bd" id="aDelete">Delete</button></div>
+  </div>
+</div>
+<!-- PROGRESS MODAL -->
+<div class="mo" id="aProgMo">
+  <div class="md" style="width:760px;max-width:96vw">
+    <button class="mc" id="aProgX">×</button>
+    <div class="mt">PROGRESS AT A GLANCE</div>
+    <div class="ms" id="aProgSub"></div>
+    <div id="aProgBody" style="overflow-x:auto"></div>
+  </div>
+</div>
 <!-- SETTINGS MODAL -->
 <div class="mo" id="setMo">
   <div class="md" style="width:400px">
@@ -584,6 +603,11 @@ function fbInit(){
       if(fbSuppressSet){fbSuppressSet=false;return;}
       if(doc.exists){applySettings(doc.data().data||{});localStorage.setItem('cbc6_settings',JSON.stringify(SET));render();if(document.getElementById('pAna').classList.contains('active'))rAna();if(document.getElementById('pToday').classList.contains('active'))rToday();}
     },function(e){console.log('Settings listen error:',e);});
+    if(fbUnsubA){fbUnsubA();fbUnsubA=null;}
+    fbUnsubA=fbDb.collection('cbc').doc('assessments').onSnapshot(function(doc){
+      if(fbSuppressA){fbSuppressA=false;return;}
+      if(doc.exists){assessments=doc.data().data||{};localStorage.setItem('cbc6_assess',JSON.stringify(assessments));if(document.getElementById('pCli').classList.contains('active'))rClients();if(document.getElementById('pToday').classList.contains('active'))rToday();}
+    },function(e){console.log('Assess listen error:',e);});
   });
 }
 fbInit();
@@ -843,7 +867,7 @@ function bBlock(key,s,past,bh){
   return blk;
 }
 
-function moveSession(key,newDate,newMins){
+function moveSession(key,newDate,newMins){try{
   var s=sess[key];if(!s)return;
   if(s.date===newDate&&s.startMins===newMins)return;
   var newKey=sk(newDate,newMins);
@@ -854,7 +878,7 @@ function moveSession(key,newDate,newMins){
   sd();render();
   toast(s.name+' moved to '+fd(newDate)+', '+m2t(newMins));
   if(gConn&&gTok&&s.gcalId)updateGCalTime(s);
-}
+}catch(e){console.error('moveSession error:',e);toast('Move error: '+(e&&e.message||e));}}
 function updateGCalTime(s){
   if(!gConn||!gTok||!s.gcalId)return;
   var start=new Date(s.date+'T'+p2(Math.floor(s.startMins/60))+':'+p2(s.startMins%60)+':00');
@@ -1003,7 +1027,7 @@ function fExtra(){return {
   email:document.getElementById('fEm').value.trim()
 };}
 
-function svSess(){
+function svSess(){try{
   var name=document.getElementById('fN').value.trim();if(!name){document.getElementById('fN').focus();return;}
   var type=document.getElementById('fType').value||'pt';
   var sm=t2m(document.getElementById('fST').value);
@@ -1016,7 +1040,7 @@ function svSess(){
   // Link PT sessions to a client record (creating/updating it); other types aren't clients.
   var cid=(type==='pt')?ensureClient(name,{phone:xt.phone,email:xt.email,rate:rate,date:date}):'';
   if(aEk){
-    var old=sess[aEk];delete sess[aEk];
+    var old=sess[aEk]||{};delete sess[aEk];
     sess[sk(date,sm)]=Object.assign({name:name,type:type,date:date,startMins:sm,duration:dur,rate:rate,notes:notes,clientId:cid,makeup:old.makeup||false,status:old.status,recurring:old.recurring,recurringId:old.recurringId,gcalId:old.gcalId},xt);
     sd();render();cAdd();toast('Session updated');return;
   }
@@ -1073,7 +1097,7 @@ function svSess(){
       if(gConn&&gTok) pgCal(sess[newKey],true);
     }
   }
-}
+}catch(e){console.error('svSess error:',e);toast('Save error: '+(e&&e.message||e));}}
 
 function oView(key){
   var s=sess[key];if(!s)return;
@@ -1618,11 +1642,15 @@ function clientAlerts(c){
   else if(!next&&last)f('noupcoming','noupcoming:'+c.id+':'+last,'No upcoming session booked');
   if(noShow>0)f('noshow','noshow:'+c.id+':'+noShow,noShow+' no-show'+(noShow>1?'s':'')+' in last 8 weeks');
   if(!c.programmeUrl)f('noprog','noprog:'+c.id,'No programme link saved');
+  var la=latestAssessment(c);
+  if(!la)f('noscreen','noscreen:'+c.id,'No movement screen on file');
+  else{var sd=Math.round((now-new Date(la.date+'T12:00:00'))/86400000);if(sd>=84)f('rescreen','rescreen:'+c.id+':'+la.date,'Movement re-screen due ('+Math.round(sd/7)+'w)');}
   if(completed>0&&noShow===0&&cancelled===0)oks.push('Attendance 100% (last 8 weeks)');
   if(next)oks.push('Next session '+fd(next));
   if(c.billing==='dd'&&ddReceived(c,monthKey))oks.push(MS[now.getMonth()]+' DD received');
-  var actMap={dd:'Chase this month’s payment',makeup:'Book their make-up session',block:'Prompt a block renewal',notseen:'Reach out to re-book',noupcoming:'Book their next session',noshow:'Follow up the no-show',noprog:'Add their programme link'};
-  var prio=['dd','makeup','block','notseen','noupcoming','noshow','noprog'];
+  if(la&&la.summary&&la.summary.primary)oks.push('Screen focus: '+la.summary.primary);
+  var actMap={dd:'Chase this month’s payment',makeup:'Book their make-up session',block:'Prompt a block renewal',notseen:'Reach out to re-book',noupcoming:'Book their next session',noshow:'Follow up the no-show',rescreen:'Re-screen movement',noscreen:'Book a movement screen',noprog:'Add their programme link'};
+  var prio=['dd','makeup','block','notseen','noupcoming','noshow','rescreen','noscreen','noprog'];
   for(var i=0;i<prio.length;i++){if(flags.some(function(fl){return fl.type===prio[i];})){action=actMap[prio[i]];break;}}
   return {flags:flags,oks:oks,action:action};
 }
@@ -1665,10 +1693,22 @@ function oCli(id,name){
   }
   if(c&&c.programmeUrl)body+='<button class="bp" id="cliProgBtn" style="width:100%;margin:10px 0 2px">📂 Open Programme (Excel app)</button><div style="text-align:center;margin-bottom:6px"><a href="#" id="cliProgWeb" style="font-size:11px;color:var(--muted)">or open in browser</a></div>';
   body+='<button class="bs" id="cliEditBtn" style="margin:8px 0 4px">Edit client details</button>';
-  body+='<div class="vfl" style="margin:14px 0 6px">Session history</div>';
+  if(c){
+    var scr=clientAssessments(c);
+    body+='<div style="display:flex;justify-content:space-between;align-items:center;margin:16px 0 6px"><div class="vfl" style="margin:0">Movement screens</div><div style="display:flex;gap:8px"><button class="tb" id="cliNewScreen">＋ New</button>'+(scr.length?'<button class="tb" id="cliProgBtn2">Progress</button>':'')+'</div></div>';
+    if(scr.length){
+      body+=scr.map(function(a){var fc=Object.keys(a.flags||{}).length;return '<div class="ur" data-openscr="'+a.id+'" style="cursor:pointer"><div><div class="ucl">'+fd(a.date)+'</div><div class="um2">'+((a.summary&&a.summary.primary)?esc(a.summary.primary):(fc?fc+' flag'+(fc>1?'s':''):'no flags'))+'</div></div><div class="ue">'+(fc?'<span style="color:var(--danger)">'+fc+' ⚠</span>':'✓')+'</div></div>';}).join('');
+    } else body+='<div style="color:var(--muted);font-size:12px">No movement screens yet.</div>';
+  }
+  body+='<div class="vfl" style="margin:16px 0 6px">Session history</div>';
   body+=items.length?items.map(function(s){var fut=s.date>=nowIso;return '<div class="ur"><div><div class="ucl">'+fd(s.date)+'</div><div class="um2">'+m2t(s.startMins)+(s.focus?' &middot; '+esc(s.focus):'')+(fut?' &middot; upcoming':'')+'</div></div><div class="ue">'+(ef(s)?'&pound;'+ef(s):'&mdash;')+'</div></div>';}).join(''):'<div style="color:var(--muted);font-size:12px">No sessions yet.</div>';
   document.getElementById('cliBody').innerHTML=body;
-  document.getElementById('cliBody').onclick=function(e){var dm=e.target.closest('.cbDismiss');if(!dm)return;dismissAlert(dm.getAttribute('data-dk'));oCli(curCli,dispName);};
+  document.getElementById('cliBody').onclick=function(e){
+    var dm=e.target.closest('.cbDismiss');if(dm){dismissAlert(dm.getAttribute('data-dk'));oCli(curCli,dispName);return;}
+    if(e.target.closest('#cliNewScreen')){if(curCli)newAssessment(curCli);return;}
+    if(e.target.closest('#cliProgBtn2')){if(curCli)openProgress(curCli);return;}
+    var os=e.target.closest('[data-openscr]');if(os){openAssessment(os.getAttribute('data-openscr'));return;}
+  };
   document.getElementById('cliEditBtn').onclick=function(){oCliEdit(dispName);};
   var pb=document.getElementById('cliProgBtn');if(pb&&c)pb.onclick=function(){var a=document.createElement('a');a.href='ms-excel:ofe|u|'+c.programmeUrl;document.body.appendChild(a);a.click();document.body.removeChild(a);};
   var pw=document.getElementById('cliProgWeb');if(pw&&c)pw.onclick=function(e){e.preventDefault();window.open(c.programmeUrl,'_blank');};
@@ -1804,7 +1844,8 @@ function rToday(){
       var extra=cl&&cl.goals?' · '+cl.goals:(s.focus?' · '+s.focus:'');
       var prep='';
       if(cl){var lastNote='',lastDate='';Object.keys(sess).forEach(function(k2){var s2=sess[k2];if((s2.type||'pt')!=='pt'||!s2.notes)return;if(s2.clientId!==cl.id&&normName(s2.name)!==normName(cl.name))return;if(s2.date>=today)return;if(!lastDate||s2.date>lastDate){lastDate=s2.date;lastNote=s2.notes;}});
-        if(lastNote)prep='<div style="font-size:11px;color:var(--muted);margin-top:3px">📝 Last: '+esc(lastNote)+'</div>';}
+        if(lastNote)prep='<div style="font-size:11px;color:var(--muted);margin-top:3px">📝 Last: '+esc(lastNote)+'</div>';
+        var la=latestAssessment(cl);if(la&&la.summary&&la.summary.primary)prep='<div style="font-size:11px;color:#f0a020;margin-top:3px">⚠ Screen: '+esc(la.summary.primary)+'</div>'+prep;}
       return '<div data-openk="'+o.k+'" style="cursor:pointer;border-bottom:1px solid var(--border);padding:8px 0'+(gone||est==='cancelled'?';opacity:.5':'')+'">'+
         '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><div class="ucl">'+m2t(s.startMins)+'&nbsp;&nbsp;'+esc(s.name)+(s.makeup?' <span style="font-size:9px;color:var(--lime)">MAKE-UP</span>':'')+'</div><div class="ue">'+(ef(s)?'&pound;'+ef(s):'&mdash;')+'</div></div>'+
         '<div class="um2">'+esc(typeLbl)+esc(extra)+stTag+'</div>'+prep+'</div>';
@@ -1841,6 +1882,158 @@ function rToday(){
     var oc=e.target.closest('[data-openc]');if(oc){oCli(oc.getAttribute('data-openc'),'');return;}
     if(e.target.closest('#todayTasksBtn'))showTab('Task');
   };
+}
+
+// ===== MOVEMENT SCREEN (Assessments) =====
+var ASSESS_TPL=[
+  {g:'Respiration',tests:[
+    {id:'isa',name:'Infrasternal Angle (ISA)',bench:'~90° neutral',flag:'Wide >90°: poor diaphragm / rib flare. Narrow <90°: restricted overhead.'},
+    {id:'brr',name:'Resting Breath Rate',bench:'12–16 breaths/min',flag:'>20 = flag'}]},
+  {g:'Posture',tests:[
+    {id:'fhp',name:'Forward Head Posture (Wall Test)',bench:'0 cm gap',flag:'>4 cm = physio referral before overhead loading'}]},
+  {g:'Ankle',tests:[
+    {id:'wblt',name:'Weight-Bearing Lunge Test',bench:'>10 cm',flag:'<7 cm = significant. L/R diff >1.5 cm = asymmetry',lr:true}]},
+  {g:'Hip & Lower',tests:[
+    {id:'thomas',name:'Modified Thomas Test',bench:'P/F — thigh horiz, knee 90°',flag:'Note Psoas or RecFem as primary restriction',lr:true},
+    {id:'aslr',name:'Active Straight Leg Raise (ASLR)',bench:'P/F — ankle clears mid-thigh',flag:'Pelvic tilt = fail. LBP injury predictor',lr:true},
+    {id:'slgb',name:'Single-Leg Glute Bridge Hold (secs)',bench:'>60s; <10% L/R diff',flag:'>10% L/R = hamstring strain risk',lr:true}]},
+  {g:'Knee / Quad',tests:[
+    {id:'wallsit',name:'Wall Sit (secs)',bench:'>60s avg; >100s good',flag:'<30s = quad weakness. Anterior knee pain before fatigue = refer'}]},
+  {g:'Thoracic',tests:[
+    {id:'tsr',name:'Seated Thoracic Rotation (°)',bench:'≥45° each side',flag:'<35° = restricted. Asymm >10° = high injury risk',lr:true},
+    {id:'wallslide',name:'Wall Slide / Overhead Reach',bench:'P/F — wrists, no rib flare',flag:'Rib flare more significant than wrist lift'}]},
+  {g:'Core / Trunk',tests:[
+    {id:'frontplank',name:'Front Plank (secs)',bench:'90–120s baseline',flag:'If front plank > Sorenson = posterior chain weakness'},
+    {id:'sideplankL',name:'Side Plank — LEFT (secs)',bench:'75–90s; within 5% of R',flag:'L/R diff >15% = high LBP injury risk'},
+    {id:'sideplankR',name:'Side Plank — RIGHT (secs)',bench:'75–90s; within 5% of L',flag:''}]},
+  {g:'Posterior',tests:[
+    {id:'sorenson',name:'Sorenson Test (secs)',bench:'120–180s; <120 = flag',flag:'⚠ <120s = NO high-volume spinal loading'},
+    {id:'nordic',name:'Nordic Hamstring (° at break)',bench:'Controls to ≥45°',flag:'⚠ Breaks >60° = no sprint work until built',lr:true}]},
+  {g:'Grip / Upper',tests:[
+    {id:'deadhang',name:'Dead Hang (secs)',bench:'>60s; <30s = flag',flag:'⚠ <30s = no heavy rows / pull-ups'},
+    {id:'flexhang',name:'Flexed-Arm Hang (secs)',bench:'>40s good; >90s elite',flag:''},
+    {id:'pushup',name:'Push-Up to Failure (reps)',bench:'M: ≥35 / F: ≥22 (20–39)',flag:''}]},
+  {g:'Global Pattern (OHS)',tests:[
+    {id:'ohs_feet',name:'Overhead Squat — Feet',bench:'Neutral',flag:'Turn out → ankle (lunge test)'},
+    {id:'ohs_knees',name:'Overhead Squat — Knees',bench:'Neutral',flag:'Valgus → hip (Thomas / ASLR)'},
+    {id:'ohs_lphc',name:'Overhead Squat — LPHC',bench:'Neutral',flag:'Fwd lean / butt wink → ankle / hip'},
+    {id:'ohs_upper',name:'Overhead Squat — Upper Body',bench:'Neutral',flag:'Arms fall fwd → lat tightness (wall slide)'}]}
+];
+var CORRECTION={
+  isa:[{ex:'90/90 Hip Lift with Exhale (wide ISA)',setup:'Supine, 90/90 position',cue:'Exhale all air through pursed lips until ribs drop. Hold empty 3 sec.'},{ex:"Rocking Child's Pose Breathing (narrow ISA)",setup:'All-fours, hips to heels',cue:'Breathe into mid-back and sides. Feel the back expand 360°.'}],
+  fhp:[{ex:'Chin Tucks + Wall Angels',setup:'Standing or supine',cue:'Retract chin gently. Pair with overhead wall slide. 10 reps.'}],
+  wblt:[{ex:'Banded Ankle Distraction',setup:'Half-kneeling, band on joint',cue:'Band pulls talus posterior. Drive knee over pinky toe. 15 reps/side.'}],
+  thomas:[{ex:'Half-Kneeling Hip Flexor + Glute Squeeze (psoas)',setup:'Half-kneeling on mat',cue:'Posterior tilt FIRST. Squeeze glute. Then lean forward. No lumbar arch.'},{ex:'Couch / Prone Quad Stretch (rec fem)',setup:'Kneeling at wall',cue:'Heel to glute with posterior tilt. Traction in front of thigh.'}],
+  aslr:[{ex:'Active Leg Lowering + Dead Bug',setup:'Supine',cue:'Lower one leg from 90°. Stop the moment the lower back lifts.'}],
+  slgb:[{ex:'Single-Leg Bridge — Weak Side Only',setup:'3 x 45–60 sec weak side',cue:'Drive through heel, squeeze glute.'}],
+  wallsit:[{ex:'TKE + Weighted Step-Ups',setup:'Band / box',cue:'Terminal knee extension activates VMO. Step-ups build endurance.'}],
+  tsr:[{ex:'Side-Lying Windmills + Thread the Needle',setup:'Side-lying / all-fours',cue:'Top arm sweeps open, eyes follow hand. 10 reps/side.'}],
+  wallslide:[{ex:'Serratus Wall Slides + Foam Roller Lat Opener',setup:'Standing / floor',cue:'Press forearms INTO the wall (protraction). Pull blades apart.'}],
+  frontplank:[{ex:'Bird-Dog with 5-sec Holds',setup:'All-fours',cue:'Opposite arm and leg. No hip rotation. Exhale throughout.'}],
+  sideplankL:[{ex:'Side Plank — Weak Side 3:1 Ratio',setup:'Side forearm plank',cue:'Train weak side 3x for every 1x strong.'}],
+  sideplankR:[{ex:'Side Plank — Weak Side 3:1 Ratio',setup:'Side forearm plank',cue:'Train weak side 3x for every 1x strong.'}],
+  sorenson:[{ex:'Bird-Dog + Partial GHD Extensions',setup:'GHD / floor',cue:'Build with bird-dog first. Duration before load.'}],
+  nordic:[{ex:'Nordic Negatives + Slider Curls',setup:'GHD / slider',cue:'Assist to top. Lower as slowly as possible — 5–8 sec descent.'}],
+  deadhang:[{ex:'Assisted Bar Hangs + Farmer Carries',setup:'Bar / KB',cue:'Band-assisted hangs. Farmer carries 3 x 20 m for grip endurance.'}],
+  flexhang:[{ex:'Eccentric Pull-Ups / Band-Assisted',setup:'Bar / band',cue:'Jump to top, lower slowly over 5–8 sec.'}],
+  pushup:[{ex:'Incline Push-Up Progression + Tempo',setup:'Bench / floor',cue:'3-sec lowering tempo. Progress to flat when 3 x 15 achieved.'}],
+  ohs_feet:[{ex:'Goblet Squat with Heels Elevated',setup:'Plates under heels',cue:'Reduces ankle demand. Build the pattern before removing the heel raise.'}],
+  ohs_knees:[{ex:'Banded Clamshells + Banded Squat',setup:'Band above knees',cue:'Clamshells activate glute medius. Band gives real-time valgus feedback.'}],
+  ohs_upper:[{ex:'Doorframe Lat Stretch + PVC Pass-Throughs',setup:'Doorframe / PVC',cue:'Grab frame at shoulder height and lean back. Feel the lat.'}]
+};
+var WARMUP=[
+  {ex:'Kneeling Ankle Rocking',dur:'30 sec / side',cue:'Heel stays pinned. Drive knee over pinky toe.'},
+  {ex:'Half-Kneeling Hip Flexor',dur:'30 sec / side',cue:'Posterior tilt first. Squeeze glute. No arch in lower back.'},
+  {ex:'Quadruped T-Spine Rotations',dur:'30 sec / side',cue:'Hand behind head. Rotate chest to ceiling. Hips stay still.'},
+  {ex:"World's Greatest Stretch",dur:'60 sec / side',cue:'Lunge → elbow to floor → rotate to sky → hamstring stretch.'}
+];
+function ldA(){try{return JSON.parse(localStorage.getItem('cbc6_assess')||'{}');}catch(e){return {};}}
+var assessments=ldA(),fbUnsubA=null,fbSuppressA=false,curAssess=null;
+function sdA(){localStorage.setItem('cbc6_assess',JSON.stringify(assessments));if(fbDb&&fbUser){fbSuppressA=true;fbDb.collection('cbc').doc('assessments').set({data:assessments}).catch(function(e){console.log('Assess save error:',e);fbSuppressA=false;});}}
+function clientAssessments(c){if(!c)return [];var a=[];Object.keys(assessments).forEach(function(id){if(assessments[id].clientId===c.id)a.push(assessments[id]);});a.sort(function(x,y){return x.date<y.date?1:x.date>y.date?-1:0;});return a;}
+function latestAssessment(c){return clientAssessments(c)[0]||null;}
+
+function newAssessment(cid){curAssess={id:'a'+Date.now(),clientId:cid,date:iso(new Date()),vals:{},flags:{},summary:{},_new:true};renderAssess();}
+function openAssessment(id){var a=assessments[id];if(!a)return;curAssess=JSON.parse(JSON.stringify(a));delete curAssess._new;renderAssess();}
+function renderAssess(){
+  var a=curAssess,cl=clients[a.clientId];
+  document.getElementById('aTit').textContent='MOVEMENT SCREEN';
+  document.getElementById('aSub').textContent=(cl?cl.name:'')+'';
+  var h='<div class="fr"><label class="fl" for="aDate">Screen date</label><input class="fi" id="aDate" type="date" value="'+a.date+'"></div>';
+  ASSESS_TPL.forEach(function(grp){
+    h+='<div style="font-family:Bebas Neue,sans-serif;color:var(--lime);font-size:13px;letter-spacing:1px;margin:14px 0 4px">'+esc(grp.g.toUpperCase())+'</div>';
+    grp.tests.forEach(function(t){
+      var vL=a.vals[t.id+'_L']||'',vR=a.vals[t.id+'_R']||'',v=a.vals[t.id]||'';
+      var inp=t.lr
+        ? '<input class="fi" id="av_'+t.id+'_L" value="'+esc(vL)+'" placeholder="L" style="width:52px;font-size:12px;padding:5px;text-align:center"><input class="fi" id="av_'+t.id+'_R" value="'+esc(vR)+'" placeholder="R" style="width:52px;font-size:12px;padding:5px;text-align:center">'
+        : '<input class="fi" id="av_'+t.id+'" value="'+esc(v)+'" style="width:110px;font-size:12px;padding:5px;text-align:center">';
+      h+='<div style="display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">'+
+        '<div style="flex:1"><div style="font-size:12px;font-weight:600">'+esc(t.name)+'</div><div style="font-size:10px;color:var(--muted)">'+esc(t.bench)+(t.flag?' · '+esc(t.flag):'')+'</div></div>'+
+        '<div style="display:flex;gap:4px">'+inp+'</div>'+
+        '<label title="Flag" style="display:flex;align-items:center;gap:3px;font-size:10px;color:var(--danger)"><input type="checkbox" class="aflag" data-t="'+t.id+'" '+(a.flags[t.id]?'checked':'')+' style="width:16px;height:16px">⚠</label>'+
+        '</div>';
+    });
+  });
+  var s=a.summary||{};
+  h+='<div style="font-family:Bebas Neue,sans-serif;color:var(--lime);font-size:13px;letter-spacing:1px;margin:16px 0 6px">COACH SUMMARY</div>';
+  h+='<div class="fr"><label class="fl">Primary red flag (address every warm-up)</label><input class="fi" id="as_primary" value="'+esc(s.primary||'')+'"></div>';
+  h+='<div class="fr"><label class="fl">Mobility focus</label><input class="fi" id="as_mobility" value="'+esc(s.mobility||'')+'"></div>';
+  h+='<div class="fr"><label class="fl">Stability / activation focus</label><input class="fi" id="as_stability" value="'+esc(s.stability||'')+'"></div>';
+  h+='<div class="fr"><label class="fl">Exercise modifications</label><input class="fi" id="as_mods" value="'+esc(s.mods||'')+'"></div>';
+  h+='<div class="fr"><label class="fl">Athlete-specific notes</label><input class="fi" id="as_notes" value="'+esc(s.notes||'')+'"></div>';
+  h+='<div class="fr"><label class="fl">Next re-test date</label><input class="fi" id="as_retest" type="date" value="'+esc(s.retest||'')+'"></div>';
+  h+='<div id="aCorr"></div>';
+  document.getElementById('aBody').innerHTML=h;
+  document.getElementById('aDelete').style.display=a._new?'none':'inline-block';
+  renderCorr();
+  document.getElementById('aBody').onchange=function(e){if(e.target.closest('.aflag'))renderCorr();};
+  document.getElementById('aMo').classList.add('open');
+}
+function currentFlags(){var f={};document.querySelectorAll('.aflag').forEach(function(cb){if(cb.checked)f[cb.getAttribute('data-t')]=true;});return f;}
+function renderCorr(){
+  var f=currentFlags(),keys=Object.keys(f),el=document.getElementById('aCorr');if(!el)return;
+  if(!keys.length){el.innerHTML='';return;}
+  var tplMap={};ASSESS_TPL.forEach(function(g){g.tests.forEach(function(t){tplMap[t.id]=t.name;});});
+  var h='<div style="border:1px solid var(--border);border-left:3px solid var(--lime);background:var(--card);padding:12px 14px;margin-top:14px"><div style="font-family:Bebas Neue,sans-serif;color:var(--lime);font-size:14px;letter-spacing:1px;margin-bottom:8px">SUGGESTED CORRECTIVES</div>';
+  keys.forEach(function(tid){var arr=CORRECTION[tid];if(!arr)return;arr.forEach(function(cx){h+='<div style="padding:5px 0;border-bottom:1px solid var(--border)"><div style="font-size:12px;font-weight:600;color:var(--lime)">'+esc(cx.ex)+'</div><div style="font-size:10px;color:var(--muted)">'+esc(tplMap[tid]||tid)+' · '+esc(cx.setup)+'</div><div style="font-size:11px;color:var(--text);margin-top:2px">'+esc(cx.cue)+'</div></div>';});});
+  h+='<div style="font-size:10px;color:var(--muted);margin-top:8px">＋ Universal 5-min warm-up: '+WARMUP.map(function(w){return esc(w.ex);}).join(' · ')+'</div></div>';
+  el.innerHTML=h;
+}
+function saveAssessment(){
+  var a=curAssess;a.date=document.getElementById('aDate').value||a.date;
+  a.vals={};a.flags={};
+  ASSESS_TPL.forEach(function(g){g.tests.forEach(function(t){
+    if(t.lr){var l=document.getElementById('av_'+t.id+'_L').value.trim(),r=document.getElementById('av_'+t.id+'_R').value.trim();if(l)a.vals[t.id+'_L']=l;if(r)a.vals[t.id+'_R']=r;}
+    else{var v=document.getElementById('av_'+t.id).value.trim();if(v)a.vals[t.id]=v;}
+  });});
+  currentFlags();document.querySelectorAll('.aflag').forEach(function(cb){if(cb.checked)a.flags[cb.getAttribute('data-t')]=true;});
+  a.summary={primary:document.getElementById('as_primary').value.trim(),mobility:document.getElementById('as_mobility').value.trim(),stability:document.getElementById('as_stability').value.trim(),mods:document.getElementById('as_mods').value.trim(),notes:document.getElementById('as_notes').value.trim(),retest:document.getElementById('as_retest').value};
+  delete a._new;assessments[a.id]=a;sdA();
+  document.getElementById('aMo').classList.remove('open');
+  if(document.getElementById('cliMo').classList.contains('open'))oCli(a.clientId,'');
+  toast('Screen saved');
+}
+function deleteAssessment(){if(!curAssess||curAssess._new)return;if(!window.confirm('Delete this movement screen?'))return;var cid=curAssess.clientId;delete assessments[curAssess.id];sdA();document.getElementById('aMo').classList.remove('open');if(document.getElementById('cliMo').classList.contains('open'))oCli(cid,'');toast('Screen deleted');}
+function cAssess(){document.getElementById('aMo').classList.remove('open');}
+
+function openProgress(cid){
+  var c=clients[cid];if(!c)return;var list=clientAssessments(c);if(!list.length){toast('No screens yet');return;}
+  var dates=list.map(function(a){return a;}); // newest first
+  document.getElementById('aProgSub').textContent=c.name+' · '+list.length+' screen'+(list.length>1?'s':'');
+  var h='<table style="border-collapse:collapse;width:100%;font-size:11px"><tr><th style="text-align:left;padding:4px;color:var(--muted)">Test</th><th style="text-align:left;padding:4px;color:var(--muted)">Benchmark</th>';
+  dates.forEach(function(a){h+='<th style="padding:4px;color:var(--lime);white-space:nowrap">'+fd(a.date).replace(/^[A-Za-z]+ /,'')+'</th>';});
+  h+='</tr>';
+  ASSESS_TPL.forEach(function(g){
+    h+='<tr><td colspan="'+(2+dates.length)+'" style="padding:6px 4px 2px;font-family:Bebas Neue,sans-serif;color:var(--lime);letter-spacing:1px">'+esc(g.g.toUpperCase())+'</td></tr>';
+    g.tests.forEach(function(t){
+      h+='<tr><td style="padding:3px 4px;border-bottom:1px solid var(--border)">'+esc(t.name)+'</td><td style="padding:3px 4px;border-bottom:1px solid var(--border);color:var(--muted)">'+esc(t.bench)+'</td>';
+      dates.forEach(function(a){var val=t.lr?((a.vals[t.id+'_L']||'–')+'/'+(a.vals[t.id+'_R']||'–')):(a.vals[t.id]||'–');var fl=a.flags[t.id];h+='<td style="padding:3px 4px;border-bottom:1px solid var(--border);text-align:center;color:'+(fl?'var(--danger)':'var(--text)')+'">'+esc(val)+(fl?' ⚠':'')+'</td>';});
+      h+='</tr>';
+    });
+  });
+  h+='</table>';
+  document.getElementById('aProgBody').innerHTML=h;
+  document.getElementById('aProgMo').classList.add('open');
 }
 
 function lGSI(){return new Promise(function(res,rej){if(typeof google!=='undefined'&&google.accounts){res();return;}var s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.onload=res;s.onerror=rej;document.head.appendChild(s);});}
@@ -2074,6 +2267,13 @@ document.getElementById('setX').onclick=function(){document.getElementById('setM
 document.getElementById('setCancel').onclick=function(){document.getElementById('setMo').classList.remove('open');};
 document.getElementById('setSave').onclick=saveSettings;
 document.getElementById('setMo').onclick=function(e){if(e.target===this)this.classList.remove('open');};
+document.getElementById('aX').onclick=cAssess;
+document.getElementById('aCancel').onclick=cAssess;
+document.getElementById('aSave').onclick=saveAssessment;
+document.getElementById('aDelete').onclick=deleteAssessment;
+document.getElementById('aMo').onclick=function(e){if(e.target===this)cAssess();};
+document.getElementById('aProgX').onclick=function(){document.getElementById('aProgMo').classList.remove('open');};
+document.getElementById('aProgMo').onclick=function(e){if(e.target===this)this.classList.remove('open');};
 document.getElementById('authBtn').onclick=function(){
   var em=document.getElementById('aEmail').value.trim();
   var pw=document.getElementById('aPass').value;
@@ -2097,7 +2297,7 @@ document.getElementById('fN').addEventListener('change',prefillFromClient);
 document.getElementById('fN').addEventListener('blur',prefillFromClient);
 document.getElementById('addMo').onclick=function(e){if(e.target===this)cAdd();};
 document.getElementById('viewMo').onclick=function(e){if(e.target===this)cView();};
-document.onkeydown=function(e){if(e.key==='Escape'){cAdd();cView();cCli();cCliEdit();document.getElementById('setMo').classList.remove('open');}if(e.key==='Enter'&&document.getElementById('addMo').classList.contains('open'))svSess();};
+document.onkeydown=function(e){if(e.key==='Escape'){cAdd();cView();cCli();cCliEdit();cAssess();document.getElementById('setMo').classList.remove('open');document.getElementById('aProgMo').classList.remove('open');}if(e.key==='Enter'&&document.getElementById('addMo').classList.contains('open'))svSess();};
 
 function showTab(which){
   ['Today','Cal','Sum','Cli','Fin','Task','Ana'].forEach(function(t){
