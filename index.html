@@ -1723,7 +1723,7 @@ function oCli(id,name){
   }
   if(c&&progWeek(c)!==null)body+='<div class="vf"><div class="vfl">Programme</div><div class="vfv" style="color:var(--lime)">'+esc(progLabel(c))+'</div></div>';
   if(c&&c.programmeUrl)body+='<button class="bp" id="cliProgBtn" style="width:100%;margin:10px 0 2px">📂 Open Programme (Excel app)</button><div style="text-align:center;margin-bottom:6px"><a href="#" id="cliProgWeb" style="font-size:11px;color:var(--muted)">or open in browser</a></div>';
-  body+='<div style="display:flex;gap:8px;margin:8px 0 4px"><button class="bs" id="cliEditBtn" style="flex:1">Edit client details</button><button class="bs" id="cliTimeline" style="flex:0 0 auto">Timeline</button></div>';
+  body+='<div style="display:flex;gap:8px;margin:8px 0 4px"><button class="bs" id="cliEditBtn" style="flex:1;border-color:var(--lime);color:var(--lime)">Edit client details</button><button class="bs" id="cliTimeline" style="flex:0 0 auto;border-color:var(--lime);color:var(--lime)">Timeline</button></div>';
   if(c){
     var scr=clientAssessments(c);
     body+='<div style="display:flex;justify-content:space-between;align-items:center;margin:16px 0 6px"><div class="vfl" style="margin:0">Movement screens</div><div style="display:flex;gap:8px"><button class="tb" id="cliNewScreen">＋ New</button>'+(scr.length?'<button class="tb" id="cliProgBtn2">Progress</button>':'')+'</div></div>';
