@@ -852,7 +852,7 @@ function bBlock(key,s,past,bh){
   if(est==='cancelled'){blk.style.opacity='.5';blk.style.borderLeftColor='#888780';blk.style.background='#88878018';}
   var nm=mk('div','bn');nm.textContent=s.name;if(est==='cancelled')nm.style.textDecoration='line-through';blk.appendChild(nm);
   if(est==='noshow'){var nsb=mk('div','bb');nsb.textContent='NO-SHOW';nsb.style.color='#e05555';nsb.style.borderColor='rgba(224,85,85,0.4)';nsb.style.background='rgba(224,85,85,0.15)';blk.appendChild(nsb);}
-  if(cl&&bh>=40){var pw=progWeek(cl);var sub2=((pw!==null&&pw>0)?('Wk'+pw+(cl.goals?' · ':'')):'')+(cl.goals||'');if(sub2){var gl=mk('div','bgoal');gl.textContent=sub2;blk.appendChild(gl);}}
+  if(cl&&bh>=40){var pw=progWeekAt(cl,s.date);var sub2=((pw!==null&&pw>0)?('Wk'+pw+(cl.goals?' · ':'')):'')+(cl.goals||'');if(sub2){var gl=mk('div','bgoal');gl.textContent=sub2;blk.appendChild(gl);}}
   if(isCF){var cfbdg=mk('div','bb');cfbdg.textContent='CF';cfbdg.style.color='#f0a020';cfbdg.style.borderColor='rgba(240,160,32,0.4)';cfbdg.style.background='rgba(240,160,32,0.15)';blk.appendChild(cfbdg);}
   if(isOth){var othbdg=mk('div','bb');othbdg.textContent='AWAY';othbdg.style.color='#b060b0';othbdg.style.borderColor='rgba(176,96,176,0.4)';othbdg.style.background='rgba(176,96,176,0.15)';blk.appendChild(othbdg);}
   if(isPers){var pbdg=mk('div','bb');pbdg.textContent='ME';pbdg.style.color='#30c0b0';pbdg.style.borderColor='rgba(48,192,176,0.4)';pbdg.style.background='rgba(48,192,176,0.15)';blk.appendChild(pbdg);}
@@ -1534,16 +1534,18 @@ function tagColor(t){
   return '#888780';
 }
 function clientOf(s){return clients[s.clientId]||findClientByName(s.name)||null;}
-// Programme week = number of weeks since start that had a non-cancelled session (holiday weeks don't count).
-function progWeek(c){
+// Programme week for a given date = number of weeks from start up to that date's week that had a non-cancelled session (holiday weeks don't count).
+function progWeekAt(c,refDateStr){
   if(!c||!c.programmeStart)return null;
-  var start=gMon(new Date(c.programmeStart+'T12:00:00')),thisWk=gMon(new Date());
-  if(thisWk<start)return 0;
+  var start=gMon(new Date(c.programmeStart+'T12:00:00'));
+  var refWk=gMon(new Date(refDateStr+'T12:00:00'));
+  if(refWk<start)return 0;
   var wk={};
-  Object.keys(sess).forEach(function(k){var s=sess[k];if((s.type||'pt')!=='pt')return;if(s.clientId!==c.id&&normName(s.name)!==normName(c.name))return;if(effStatus(s)==='cancelled')return;var m=gMon(new Date(s.date+'T12:00:00'));if(m>=start&&m<=thisWk)wk[iso(m)]=1;});
-  var count=0;for(var d=new Date(start);d<=thisWk;d=aD(d,7)){if(wk[iso(d)])count++;}
+  Object.keys(sess).forEach(function(k){var s=sess[k];if((s.type||'pt')!=='pt')return;if(s.clientId!==c.id&&normName(s.name)!==normName(c.name))return;if(effStatus(s)==='cancelled')return;var m=gMon(new Date(s.date+'T12:00:00'));if(m>=start&&m<=refWk)wk[iso(m)]=1;});
+  var count=0;for(var d=new Date(start);d<=refWk;d=aD(d,7)){if(wk[iso(d)])count++;}
   return count;
 }
+function progWeek(c){return progWeekAt(c,iso(new Date()));}
 function progLabel(c){var w=progWeek(c);if(w===null)return '';if(w<=0)return 'Wk – (pending)';return 'Week '+w+(c.programmeWeeks?' / '+c.programmeWeeks:'');}
 // Effective session status: explicit if set, else past auto-completes, future is scheduled.
 function effStatus(s){
@@ -1872,7 +1874,7 @@ function rToday(){
         var la=latestAssessment(cl);if(la&&la.summary&&la.summary.primary)prep='<div style="font-size:11px;color:#f0a020;margin-top:3px">⚠ Screen: '+esc(la.summary.primary)+'</div>'+prep;}
       return '<div data-openk="'+o.k+'" style="cursor:pointer;border-bottom:1px solid var(--border);padding:8px 0'+(gone||est==='cancelled'?';opacity:.5':'')+'">'+
         '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><div class="ucl">'+m2t(s.startMins)+'&nbsp;&nbsp;'+esc(s.name)+(s.makeup?' <span style="font-size:9px;color:var(--lime)">MAKE-UP</span>':'')+'</div><div class="ue">'+(ef(s)?'&pound;'+ef(s):'&mdash;')+'</div></div>'+
-        '<div class="um2">'+esc(typeLbl)+((function(){var pw=cl?progWeek(cl):null;return (pw!==null&&pw>0)?' · <span style="color:var(--lime)">Week '+pw+(cl.programmeWeeks?'/'+cl.programmeWeeks:'')+'</span>':'';})())+esc(extra)+stTag+'</div>'+prep+'</div>';
+        '<div class="um2">'+esc(typeLbl)+((function(){var pw=cl?progWeekAt(cl,s.date):null;return (pw!==null&&pw>0)?' · <span style="color:var(--lime)">Week '+pw+(cl.programmeWeeks?'/'+cl.programmeWeeks:'')+'</span>':'';})())+esc(extra)+stTag+'</div>'+prep+'</div>';
     }).join('');
   } else html+='<div style="color:var(--muted);font-size:13px">No sessions today.</div>';
   html+='</div>';
