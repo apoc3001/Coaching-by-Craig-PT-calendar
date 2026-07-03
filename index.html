@@ -397,6 +397,10 @@ header{padding-top:env(safe-area-inset-top);}
     </div>
     <div id="ceBlockStartWrap" style="display:none" class="fr"><label class="fl" for="ceBlockStart">Block start date</label><input class="fi" id="ceBlockStart" type="date"></div>
     <div class="fr"><label class="fl" for="ceProg">Programme link <span style="color:var(--muted);text-transform:none;letter-spacing:0">(Excel / Drive URL)</span></label><input class="fi" id="ceProg" type="url" placeholder="Paste their programme link" autocomplete="off"></div>
+    <div class="fr2">
+      <div><label class="fl" for="ceProgStart">Programme start <span style="color:var(--muted);text-transform:none;letter-spacing:0">(Week 1)</span></label><input class="fi" id="ceProgStart" type="date"></div>
+      <div><label class="fl" for="ceProgWeeks">Total weeks</label><input class="fi" id="ceProgWeeks" type="number" min="0" placeholder="e.g. 38"></div>
+    </div>
     <div class="fr"><label class="fl" for="ceNotes">Notes</label><input class="fi" id="ceNotes" placeholder="Optional"></div>
     <div class="ma"><button class="bp" id="ceSave">SAVE</button><button class="bs" id="ceCancel">Cancel</button><button class="bd" id="ceDelete">Delete</button></div>
   </div>
@@ -848,7 +852,7 @@ function bBlock(key,s,past,bh){
   if(est==='cancelled'){blk.style.opacity='.5';blk.style.borderLeftColor='#888780';blk.style.background='#88878018';}
   var nm=mk('div','bn');nm.textContent=s.name;if(est==='cancelled')nm.style.textDecoration='line-through';blk.appendChild(nm);
   if(est==='noshow'){var nsb=mk('div','bb');nsb.textContent='NO-SHOW';nsb.style.color='#e05555';nsb.style.borderColor='rgba(224,85,85,0.4)';nsb.style.background='rgba(224,85,85,0.15)';blk.appendChild(nsb);}
-  if(cl&&cl.goals&&bh>=40){var gl=mk('div','bgoal');gl.textContent=cl.goals;blk.appendChild(gl);}
+  if(cl&&bh>=40){var pw=progWeek(cl);var sub2=((pw!==null&&pw>0)?('Wk'+pw+(cl.goals?' · ':'')):'')+(cl.goals||'');if(sub2){var gl=mk('div','bgoal');gl.textContent=sub2;blk.appendChild(gl);}}
   if(isCF){var cfbdg=mk('div','bb');cfbdg.textContent='CF';cfbdg.style.color='#f0a020';cfbdg.style.borderColor='rgba(240,160,32,0.4)';cfbdg.style.background='rgba(240,160,32,0.15)';blk.appendChild(cfbdg);}
   if(isOth){var othbdg=mk('div','bb');othbdg.textContent='AWAY';othbdg.style.color='#b060b0';othbdg.style.borderColor='rgba(176,96,176,0.4)';othbdg.style.background='rgba(176,96,176,0.15)';blk.appendChild(othbdg);}
   if(isPers){var pbdg=mk('div','bb');pbdg.textContent='ME';pbdg.style.color='#30c0b0';pbdg.style.borderColor='rgba(48,192,176,0.4)';pbdg.style.background='rgba(48,192,176,0.15)';blk.appendChild(pbdg);}
@@ -1530,6 +1534,17 @@ function tagColor(t){
   return '#888780';
 }
 function clientOf(s){return clients[s.clientId]||findClientByName(s.name)||null;}
+// Programme week = number of weeks since start that had a non-cancelled session (holiday weeks don't count).
+function progWeek(c){
+  if(!c||!c.programmeStart)return null;
+  var start=gMon(new Date(c.programmeStart+'T12:00:00')),thisWk=gMon(new Date());
+  if(thisWk<start)return 0;
+  var wk={};
+  Object.keys(sess).forEach(function(k){var s=sess[k];if((s.type||'pt')!=='pt')return;if(s.clientId!==c.id&&normName(s.name)!==normName(c.name))return;if(effStatus(s)==='cancelled')return;var m=gMon(new Date(s.date+'T12:00:00'));if(m>=start&&m<=thisWk)wk[iso(m)]=1;});
+  var count=0;for(var d=new Date(start);d<=thisWk;d=aD(d,7)){if(wk[iso(d)])count++;}
+  return count;
+}
+function progLabel(c){var w=progWeek(c);if(w===null)return '';if(w<=0)return 'Wk – (pending)';return 'Week '+w+(c.programmeWeeks?' / '+c.programmeWeeks:'');}
 // Effective session status: explicit if set, else past auto-completes, future is scheduled.
 function effStatus(s){
   if(s.status)return s.status;
@@ -1644,6 +1659,8 @@ function clientAlerts(c){
   else if(!next&&last)f('noupcoming','noupcoming:'+c.id+':'+last,'No upcoming session booked');
   if(noShow>0)f('noshow','noshow:'+c.id+':'+noShow,noShow+' no-show'+(noShow>1?'s':'')+' in last 8 weeks');
   if(!c.programmeUrl)f('noprog','noprog:'+c.id,'No programme link saved');
+  var pw=progWeek(c);
+  if(pw!==null&&c.programmeWeeks&&pw>=c.programmeWeeks)f('progend','progend:'+c.id+':'+c.programmeWeeks,'Programme finished (Week '+pw+'/'+c.programmeWeeks+') — plan next block');
   var la=latestAssessment(c);
   if(!la)f('noscreen','noscreen:'+c.id,'No movement screen on file');
   else{var sd=Math.round((now-new Date(la.date+'T12:00:00'))/86400000);if(sd>=84)f('rescreen','rescreen:'+c.id+':'+la.date,'Movement re-screen due ('+Math.round(sd/7)+'w)');}
@@ -1651,8 +1668,8 @@ function clientAlerts(c){
   if(next)oks.push('Next session '+fd(next));
   if(c.billing==='dd'&&ddReceived(c,monthKey))oks.push(MS[now.getMonth()]+' DD received');
   if(la&&la.summary&&la.summary.primary)oks.push('Screen focus: '+la.summary.primary);
-  var actMap={dd:'Chase this month’s payment',makeup:'Book their make-up session',block:'Prompt a block renewal',notseen:'Reach out to re-book',noupcoming:'Book their next session',noshow:'Follow up the no-show',rescreen:'Re-screen movement',noscreen:'Book a movement screen',noprog:'Add their programme link'};
-  var prio=['dd','makeup','block','notseen','noupcoming','noshow','rescreen','noscreen','noprog'];
+  var actMap={dd:'Chase this month’s payment',makeup:'Book their make-up session',block:'Prompt a block renewal',progend:'Plan their next programme block',notseen:'Reach out to re-book',noupcoming:'Book their next session',noshow:'Follow up the no-show',rescreen:'Re-screen movement',noscreen:'Book a movement screen',noprog:'Add their programme link'};
+  var prio=['dd','makeup','block','progend','notseen','noupcoming','noshow','rescreen','noscreen','noprog'];
   for(var i=0;i<prio.length;i++){if(flags.some(function(fl){return fl.type===prio[i];})){action=actMap[prio[i]];break;}}
   return {flags:flags,oks:oks,action:action};
 }
@@ -1693,6 +1710,7 @@ function oCli(id,name){
     var lowcol=br.left<=2?'var(--danger)':'var(--lime)';
     body+='<div class="vf"><div class="vfl">Billing</div><div class="vfv">Prepaid block &middot; <span style="color:'+lowcol+'">'+br.left+' of '+br.total+' left</span></div></div>';
   }
+  if(c&&progWeek(c)!==null)body+='<div class="vf"><div class="vfl">Programme</div><div class="vfv" style="color:var(--lime)">'+esc(progLabel(c))+'</div></div>';
   if(c&&c.programmeUrl)body+='<button class="bp" id="cliProgBtn" style="width:100%;margin:10px 0 2px">📂 Open Programme (Excel app)</button><div style="text-align:center;margin-bottom:6px"><a href="#" id="cliProgWeb" style="font-size:11px;color:var(--muted)">or open in browser</a></div>';
   body+='<button class="bs" id="cliEditBtn" style="margin:8px 0 4px">Edit client details</button>';
   if(c){
@@ -1730,6 +1748,8 @@ function oCliEdit(name){
   document.getElementById('ceStatus').value=c.status||'active';
   document.getElementById('ceGoals').value=c.goals||'';
   document.getElementById('ceProg').value=c.programmeUrl||'';
+  document.getElementById('ceProgStart').value=c.programmeStart||'';
+  document.getElementById('ceProgWeeks').value=c.programmeWeeks||'';
   document.getElementById('ceBilling').value=c.billing||'';
   document.getElementById('ceFee').value=c.monthlyFee||'';
   document.getElementById('ceBlockTotal').value=c.blockTotal||'';
@@ -1754,6 +1774,8 @@ function saveCliEdit(){
   c.status=document.getElementById('ceStatus').value;
   c.goals=document.getElementById('ceGoals').value.trim();
   var pu=document.getElementById('ceProg').value.trim();if(pu&&!/^https?:\/\//i.test(pu))pu='https://'+pu;c.programmeUrl=pu;
+  c.programmeStart=document.getElementById('ceProgStart').value||'';
+  c.programmeWeeks=parseInt(document.getElementById('ceProgWeeks').value,10)||0;
   c.billing=document.getElementById('ceBilling').value;
   c.monthlyFee=parseFloat(document.getElementById('ceFee').value)||0;
   c.blockTotal=parseInt(document.getElementById('ceBlockTotal').value,10)||0;
@@ -1850,7 +1872,7 @@ function rToday(){
         var la=latestAssessment(cl);if(la&&la.summary&&la.summary.primary)prep='<div style="font-size:11px;color:#f0a020;margin-top:3px">⚠ Screen: '+esc(la.summary.primary)+'</div>'+prep;}
       return '<div data-openk="'+o.k+'" style="cursor:pointer;border-bottom:1px solid var(--border);padding:8px 0'+(gone||est==='cancelled'?';opacity:.5':'')+'">'+
         '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><div class="ucl">'+m2t(s.startMins)+'&nbsp;&nbsp;'+esc(s.name)+(s.makeup?' <span style="font-size:9px;color:var(--lime)">MAKE-UP</span>':'')+'</div><div class="ue">'+(ef(s)?'&pound;'+ef(s):'&mdash;')+'</div></div>'+
-        '<div class="um2">'+esc(typeLbl)+esc(extra)+stTag+'</div>'+prep+'</div>';
+        '<div class="um2">'+esc(typeLbl)+((function(){var pw=cl?progWeek(cl):null;return (pw!==null&&pw>0)?' · <span style="color:var(--lime)">Week '+pw+(cl.programmeWeeks?'/'+cl.programmeWeeks:'')+'</span>':'';})())+esc(extra)+stTag+'</div>'+prep+'</div>';
     }).join('');
   } else html+='<div style="color:var(--muted);font-size:13px">No sessions today.</div>';
   html+='</div>';
