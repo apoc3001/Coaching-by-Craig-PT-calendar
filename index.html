@@ -17,7 +17,7 @@
 <style>
 :root {
   --black:#0a0a0a;--dark:#111;--card:#181818;--border:#242424;
-  --lime:#C6F135;--text:#f0f0f0;--muted:#555;
+  --lime:#C6F135;--text:#f0f0f0;--muted:#adadad;
   --booked-bg:#1a2a0a;--booked-border:#4a7a10;--booked-accent:#6aba20;
   --rec-bg:#0a1a2a;--rec-border:#1070a0;--rec-accent:#1090c0;
   --ef:#232323;--ep:#131313;--danger:#e05555;--rh:30px;
@@ -1364,7 +1364,7 @@ function rMissed(){
         if(d.missed===0)return;
         var dt=new Date(d.date+'T12:00:00');
         contentHtml+='<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border);font-size:11px">'+
-          '<span style="color:var(--muted)">'+DS[dt.getDay()]+' '+dt.getDate()+'&nbsp;<span style="color:#555">'+d.booked+'/'+d.tgt+'</span></span>'+
+          '<span style="color:var(--muted)">'+DS[dt.getDay()]+' '+dt.getDate()+'&nbsp;<span style="color:#8a8a8a">'+d.booked+'/'+d.tgt+'</span></span>'+
           '<span style="color:var(--danger);font-family:Bebas Neue,sans-serif;font-size:13px">&pound;'+(d.missed*ar)+'</span></div>';
       });
       contentHtml+='<div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:6px;border-top:1px solid var(--border)">'+
@@ -1639,7 +1639,7 @@ function rClients(){
     if(c.next){sub='<span class="clim">Next: '+fd(c.next)+'</span>';}
     else if(c.last){var days=Math.round((nowD-new Date(c.last+'T12:00:00'))/86400000);sub=days>21?'<span class="cliflag">No upcoming · last seen '+days+'d ago</span>':'<span class="clim">Last seen '+fd(c.last)+'</span>';}
     else{sub='<span class="clim">No sessions yet</span>';}
-    var lapsed=c.status==='lapsed'?'<span style="font-size:9px;color:#888780;letter-spacing:1px;margin-left:6px">LAPSED</span>':'';
+    var lapsed=c.status==='lapsed'?'<span style="font-size:9px;color:var(--muted);letter-spacing:1px;margin-left:6px">LAPSED</span>':'';
     var bankChip=c.banked>0?'<span style="font-size:9px;font-weight:700;letter-spacing:1px;margin-left:6px;padding:1px 6px;border:1px solid var(--lime);color:var(--lime);border-radius:3px">OWED +'+c.banked+'</span>':'';
     return '<div class="clic" data-cid="'+esc(c.id||'')+'" data-cli="'+esc(c.name)+'"><div><div class="clin">'+esc(c.name)+tagChip(c.tag)+bankChip+lapsed+'</div><div class="clim">'+c.count+' session'+(c.count===1?'':'s')+(c.phone?' · '+esc(c.phone):'')+'</div>'+sub+'</div><div style="text-align:right"><div class="clie">&pound;'+c.earn.toLocaleString()+'</div></div></div>';
   }).join('');
