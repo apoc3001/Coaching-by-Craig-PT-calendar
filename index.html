@@ -970,9 +970,10 @@ function prefillFromClient(){
   if(c.email&&!document.getElementById('fEm').value)document.getElementById('fEm').value=c.email;
   if(c.defaultRate&&!document.getElementById('fR').value)document.getElementById('fR').value=c.defaultRate;
   var bk=bankedCount(c);
-  document.getElementById('makeupRow').style.display=bk>0?'flex':'none';
+  // Make-up credits only apply when creating a new booking (the edit path ignores them).
+  document.getElementById('makeupRow').style.display=(!aEk&&bk>0)?'flex':'none';
   document.getElementById('makeupCount').textContent=bk>0?'(+'+bk+' owed)':'';
-  if(bk===0)document.getElementById('fMakeup').checked=false;
+  if(bk===0||aEk)document.getElementById('fMakeup').checked=false;
 }
 
 function oAdd(date,sm){
@@ -1032,6 +1033,8 @@ function oEdit(key){
   document.getElementById('fEm').value=s.email||'';
   document.getElementById('fRec').checked=false;
   document.getElementById('rOpts').style.display='none';
+  document.getElementById('fMakeup').checked=false;
+  document.getElementById('makeupRow').style.display='none';
   document.getElementById('addMo').classList.add('open');
   setTimeout(function(){document.getElementById('fN').focus();},120);
 }
@@ -1059,8 +1062,28 @@ function svSess(){try{
   var cid=(type==='pt')?ensureClient(name,{phone:xt.phone,email:xt.email,rate:rate,date:date}):'';
   if(aEk){
     var old=sess[aEk]||{};delete sess[aEk];
-    sess[sk(date,sm)]=Object.assign({name:name,type:type,date:date,startMins:sm,duration:dur,rate:rate,notes:notes,clientId:cid,makeup:old.makeup||false,status:old.status,recurring:old.recurring,recurringId:old.recurringId,gcalId:old.gcalId},xt);
-    sd();render();cAdd();toast('Session updated');return;
+    var baseKey=sk(date,sm);
+    var ridE=old.recurringId||('r'+Date.now());
+    var base=Object.assign({name:name,type:type,date:date,startMins:sm,duration:dur,rate:rate,notes:notes,clientId:cid,makeup:old.makeup||false,status:old.status,recurring:(rec||!!old.recurring),recurringId:((rec||old.recurring)?ridE:old.recurringId),gcalId:old.gcalId},xt);
+    sess[baseKey]=base;
+    var addedE=0;
+    if(rec){
+      var intvE=parseInt(document.getElementById('fFq').value,10)||1;
+      var wksE=parseInt(document.getElementById('fW').value,10)||12;
+      for(var wE=intvE;wE<wksE;wE+=intvE){
+        var dtE=new Date(date+'T12:00:00');dtE.setDate(dtE.getDate()+wE*7);
+        var d2E=iso(dtE),kE=sk(d2E,sm);
+        if(!sess[kE]){
+          var cp=Object.assign({},base,{date:d2E,recurring:true,recurringId:ridE,makeup:false});
+          delete cp.gcalId;delete cp.status;
+          sess[kE]=cp;addedE++;
+        }
+      }
+    }
+    sd();render();cAdd();
+    toast(addedE?('Updated · '+addedE+' recurring sessions added'):'Session updated');
+    if(addedE&&gConn&&gTok)syncAllUnsynced();
+    return;
   }
   if(rec){
     var intv=parseInt(document.getElementById('fFq').value,10)||1;
@@ -1072,7 +1095,7 @@ function svSess(){try{
       if(!sess[k]){sess[k]=Object.assign({name:name,type:type,date:d2,startMins:sm,duration:dur,rate:rate,notes:notes,clientId:cid,recurring:true,recurringId:rid},xt);cnt++;}
     }
     sd();render();cAdd();toast(cnt+' recurring sessions added');
-    if(gConn&&gTok){Object.keys(sess).forEach(function(k){if(sess[k].recurringId===rid)pgCal(sess[k],true);});}
+    if(gConn&&gTok)syncAllUnsynced();
   } else {
     if(type==='other'){
       // Handle multi-day blocking
@@ -1111,7 +1134,7 @@ function svSess(){try{
       var useMakeup=type==='pt'&&document.getElementById('fMakeup').checked&&cid&&clients[cid]&&bankedCount(clients[cid])>0;
       sess[newKey]=Object.assign({name:name,type:type,date:date,startMins:sm,duration:dur,rate:rate,notes:notes,clientId:cid,makeup:useMakeup||false,recurring:false},xt);
       if(useMakeup){redeemBankedCredit(clients[cid]);sdc();}
-      sd();render();cAdd();toast(useMakeup?'Make-up session booked':'Session booked');
+      sd();render();cAdd();toast(useMakeup?('Make-up booked · '+bankedCount(clients[cid])+' credit(s) left'):'Session booked');
       if(gConn&&gTok) pgCal(sess[newKey],true);
     }
   }
@@ -1593,8 +1616,8 @@ function bankedCount(c){return bankedList(c).length;}
 function addBankedCredit(c){if(!c.bankedCredits)c.bankedCredits=[];c.bankedCredits.push({date:iso(new Date())});}
 function redeemBankedCredit(c){
   var live=bankedList(c);if(!live.length)return false;
-  var idx=c.bankedCredits.indexOf(live[0]);if(idx>-1)c.bankedCredits.splice(idx,1);
-  c.bankedCredits=bankedList(c); // prune expired while we're here
+  var idx=c.bankedCredits.indexOf(live[0]);
+  if(idx>-1)c.bankedCredits.splice(idx,1); // remove exactly one; never touch the others
   return true;
 }
 function tagChip(t){if(!t)return '';var c=tagColor(t);return '<span style="font-size:9px;text-transform:uppercase;letter-spacing:1px;padding:1px 6px;border:1px solid '+c+';color:'+c+';border-radius:3px;margin-left:6px">'+esc(t)+'</span>';}
@@ -2364,6 +2387,7 @@ document.getElementById('reconnectBtn').onclick=function(){
 document.getElementById('fRec').onchange=function(){document.getElementById('rOpts').style.display=this.checked?'block':'none';};
 document.getElementById('fN').addEventListener('change',prefillFromClient);
 document.getElementById('fN').addEventListener('blur',prefillFromClient);
+document.getElementById('fN').addEventListener('input',prefillFromClient);
 document.getElementById('addMo').onclick=function(e){if(e.target===this)cAdd();};
 document.getElementById('viewMo').onclick=function(e){if(e.target===this)cView();};
 document.onkeydown=function(e){if(e.key==='Escape'){cAdd();cView();cCli();cCliEdit();cAssess();document.getElementById('setMo').classList.remove('open');document.getElementById('aProgMo').classList.remove('open');document.getElementById('tlMo').classList.remove('open');}if(e.key==='Enter'&&document.getElementById('addMo').classList.contains('open'))svSess();};
