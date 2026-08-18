@@ -228,7 +228,7 @@ canvas{display:block;}
 @media(max-width:380px){
   .fr3{grid-template-columns:1fr;}
   .ag{grid-template-columns:1fr;}
-  #cpw{display:none!important;}
+  #cpw,#cpw2,#cpw3{display:none!important;}
 }
 /* Safe area for notched phones */
 body{padding-bottom:env(safe-area-inset-bottom);}
@@ -241,7 +241,8 @@ header{padding-top:env(safe-area-inset-top);}
   <div class="hr">
     <div id="gcalStatus">● Cal Connected</div>
     <div id="cpw"><span>PT Cal:</span><select id="cp"></select></div>
-    <div id="cpw2" style="display:none;align-items:center;gap:8px"><span style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">CF/Other:</span><select id="cp2" style="background:var(--card);border:1px solid #f0a020;color:#f0a020;font-family:&#39;DM Sans&#39;,sans-serif;font-size:11px;font-weight:600;padding:5px 8px;outline:none;cursor:pointer;max-width:160px"></select></div>
+    <div id="cpw2" style="display:none;align-items:center;gap:8px"><span style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Away/Holiday:</span><select id="cp2" style="background:var(--card);border:1px solid #f0a020;color:#f0a020;font-family:&#39;DM Sans&#39;,sans-serif;font-size:11px;font-weight:600;padding:5px 8px;outline:none;cursor:pointer;max-width:160px"></select></div>
+    <div id="cpw3" style="display:none;align-items:center;gap:8px"><span style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Crossfit:</span><select id="cp3" style="background:var(--card);border:1px solid #f0a020;color:#f0a020;font-family:&#39;DM Sans&#39;,sans-serif;font-size:11px;font-weight:600;padding:5px 8px;outline:none;cursor:pointer;max-width:160px"></select></div>
     <button class="hbtn" id="syncAllBtn" style="display:none">↻ Sync all</button>
     <button class="hbtn" id="setBtn">⚙ Settings</button>
     <button class="hbtn" id="expBtn">Export CSV</button>
@@ -666,7 +667,7 @@ function sdSet(){
 var DS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 var DF=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 var MS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-var ws=gMon(new Date()),sess=ld(),aSlot=null,aEk=null,gConn=false,gTok=null,selCal='primary',selCal2='',aPer=6,uView='all',mView='1w',syncInProgress=false;
+var ws=gMon(new Date()),sess=ld(),aSlot=null,aEk=null,gConn=false,gTok=null,selCal='primary',selCal2='',selCal3='',aPer=6,uView='all',mView='1w',syncInProgress=false;
 var sumMonth=(function(){var d=new Date();d.setDate(1);d.setHours(0,0,0,0);return d;})();
 function ldc(){try{return JSON.parse(localStorage.getItem('cbc6_clients')||'{}');}catch(e){return {};}}
 var clients=ldc();
@@ -2235,7 +2236,23 @@ function fCals(){
     var savedCal2=localStorage.getItem('cbc_selCal2');
     if(savedCal2){sel2.value=savedCal2;selCal2=savedCal2;}
     w2.style.display='flex';
-    sel2.onchange=function(){selCal2=this.value;localStorage.setItem('cbc_selCal2',selCal2);toast('CF/Other calendar: '+this.options[this.selectedIndex].text);};
+    sel2.onchange=function(){selCal2=this.value;localStorage.setItem('cbc_selCal2',selCal2);toast('Away/Holiday calendar: '+this.options[this.selectedIndex].text);};
+
+    // Crossfit shifts -> their own (shared) calendar
+    var w3=document.getElementById('cpw3');
+    var sel3=document.getElementById('cp3');
+    sel3.innerHTML='';
+    cals.forEach(function(c){
+      var o=document.createElement('option');
+      o.value=c.id; o.textContent=c.summary;
+      sel3.appendChild(o);
+    });
+    var shiftOpt=Array.from(sel3.options).find(function(o){var t=o.textContent.toLowerCase();return t.indexOf('shift')!==-1||(t.indexOf('robyn')!==-1&&t.indexOf('craig')!==-1);});
+    if(shiftOpt){sel3.value=shiftOpt.value;selCal3=shiftOpt.value;}
+    var savedCal3=localStorage.getItem('cbc_selCal3');
+    if(savedCal3){sel3.value=savedCal3;selCal3=savedCal3;}
+    w3.style.display='flex';
+    sel3.onchange=function(){selCal3=this.value;localStorage.setItem('cbc_selCal3',selCal3);toast('Crossfit calendar: '+this.options[this.selectedIndex].text);};
   }).catch(function(e){console.error('fCals error:',e);toast('Could not load calendars');});
 }
 
@@ -2263,7 +2280,8 @@ function calName(id){
 // Which Google calendar a session type belongs on.
 function calForType(type){
   if(type==='personal')return 'primary';
-  if((type==='crossfit'||type==='other')&&selCal2)return selCal2;
+  if(type==='crossfit')return selCal3||selCal2||selCal;   // shared shifts calendar
+  if(type==='other'&&selCal2)return selCal2;              // away/holiday
   return selCal;
 }
 function pgCal(s,silent){
