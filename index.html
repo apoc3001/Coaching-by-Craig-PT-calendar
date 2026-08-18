@@ -1197,31 +1197,35 @@ function oView(key){
     da.onclick=function(){
       var rid=s.recurringId;
       var toDelete=[];
-      var isCF=s.type==='crossfit';
-      var isOth=s.type==='other';
       Object.keys(sess).forEach(function(k){
         if(sess[k].recurringId===rid){
-          if(sess[k].gcalId&&!isCF&&!isOth) toDelete.push(sess[k].gcalId);
+          if(sess[k].gcalId) toDelete.push({id:sess[k].gcalId,cal:calForType(sess[k].type)});
           delete sess[k];
         }
       });
       sd();render();cView();toast('All recurring sessions removed');
-      toDelete.forEach(function(id){deleteFromGCal(id);});
+      toDelete.forEach(function(o){deleteFromGCal(o.id,o.cal);});
     };
     acts.appendChild(d1);acts.appendChild(da);
   } else if(s.type==='other'&&s.recurringId){
     // Multi-day Other block — offer to remove all days at once
     var db=mk('button','bd');db.textContent='Remove this day';
     db.onclick=function(){
+      var s2=sess[key],gid=s2&&s2.gcalId,cal2=calForType(s2&&s2.type);
       delete sess[key];sd();render();cView();toast('Day removed');
+      if(gid)deleteFromGCal(gid,cal2);
     };
     var da2=mk('button','bd');da2.textContent='Remove all days';
     da2.onclick=function(){
-      var rid=s.recurringId;
+      var rid=s.recurringId,toDel2=[];
       Object.keys(sess).forEach(function(k){
-        if(sess[k].recurringId===rid) delete sess[k];
+        if(sess[k].recurringId===rid){
+          if(sess[k].gcalId)toDel2.push({id:sess[k].gcalId,cal:calForType(sess[k].type)});
+          delete sess[k];
+        }
       });
       sd();render();cView();toast(s.name+' fully cleared');
+      toDel2.forEach(function(o){deleteFromGCal(o.id,o.cal);});
     };
     acts.appendChild(db);acts.appendChild(da2);
   } else {
@@ -1838,10 +1842,10 @@ function deleteClient(){
   var keys=Object.keys(sess).filter(function(k){var s=sess[k];return (s.type||'pt')==='pt'&&(s.clientId===c.id||normName(s.name)===normName(c.name));});
   if(!window.confirm('Delete '+c.name+'?\n\nThis removes the client and their '+keys.length+' session'+(keys.length===1?'':'s')+' (including past earnings). This cannot be undone.'))return;
   var toDel=[];
-  keys.forEach(function(k){if(sess[k].gcalId)toDel.push(sess[k].gcalId);delete sess[k];});
+  keys.forEach(function(k){if(sess[k].gcalId)toDel.push({id:sess[k].gcalId,cal:calForType(sess[k].type)});delete sess[k];});
   delete clients[curCli];
   sdc();sd();
-  toDel.forEach(function(id){deleteFromGCal(id);});
+  toDel.forEach(function(o){deleteFromGCal(o.id,o.cal);});
   document.getElementById('cliEditMo').classList.remove('open');
   document.getElementById('cliMo').classList.remove('open');
   curCli=null;render();rClients();toast('Client removed');
