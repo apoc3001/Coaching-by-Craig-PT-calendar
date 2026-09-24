@@ -105,6 +105,7 @@ header{background:var(--dark);border-bottom:1px solid var(--border);padding:0 20
 .blk.toth{background:#1a0a1a;border:1px solid #6b3a6b;border-left:3px solid #b060b0;}
 .blk.tpers{background:#06201d;border:1px solid #1f6b62;border-left:3px solid #30c0b0;}
 .blk.tcon{background:#0a1428;border:1px solid #3a5488;border-left:3px solid #6a90d0;}
+.blk.trob{background:#26101a;border:1px solid #7d3b58;border-left:3px solid #ec6ba4;}
 .blk.isp{opacity:.5;cursor:pointer;}
 .bn{font-size:10px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;line-height:1.3;}
 .bt{font-size:9px;color:var(--muted);pointer-events:none;}
@@ -286,8 +287,11 @@ header{padding-top:env(safe-area-inset-top);}
     <div class="li"><div class="ld" style="background:#f0a02022;border-color:#f0a020"></div>Fat Loss</div>
     <div class="li"><div class="ld" style="background:#30c0b022;border-color:#30c0b0"></div>General Health</div>
     <div class="li"><div class="ld" style="background:#b060b022;border-color:#b060b0"></div>Performance</div>
+    <div class="li"><div class="ld" style="background:#8b7cf022;border-color:#8b7cf0"></div>Mindset &amp; Habits</div>
+    <div class="li"><span style="font-size:8px;font-weight:700;letter-spacing:1px;padding:1px 4px;border:1px solid rgba(139,124,240,.45);color:#8b7cf0;background:rgba(139,124,240,.18)">COACHING</span>Coaching session</div>
     <div class="li"><span style="font-size:8px;font-weight:700;letter-spacing:1px;padding:1px 4px;border:1px solid rgba(48,192,176,.4);color:#30c0b0;background:rgba(48,192,176,.15)">ME</span>Personal</div>
     <div class="li"><span style="font-size:8px;font-weight:700;letter-spacing:1px;padding:1px 4px;border:1px solid rgba(240,160,32,.4);color:#f0a020;background:rgba(240,160,32,.15)">CF</span>Crossfit</div>
+    <div class="li"><span style="font-size:8px;font-weight:700;letter-spacing:1px;padding:1px 4px;border:1px solid rgba(236,107,164,.4);color:#ec6ba4;background:rgba(236,107,164,.15)">ROBYN</span>Drop-off / pick-up</div>
     <div class="li"><span style="font-size:8px;font-weight:700;letter-spacing:1px;padding:1px 4px;border:1px solid rgba(176,96,176,.4);color:#b060b0;background:rgba(176,96,176,.15)">AWAY</span>Holiday</div>
     <div class="li"><span style="font-size:8px;font-weight:700;letter-spacing:1px;padding:1px 4px;border:1px solid rgba(224,85,85,.4);color:#e05555;background:rgba(224,85,85,.15)">NO-SHOW</span></div>
     <div class="li"><span style="text-decoration:line-through;color:var(--muted)">Cancelled</span></div>
@@ -379,6 +383,7 @@ header{padding-top:env(safe-area-inset-top);}
           <option value="Fat Loss">Fat Loss</option>
           <option value="General Health">General Health</option>
           <option value="Performance">Performance</option>
+          <option value="Mindset &amp; Habits">Mindset &amp; Habits</option>
         </optgroup>
         <optgroup label="Online">
           <option value="Online - General PT">Online - General PT</option>
@@ -387,6 +392,7 @@ header{padding-top:env(safe-area-inset-top);}
           <option value="Online - Fat Loss">Online - Fat Loss</option>
           <option value="Online - General Health">Online - General Health</option>
           <option value="Online - Performance">Online - Performance</option>
+          <option value="Online - Mindset &amp; Habits">Online - Mindset &amp; Habits</option>
         </optgroup>
       </select></div>
       <div><label class="fl" for="ceStatus">Status</label><select class="fi" id="ceStatus"><option value="active">Active</option><option value="lapsed">Lapsed</option></select></div>
@@ -433,7 +439,7 @@ header{padding-top:env(safe-area-inset-top);}
     <div class="mt" id="addTit">BOOK SESSION</div>
     <div class="ms" id="addSub"></div>
     <div class="fr"><label class="fl" for="fN">Client Name</label><input class="fi" id="fN" placeholder="e.g. Sarah Johnson" autocomplete="off" list="clientNames"><datalist id="clientNames"></datalist></div>
-    <div class="fr"><label class="fl" for="fType">Session Type</label><select class="fi" id="fType" onchange="onTypeChange(this.value)"><option value="pt">PT Session</option><option value="consult">Consultation (free)</option><option value="personal">Personal (my training)</option><option value="crossfit">Crossfit</option><option value="other">Other</option></select></div>
+    <div class="fr"><label class="fl" for="fType">Session Type</label><select class="fi" id="fType" onchange="onTypeChange(this.value)"><option value="pt">PT Session</option><option value="coaching">Coaching (mindset / habits)</option><option value="consult">Consultation (free)</option><option value="personal">Personal (my training)</option><option value="robyn">Robyn (drop-off / pick-up)</option><option value="crossfit">Crossfit</option><option value="other">Other</option></select></div>
     <div class="fr3">
       <div><label class="fl" for="fST">Start Time</label><input class="fi" id="fST" type="time" step="1800"></div>
       <div id="durSelectWrap"><label class="fl">Duration</label>
@@ -744,7 +750,7 @@ function migrateClients(){
   var changedS=false;
   Object.keys(sess).forEach(function(k){
     var s=sess[k];
-    if((s.type||'pt')!=='pt'||!s.name)return;
+    if(!isClientType(s.type)||!s.name)return;
     if(s.clientId&&clients[s.clientId])return;
     var c=findClientByName(s.name);
     if(!c){
@@ -787,7 +793,7 @@ function rWL(){
 
 function rSum(){
   var earn=0,bk=0,tgtBk=0;
-  for(var d=0;d<7;d++){var ds=iso(aD(ws,d));Object.keys(sess).forEach(function(k){if(k.indexOf(ds+'_')===0){var s=sess[k];earn+=ef(s);bk++;if(s.type!=='crossfit'&&s.type!=='personal'&&s.type!=='consult'&&s.type!=='other'&&effStatus(s)!=='cancelled')tgtBk++;}});}
+  for(var d=0;d<7;d++){var ds=iso(aD(ws,d));Object.keys(sess).forEach(function(k){if(k.indexOf(ds+'_')===0){var s=sess[k];earn+=ef(s);bk++;if(s.type!=='crossfit'&&s.type!=='personal'&&s.type!=='consult'&&s.type!=='other'&&s.type!=='robyn'&&effStatus(s)!=='cancelled')tgtBk++;}});}
   var weekTgt=0;for(var d2=0;d2<7;d2++)weekTgt+=targetFor(aD(ws,d2).getDay());
   var av=Math.max(0,weekTgt-tgtBk),pct=weekTgt?Math.round(tgtBk/weekTgt*100):0;
   var col=pct>=80?'var(--lime)':pct>=50?'#f0a020':'var(--danger)';
@@ -853,8 +859,9 @@ function bBlock(key,s,past,bh){
   var isOth=s.type==='other';
   var isPers=s.type==='personal';
   var isCons=s.type==='consult';
-  var isClientSess=(!isCF&&!isOth&&!isPers&&!isCons);
-  var blockCls=isCF?'tcf':isOth?'toth':isPers?'tpers':isCons?'tcon':(s.recurring?'tr':'tb2');
+  var isRob=s.type==='robyn';
+  var isClientSess=(!isCF&&!isOth&&!isPers&&!isCons&&!isRob);
+  var blockCls=isCF?'tcf':isOth?'toth':isPers?'tpers':isCons?'tcon':isRob?'trob':(s.recurring?'tr':'tb2');
   var blk=mk('div','blk '+blockCls+(past?' isp':''));
   blk.style.height=bh+'px';
   // PT sessions: colour the block by the client's training type.
@@ -870,6 +877,8 @@ function bBlock(key,s,past,bh){
   if(isOth){var othbdg=mk('div','bb');othbdg.textContent='AWAY';othbdg.style.color='#b060b0';othbdg.style.borderColor='rgba(176,96,176,0.4)';othbdg.style.background='rgba(176,96,176,0.15)';blk.appendChild(othbdg);}
   if(isPers){var pbdg=mk('div','bb');pbdg.textContent='ME';pbdg.style.color='#30c0b0';pbdg.style.borderColor='rgba(48,192,176,0.4)';pbdg.style.background='rgba(48,192,176,0.15)';blk.appendChild(pbdg);}
   if(isCons){var cnbdg=mk('div','bb');cnbdg.textContent='CONSULT';cnbdg.style.color='#6a90d0';cnbdg.style.borderColor='rgba(106,144,208,0.4)';cnbdg.style.background='rgba(106,144,208,0.15)';blk.appendChild(cnbdg);}
+  if(isRob){var rbdg=mk('div','bb');rbdg.textContent='ROBYN';rbdg.style.color='#ec6ba4';rbdg.style.borderColor='rgba(236,107,164,0.4)';rbdg.style.background='rgba(236,107,164,0.15)';blk.appendChild(rbdg);}
+  if(s.type==='coaching'){var cbdg=mk('div','bb');cbdg.textContent='COACHING';cbdg.style.color='#8b7cf0';cbdg.style.borderColor='rgba(139,124,240,0.45)';cbdg.style.background='rgba(139,124,240,0.18)';blk.appendChild(cbdg);}
   if(s.makeup){blk.style.borderStyle='dashed';var mub=mk('div','bb');mub.textContent='MAKE-UP';mub.style.color='var(--lime)';mub.style.borderColor='rgba(198,241,53,0.4)';mub.style.background='rgba(198,241,53,0.15)';blk.appendChild(mub);}
   var tm=mk('div','bt');tm.textContent=m2t(s.startMins)+' - '+m2t(s.startMins+(s.duration||60));blk.appendChild(tm);
   if(s.rate){var rt=mk('div','br');rt.textContent='\u00a3'+ef(s);blk.appendChild(rt);}
@@ -959,12 +968,12 @@ function fillClientList(){
   var names={};
   Object.keys(clients).forEach(function(id){if(clients[id].name)names[clients[id].name]=1;});
   // include any session names not yet promoted to a client record
-  Object.keys(sess).forEach(function(k){var s=sess[k];if((s.type||'pt')==='pt'&&s.name)names[s.name]=1;});
+  Object.keys(sess).forEach(function(k){var s=sess[k];if(isClientType(s.type)&&s.name)names[s.name]=1;});
   dl.innerHTML=Object.keys(names).sort().map(function(n){return '<option value="'+esc(n)+'">';}).join('');
 }
 // When a known client's name is entered, prefill their saved contact + default rate.
 function prefillFromClient(){
-  if(document.getElementById('fType').value!=='pt'){document.getElementById('makeupRow').style.display='none';return;}
+  if(!isClientType(document.getElementById('fType').value)){document.getElementById('makeupRow').style.display='none';return;}
   var c=findClientByName(document.getElementById('fN').value);
   if(!c){document.getElementById('makeupRow').style.display='none';return;}
   if(c.phone&&!document.getElementById('fPh').value)document.getElementById('fPh').value=c.phone;
@@ -1060,7 +1069,7 @@ function svSess(){try{
   var rec=document.getElementById('fRec').checked;
   var date=aSlot.date;
   // Link PT sessions to a client record (creating/updating it); other types aren't clients.
-  var cid=(type==='pt')?ensureClient(name,{phone:xt.phone,email:xt.email,rate:rate,date:date}):'';
+  var cid=isClientType(type)?ensureClient(name,{phone:xt.phone,email:xt.email,rate:rate,date:date}):'';
   if(aEk){
     var old=sess[aEk]||{};delete sess[aEk];
     var baseKey=sk(date,sm);
@@ -1132,7 +1141,7 @@ function svSess(){try{
       toast(cnt2>1?name+' blocked '+cnt2+' days':name+' blocked');
     } else {
       var newKey=sk(date,sm);
-      var useMakeup=type==='pt'&&document.getElementById('fMakeup').checked&&cid&&clients[cid]&&bankedCount(clients[cid])>0;
+      var useMakeup=isClientType(type)&&document.getElementById('fMakeup').checked&&cid&&clients[cid]&&bankedCount(clients[cid])>0;
       sess[newKey]=Object.assign({name:name,type:type,date:date,startMins:sm,duration:dur,rate:rate,notes:notes,clientId:cid,makeup:useMakeup||false,recurring:false},xt);
       if(useMakeup){redeemBankedCredit(clients[cid]);sdc();}
       sd();render();cAdd();toast(useMakeup?('Make-up booked · '+bankedCount(clients[cid])+' credit(s) left'):'Session booked');
@@ -1144,7 +1153,7 @@ function svSess(){try{
 function oView(key){
   var s=sess[key];if(!s)return;
   var earned=ef(s);
-  var isPT=(s.type||'pt')==='pt';
+  var isPT=isClientType(s.type);
   var eff=effStatus(s);
   var stLbl={scheduled:'Scheduled',completed:'Completed',cancelled:'Cancelled',noshow:'No-show'};
   var statusRow=isPT?('<div class="vfl" style="margin:12px 0 5px">Attendance</div><div style="display:flex;gap:6px;flex-wrap:wrap" id="stRow">'+
@@ -1157,7 +1166,7 @@ function oView(key){
     vf(s.type==='crossfit'?'Rate':'Session fee',s.rate?('\u00a3'+s.rate+(s.type==='crossfit'?'/hr':'')):'\u2014',s.rate?'vfl2':'')+
     (s.type==='crossfit'?vf('Session Earnings',earned?'\u00a3'+earned:'\u2014',''):'')+
     vf('Duration',(s.duration||60)+' mins','')+
-    vf('Type',(s.type==='crossfit'?'Crossfit':s.type==='other'?'Other':s.type==='personal'?'Personal':s.type==='consult'?'Consultation':'PT Session')+(s.recurring?' (Recurring)':' (One-off)'),'')+
+    vf('Type',(s.type==='crossfit'?'Crossfit':s.type==='other'?'Other':s.type==='personal'?'Personal':s.type==='consult'?'Consultation':s.type==='robyn'?'Robyn (drop-off / pick-up)':s.type==='coaching'?'Coaching (mindset / habits)':'PT Session')+(s.recurring?' (Recurring)':' (One-off)'),'')+
     (s.location?vf('Location',s.location,''):'')+
     (s.focus?vf('Session Focus',s.focus,''):'')+
     (s.phone?'<div class="vf"><div class="vfl">Phone</div><div class="vfv"><a href="tel:'+s.phone+'" style="color:var(--lime);text-decoration:none">'+s.phone+'</a></div></div>':'')+
@@ -1365,7 +1374,7 @@ function rMissed(){
   Object.keys(sess).forEach(function(k){
     var s=sess[k];
     // Crossfit/personal block the slot but don't count toward the PT session target; cancelled doesn't count
-    if(dm[s.date]!==undefined&&s.type!=='crossfit'&&s.type!=='personal'&&s.type!=='consult'&&effStatus(s)!=='cancelled') dm[s.date]++;
+    if(dm[s.date]!==undefined&&s.type!=='crossfit'&&s.type!=='personal'&&s.type!=='consult'&&s.type!=='robyn'&&effStatus(s)!=='cancelled') dm[s.date]++;
   });
 
   var tms=0,tme=0,days=[];
@@ -1573,8 +1582,11 @@ function tagColor(t){
   if(t.indexOf('general health')!==-1)return '#30c0b0';
   if(t.indexOf('performance')!==-1)return '#b060b0';
   if(t.indexOf('general pt')!==-1)return '#4090d0';
+  if(t.indexOf('mindset')!==-1||t.indexOf('habit')!==-1)return '#8b7cf0';
   return '#888780';
 }
+// Session types that represent paid client work (get a client record, earnings, attendance, alerts).
+function isClientType(t){t=t||'pt';return t==='pt'||t==='coaching';}
 function clientOf(s){return clients[s.clientId]||findClientByName(s.name)||null;}
 // Programme week for a given date = number of weeks from start up to that date's week that had a non-cancelled session (holiday weeks don't count).
 function progWeekAt(c,refDateStr){
@@ -1583,7 +1595,7 @@ function progWeekAt(c,refDateStr){
   var refWk=gMon(new Date(refDateStr+'T12:00:00'));
   if(refWk<start)return 0;
   var wk={};
-  Object.keys(sess).forEach(function(k){var s=sess[k];if((s.type||'pt')!=='pt')return;if(s.clientId!==c.id&&normName(s.name)!==normName(c.name))return;if(effStatus(s)==='cancelled')return;var m=gMon(new Date(s.date+'T12:00:00'));if(m>=start&&m<=refWk)wk[iso(m)]=1;});
+  Object.keys(sess).forEach(function(k){var s=sess[k];if(!isClientType(s.type))return;if(s.clientId!==c.id&&normName(s.name)!==normName(c.name))return;if(effStatus(s)==='cancelled')return;var m=gMon(new Date(s.date+'T12:00:00'));if(m>=start&&m<=refWk)wk[iso(m)]=1;});
   var count=0;for(var d=new Date(start);d<=refWk;d=aD(d,7)){if(wk[iso(d)])count++;}
   return count;
 }
@@ -1600,7 +1612,7 @@ function usesBlock(s){var e=effStatus(s);return e==='completed'||e==='noshow';}
 function blockRemaining(c){
   if(!c||c.billing!=='block')return null;
   var total=c.blockTotal||0,start=c.blockStart||'',used=0;
-  Object.keys(sess).forEach(function(k){var s=sess[k];if((s.type||'pt')!=='pt')return;if(s.clientId!==c.id&&normName(s.name)!==normName(c.name))return;if(start&&s.date<start)return;if(usesBlock(s))used++;});
+  Object.keys(sess).forEach(function(k){var s=sess[k];if(!isClientType(s.type))return;if(s.clientId!==c.id&&normName(s.name)!==normName(c.name))return;if(start&&s.date<start)return;if(usesBlock(s))used++;});
   return {total:total,used:used,left:total-used};
 }
 function ddKey(d){return (d||iso(new Date())).slice(0,7);}
@@ -1631,7 +1643,7 @@ function rClients(){
   var map={};
   Object.keys(clients).forEach(function(id){var c=clients[id];map[id]={id:id,name:c.name,phone:c.phone||'',email:c.email||'',tag:c.tag||'',status:c.status||'active',count:0,earn:0,last:null,next:null,banked:bankedCount(c)};});
   Object.keys(sess).forEach(function(k){
-    var s=sess[k];if((s.type||'pt')!=='pt'||!s.name)return;
+    var s=sess[k];if(!isClientType(s.type)||!s.name)return;
     var key=(s.clientId&&map[s.clientId])?s.clientId:null;
     if(!key){var c=findClientByName(s.name);if(c&&map[c.id])key=c.id;}
     if(!key){key='n:'+normName(s.name);if(!map[key])map[key]={id:null,name:s.name,phone:s.phone||'',email:s.email||'',tag:'',status:'active',count:0,earn:0,last:null,next:null};}
@@ -1686,7 +1698,7 @@ function clientAlerts(c){
   var now=new Date(),today=iso(now),monthKey=today.slice(0,7);
   var last=null,next=null,noShow=0,completed=0,cancelled=0;
   var cut=iso(aD(now,-56));
-  Object.keys(sess).forEach(function(k){var s=sess[k];if((s.type||'pt')!=='pt')return;if(s.clientId!==c.id&&normName(s.name)!==normName(c.name))return;
+  Object.keys(sess).forEach(function(k){var s=sess[k];if(!isClientType(s.type))return;if(s.clientId!==c.id&&normName(s.name)!==normName(c.name))return;
     if(s.date<=today){if(!last||s.date>last)last=s.date;}
     if(s.date>=today){if(!next||s.date<next)next=s.date;}
     if(s.date>=cut&&s.date<=today){var e=effStatus(s);if(e==='completed')completed++;else if(e==='noshow')noShow++;else if(e==='cancelled')cancelled++;}
@@ -1724,7 +1736,7 @@ function oCli(id,name){
   curCli=c?c.id:null;
   var dispName=c?c.name:name;
   var nowIso=iso(new Date());var items=[],total=0;
-  Object.keys(sess).forEach(function(k){var s=sess[k];if((s.type||'pt')!=='pt')return;var match=(c&&s.clientId===c.id)||(normName(s.name)===normName(dispName));if(match){items.push(s);total+=ef(s);}});
+  Object.keys(sess).forEach(function(k){var s=sess[k];if(!isClientType(s.type))return;var match=(c&&s.clientId===c.id)||(normName(s.name)===normName(dispName));if(match){items.push(s);total+=ef(s);}});
   items.sort(function(a,b){return a.date<b.date?1:a.date>b.date?-1:b.startMins-a.startMins;});
   document.getElementById('cliTit').textContent=(dispName||'').toUpperCase();
   document.getElementById('cliSub').textContent=items.length+' session'+(items.length===1?'':'s')+'  ·  £'+total.toLocaleString()+' total';
@@ -1830,7 +1842,7 @@ function saveCliEdit(){
   c.blockStart=document.getElementById('ceBlockStart').value||'';
   c.notes=document.getElementById('ceNotes').value.trim();
   var changedS=false;
-  Object.keys(sess).forEach(function(k){var s=sess[k];if((s.type||'pt')!=='pt')return;if(s.clientId===c.id||normName(s.name)===normName(oldName)){if(s.clientId!==c.id){s.clientId=c.id;changedS=true;}if(s.name!==newName){s.name=newName;changedS=true;}}});
+  Object.keys(sess).forEach(function(k){var s=sess[k];if(!isClientType(s.type))return;if(s.clientId===c.id||normName(s.name)===normName(oldName)){if(s.clientId!==c.id){s.clientId=c.id;changedS=true;}if(s.name!==newName){s.name=newName;changedS=true;}}});
   sdc();if(changedS)sd();
   document.getElementById('cliEditMo').classList.remove('open');
   document.getElementById('cliMo').classList.remove('open');
@@ -1839,7 +1851,7 @@ function saveCliEdit(){
 function cCliEdit(){document.getElementById('cliEditMo').classList.remove('open');}
 function deleteClient(){
   var c=clients[curCli];if(!c)return;
-  var keys=Object.keys(sess).filter(function(k){var s=sess[k];return (s.type||'pt')==='pt'&&(s.clientId===c.id||normName(s.name)===normName(c.name));});
+  var keys=Object.keys(sess).filter(function(k){var s=sess[k];return isClientType(s.type)&&(s.clientId===c.id||normName(s.name)===normName(c.name));});
   if(!window.confirm('Delete '+c.name+'?\n\nThis removes the client and their '+keys.length+' session'+(keys.length===1?'':'s')+' (including past earnings). This cannot be undone.'))return;
   var toDel=[];
   keys.forEach(function(k){if(sess[k].gcalId)toDel.push({id:sess[k].gcalId,cal:calForType(sess[k].type)});delete sess[k];});
@@ -1861,9 +1873,9 @@ function genAutoTasks(){
   }
   Object.keys(clients).forEach(function(id){var c=clients[id];if(c.billing==='block'){var br=blockRemaining(c);if(br&&br.left<=2)add('block:'+id,'Rebook block — '+c.name+' ('+br.left+' left)');}});
   var lastMap={},nextMap={};
-  Object.keys(sess).forEach(function(k){var s=sess[k];if((s.type||'pt')!=='pt'||!s.clientId)return;if(s.date<=today){if(!lastMap[s.clientId]||s.date>lastMap[s.clientId])lastMap[s.clientId]=s.date;}if(s.date>=today){if(!nextMap[s.clientId]||s.date<nextMap[s.clientId])nextMap[s.clientId]=s.date;}});
+  Object.keys(sess).forEach(function(k){var s=sess[k];if(!isClientType(s.type)||!s.clientId)return;if(s.date<=today){if(!lastMap[s.clientId]||s.date>lastMap[s.clientId])lastMap[s.clientId]=s.date;}if(s.date>=today){if(!nextMap[s.clientId]||s.date<nextMap[s.clientId])nextMap[s.clientId]=s.date;}});
   var cut=iso(aD(now,-14));
-  Object.keys(sess).forEach(function(k){var s=sess[k];if((s.type||'pt')!=='pt')return;if(s.date<cut||s.date>today)return;if(effStatus(s)==='noshow')add('noshow:'+k,'Follow up no-show — '+s.name+' ('+fd(s.date)+')');});
+  Object.keys(sess).forEach(function(k){var s=sess[k];if(!isClientType(s.type))return;if(s.date<cut||s.date>today)return;if(effStatus(s)==='noshow')add('noshow:'+k,'Follow up no-show — '+s.name+' ('+fd(s.date)+')');});
   Object.keys(clients).forEach(function(id){var c=clients[id];if(c.status==='lapsed')return;var last=lastMap[id],next=nextMap[id];if(last&&!next){var days=Math.round((now-new Date(last+'T12:00:00'))/86400000);if(days>=28)add('notseen:'+id,'Re-engage — '+c.name+' (not seen '+days+'d)');}});
   return out;
 }
@@ -1911,11 +1923,11 @@ function rToday(){
       var s=o.s,est=effStatus(s);
       var gone=new Date(s.date+'T'+p2(Math.floor(s.startMins/60))+':'+p2(s.startMins%60)+':00')<now;
       var cl=clientOf(s);
-      var typeLbl=s.type==='consult'?'Consultation':s.type==='personal'?'Personal':s.type==='crossfit'?'Crossfit':s.type==='other'?'Away':(cl&&cl.tag?cl.tag:'PT');
+      var typeLbl=s.type==='consult'?'Consultation':s.type==='personal'?'Personal':s.type==='crossfit'?'Crossfit':s.type==='other'?'Away':s.type==='robyn'?'Robyn':s.type==='coaching'?'Coaching':(cl&&cl.tag?cl.tag:'PT');
       var stTag=est==='cancelled'?' · cancelled':est==='noshow'?' · no-show':'';
       var extra=cl&&cl.goals?' · '+cl.goals:(s.focus?' · '+s.focus:'');
       var prep='';
-      if(cl){var lastNote='',lastDate='';Object.keys(sess).forEach(function(k2){var s2=sess[k2];if((s2.type||'pt')!=='pt'||!s2.notes)return;if(s2.clientId!==cl.id&&normName(s2.name)!==normName(cl.name))return;if(s2.date>=today)return;if(!lastDate||s2.date>lastDate){lastDate=s2.date;lastNote=s2.notes;}});
+      if(cl){var lastNote='',lastDate='';Object.keys(sess).forEach(function(k2){var s2=sess[k2];if(!isClientType(s2.type)||!s2.notes)return;if(s2.clientId!==cl.id&&normName(s2.name)!==normName(cl.name))return;if(s2.date>=today)return;if(!lastDate||s2.date>lastDate){lastDate=s2.date;lastNote=s2.notes;}});
         if(lastNote)prep='<div style="font-size:11px;color:var(--muted);margin-top:3px">📝 Last: '+esc(lastNote)+'</div>';
         var la=latestAssessment(cl);if(la&&la.summary&&la.summary.primary)prep='<div style="font-size:11px;color:#f0a020;margin-top:3px">⚠ Screen: '+esc(la.summary.primary)+'</div>'+prep;
         if(cl.motivation)prep='<div style="font-size:11px;color:var(--lime);margin-top:3px">💪 '+esc(cl.motivation)+'</div>'+prep;}
@@ -2116,7 +2128,7 @@ function buildTimeline(c){
   if(c.programmeStart)ev.push({date:c.programmeStart,ic:'🏋',t:'Programme started'+(c.programmeWeeks?' ('+c.programmeWeeks+' wks)':'')});
   clientAssessments(c).forEach(function(a){var fc=Object.keys(a.flags||{}).length;ev.push({date:a.date,ic:'📋',t:'Movement screen'+(fc?' — '+fc+' flag'+(fc>1?'s':''):' — no flags'),sub:(a.summary&&a.summary.primary)||''});});
   if(c.ddReceived)Object.keys(c.ddReceived).forEach(function(mk){if(c.ddReceived[mk]){var mo=parseInt(mk.slice(5,7),10)-1;ev.push({date:mk+'-28',ic:'💷',t:'DD received — '+MS[mo]+' '+mk.slice(0,4)});}});
-  Object.keys(sess).forEach(function(k){var s=sess[k];if((s.type||'pt')!=='pt')return;if(s.clientId!==c.id&&normName(s.name)!==normName(c.name))return;var e=effStatus(s);
+  Object.keys(sess).forEach(function(k){var s=sess[k];if(!isClientType(s.type))return;if(s.clientId!==c.id&&normName(s.name)!==normName(c.name))return;var e=effStatus(s);
     if(e==='cancelled')ev.push({date:s.date,ic:'✕',t:'Session cancelled'+(s.makeup?' (make-up)':'')});
     else if(e==='noshow')ev.push({date:s.date,ic:'⚠',t:'No-show'});
     else if(s.notes)ev.push({date:s.date,ic:'📝',t:s.notes+(s.makeup?' (make-up)':'')});});
@@ -2284,7 +2296,7 @@ function calName(id){
 // Which Google calendar a session type belongs on.
 function calForType(type){
   if(type==='personal')return 'primary';
-  if(type==='crossfit')return selCal3||selCal2||selCal;   // shared shifts calendar
+  if(type==='crossfit'||type==='robyn')return selCal3||selCal2||selCal; // shared shifts calendar
   if(type==='other'&&selCal2)return selCal2;              // away/holiday
   return selCal;
 }
@@ -2293,7 +2305,7 @@ function pgCal(s,silent){
   var start=new Date(s.date+'T'+p2(Math.floor(s.startMins/60))+':'+p2(s.startMins%60)+':00');
   var end=new Date(start.getTime()+(s.duration||60)*60000);
   var desc=(s.rate?'Fee: \u00a3'+s.rate:'')+(s.focus?'\nFocus: '+s.focus:'')+(s.phone?'\nPhone: '+s.phone:'')+(s.email?'\nEmail: '+s.email:'')+(s.notes?'\nNotes: '+s.notes:'');
-  var summary=s.type==='personal'?('Training: '+s.name):s.type==='crossfit'?('CF: '+s.name):s.type==='consult'?('Consult: '+s.name):s.type==='other'?s.name:('PT: '+s.name);
+  var summary=s.type==='personal'?('Training: '+s.name):s.type==='crossfit'?('CF: '+s.name):s.type==='consult'?('Consult: '+s.name):s.type==='coaching'?('Coaching: '+s.name):s.type==='robyn'?('Robyn: '+s.name):s.type==='other'?s.name:('PT: '+s.name);
   var ev={summary:summary,description:desc,start:{dateTime:start.toISOString(),timeZone:'Europe/London'},end:{dateTime:end.toISOString(),timeZone:'Europe/London'},colorId:'10'};
   if(s.location)ev.location=s.location;
   var calTarget=calForType(s.type);
