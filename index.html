@@ -106,6 +106,7 @@ header{background:var(--dark);border-bottom:1px solid var(--border);padding:0 20
 .blk.tpers{background:#06201d;border:1px solid #1f6b62;border-left:3px solid #30c0b0;}
 .blk.tcon{background:#0a1428;border:1px solid #3a5488;border-left:3px solid #6a90d0;}
 .blk.trob{background:#26101a;border:1px solid #7d3b58;border-left:3px solid #ec6ba4;}
+.blk.tadi{background:#1c1c1c;border:1px solid #6a6a6a;border-left:3px solid #f2f2f2;}
 .blk.isp{opacity:.5;cursor:pointer;}
 .bn{font-size:10px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;line-height:1.3;}
 .bt{font-size:9px;color:var(--muted);pointer-events:none;}
@@ -291,6 +292,7 @@ header{padding-top:env(safe-area-inset-top);}
     <div class="li"><span style="font-size:8px;font-weight:700;letter-spacing:1px;padding:1px 4px;border:1px solid rgba(139,124,240,.45);color:#8b7cf0;background:rgba(139,124,240,.18)">COACHING</span>Coaching session</div>
     <div class="li"><span style="font-size:8px;font-weight:700;letter-spacing:1px;padding:1px 4px;border:1px solid rgba(48,192,176,.4);color:#30c0b0;background:rgba(48,192,176,.15)">ME</span>Personal</div>
     <div class="li"><span style="font-size:8px;font-weight:700;letter-spacing:1px;padding:1px 4px;border:1px solid rgba(240,160,32,.4);color:#f0a020;background:rgba(240,160,32,.15)">CF</span>Crossfit</div>
+    <div class="li"><span style="font-size:8px;font-weight:700;letter-spacing:1px;padding:1px 4px;border:1px solid rgba(242,242,242,.45);color:#f2f2f2;background:rgba(242,242,242,.12)">ADIDAS</span>Adidas</div>
     <div class="li"><span style="font-size:8px;font-weight:700;letter-spacing:1px;padding:1px 4px;border:1px solid rgba(236,107,164,.4);color:#ec6ba4;background:rgba(236,107,164,.15)">ROBYN</span>Drop-off / pick-up</div>
     <div class="li"><span style="font-size:8px;font-weight:700;letter-spacing:1px;padding:1px 4px;border:1px solid rgba(176,96,176,.4);color:#b060b0;background:rgba(176,96,176,.15)">AWAY</span>Holiday</div>
     <div class="li"><span style="font-size:8px;font-weight:700;letter-spacing:1px;padding:1px 4px;border:1px solid rgba(224,85,85,.4);color:#e05555;background:rgba(224,85,85,.15)">NO-SHOW</span></div>
@@ -439,7 +441,11 @@ header{padding-top:env(safe-area-inset-top);}
     <div class="mt" id="addTit">BOOK SESSION</div>
     <div class="ms" id="addSub"></div>
     <div class="fr"><label class="fl" for="fN">Client Name</label><input class="fi" id="fN" placeholder="e.g. Sarah Johnson" autocomplete="off" list="clientNames"><datalist id="clientNames"></datalist></div>
-    <div class="fr"><label class="fl" for="fType">Session Type</label><select class="fi" id="fType" onchange="onTypeChange(this.value)"><option value="pt">PT Session</option><option value="coaching">Coaching (mindset / habits)</option><option value="consult">Consultation (free)</option><option value="personal">Personal (my training)</option><option value="robyn">Robyn (drop-off / pick-up)</option><option value="crossfit">Crossfit</option><option value="other">Other</option></select></div>
+    <div class="fr"><label class="fl" for="fType">Session Type</label><select class="fi" id="fType" onchange="onTypeChange(this.value)"><option value="pt">PT Session</option><option value="coaching">Coaching (mindset / habits)</option><option value="consult">Consultation (free)</option><option value="personal">Personal (my training)</option><option value="robyn">Robyn (drop-off / pick-up)</option><option value="crossfit">Crossfit</option><option value="adidas">Adidas</option><option value="other">Other</option></select></div>
+    <div class="tr2" id="adidasRow" style="display:none">
+      <label class="tw"><input type="checkbox" id="fAdiFull" onchange="onAdidasFull(this.checked)"><div class="tt"></div><div class="th"></div></label>
+      <span style="font-size:13px">Full day (7am &ndash; 3pm) <span style="color:var(--lime)">&pound;150</span></span>
+    </div>
     <div class="fr3">
       <div><label class="fl" for="fST">Start Time</label><input class="fi" id="fST" type="time" step="1800"></div>
       <div id="durSelectWrap"><label class="fl">Duration</label>
@@ -793,7 +799,7 @@ function rWL(){
 
 function rSum(){
   var earn=0,bk=0,tgtBk=0;
-  for(var d=0;d<7;d++){var ds=iso(aD(ws,d));Object.keys(sess).forEach(function(k){if(k.indexOf(ds+'_')===0){var s=sess[k];earn+=ef(s);bk++;if(s.type!=='crossfit'&&s.type!=='personal'&&s.type!=='consult'&&s.type!=='other'&&s.type!=='robyn'&&effStatus(s)!=='cancelled')tgtBk++;}});}
+  for(var d=0;d<7;d++){var ds=iso(aD(ws,d));Object.keys(sess).forEach(function(k){if(k.indexOf(ds+'_')===0){var s=sess[k];earn+=ef(s);bk++;if(s.type!=='crossfit'&&s.type!=='personal'&&s.type!=='consult'&&s.type!=='other'&&s.type!=='robyn'&&s.type!=='adidas'&&effStatus(s)!=='cancelled')tgtBk++;}});}
   var weekTgt=0;for(var d2=0;d2<7;d2++)weekTgt+=targetFor(aD(ws,d2).getDay());
   var av=Math.max(0,weekTgt-tgtBk),pct=weekTgt?Math.round(tgtBk/weekTgt*100):0;
   var col=pct>=80?'var(--lime)':pct>=50?'#f0a020':'var(--danger)';
@@ -860,8 +866,9 @@ function bBlock(key,s,past,bh){
   var isPers=s.type==='personal';
   var isCons=s.type==='consult';
   var isRob=s.type==='robyn';
-  var isClientSess=(!isCF&&!isOth&&!isPers&&!isCons&&!isRob);
-  var blockCls=isCF?'tcf':isOth?'toth':isPers?'tpers':isCons?'tcon':isRob?'trob':(s.recurring?'tr':'tb2');
+  var isAdi=s.type==='adidas';
+  var isClientSess=(!isCF&&!isOth&&!isPers&&!isCons&&!isRob&&!isAdi);
+  var blockCls=isCF?'tcf':isOth?'toth':isPers?'tpers':isCons?'tcon':isRob?'trob':isAdi?'tadi':(s.recurring?'tr':'tb2');
   var blk=mk('div','blk '+blockCls+(past?' isp':''));
   blk.style.height=bh+'px';
   // PT sessions: colour the block by the client's training type.
@@ -878,6 +885,7 @@ function bBlock(key,s,past,bh){
   if(isPers){var pbdg=mk('div','bb');pbdg.textContent='ME';pbdg.style.color='#30c0b0';pbdg.style.borderColor='rgba(48,192,176,0.4)';pbdg.style.background='rgba(48,192,176,0.15)';blk.appendChild(pbdg);}
   if(isCons){var cnbdg=mk('div','bb');cnbdg.textContent='CONSULT';cnbdg.style.color='#6a90d0';cnbdg.style.borderColor='rgba(106,144,208,0.4)';cnbdg.style.background='rgba(106,144,208,0.15)';blk.appendChild(cnbdg);}
   if(isRob){var rbdg=mk('div','bb');rbdg.textContent='ROBYN';rbdg.style.color='#ec6ba4';rbdg.style.borderColor='rgba(236,107,164,0.4)';rbdg.style.background='rgba(236,107,164,0.15)';blk.appendChild(rbdg);}
+  if(isAdi){var abdg=mk('div','bb');abdg.textContent='ADIDAS';abdg.style.color='#f2f2f2';abdg.style.borderColor='rgba(242,242,242,0.45)';abdg.style.background='rgba(242,242,242,0.12)';blk.appendChild(abdg);}
   if(s.type==='coaching'){var cbdg=mk('div','bb');cbdg.textContent='COACHING';cbdg.style.color='#8b7cf0';cbdg.style.borderColor='rgba(139,124,240,0.45)';cbdg.style.background='rgba(139,124,240,0.18)';blk.appendChild(cbdg);}
   if(s.makeup){blk.style.borderStyle='dashed';var mub=mk('div','bb');mub.textContent='MAKE-UP';mub.style.color='var(--lime)';mub.style.borderColor='rgba(198,241,53,0.4)';mub.style.background='rgba(198,241,53,0.15)';blk.appendChild(mub);}
   var tm=mk('div','bt');tm.textContent=m2t(s.startMins)+' - '+m2t(s.startMins+(s.duration||60));blk.appendChild(tm);
@@ -925,7 +933,10 @@ function onTypeChange(type){
   var edWrap=document.getElementById('endDateWrap');
   var stRow=document.getElementById('fST').closest?document.getElementById('fST').parentElement:null;
   var rl=document.getElementById('fRlabel');if(rl)rl.textContent=(type==='crossfit')?'Rate (£/hr)':'Session fee (£)';
-  if(type==='crossfit'){
+  var adiRow=document.getElementById('adidasRow');if(adiRow)adiRow.style.display=(type==='adidas')?'flex':'none';
+  if(type!=='adidas')document.getElementById('fAdiFull').checked=false;
+  if(type==='adidas'&&!document.getElementById('fN').value.trim())document.getElementById('fN').value='Adidas';
+  if(type==='crossfit'||type==='adidas'){
     durWrap.style.display='none';
     etWrap.style.display='block';
     edWrap.style.display='none';
@@ -952,9 +963,19 @@ function onTypeChange(type){
   }
 }
 
+// Adidas full day = fixed 7am-3pm at 150; unticking leaves the times/fee free to edit for a one-off session.
+var ADI_FULL={start:7*60,end:15*60,fee:150};
+function onAdidasFull(on){
+  if(!on)return;
+  document.getElementById('fST').value=m2i(ADI_FULL.start);
+  document.getElementById('fET').value=m2i(ADI_FULL.end);
+  document.getElementById('fR').value=ADI_FULL.fee;
+  if(aSlot)document.getElementById('addSub').textContent=fd(aSlot.date)+'  ·  '+m2t(ADI_FULL.start);
+}
+
 function getDuration(){
   var type=document.getElementById('fType').value;
-  if(type==='crossfit'||type==='other'){
+  if(type==='crossfit'||type==='adidas'||type==='other'){
     var st=t2m(document.getElementById('fST').value);
     var et=t2m(document.getElementById('fET').value);
     var diff=et-st;
@@ -1000,6 +1021,7 @@ function oAdd(date,sm){
   document.getElementById('fFoc').value='';
   document.getElementById('fPh').value='';
   document.getElementById('fEm').value='';
+  document.getElementById('fAdiFull').checked=false;
   document.getElementById('fType').value='pt';
   onTypeChange('pt');
   document.getElementById('fET').value='';
@@ -1023,8 +1045,9 @@ function oEdit(key){
   var editType=s.type||'pt';
   document.getElementById('fType').value=editType;
   onTypeChange(editType);
-  if(editType==='crossfit'){
+  if(editType==='crossfit'||editType==='adidas'){
     document.getElementById('fET').value=m2i(s.startMins+(s.duration||60));
+    document.getElementById('fAdiFull').checked=(editType==='adidas'&&s.startMins===ADI_FULL.start&&(s.duration||60)===ADI_FULL.end-ADI_FULL.start);
     document.getElementById('fED').value='';
   } else if(editType==='other'){
     document.getElementById('fET').value=m2i(s.startMins+(s.duration||60));
@@ -1166,7 +1189,7 @@ function oView(key){
     vf(s.type==='crossfit'?'Rate':'Session fee',s.rate?('\u00a3'+s.rate+(s.type==='crossfit'?'/hr':'')):'\u2014',s.rate?'vfl2':'')+
     (s.type==='crossfit'?vf('Session Earnings',earned?'\u00a3'+earned:'\u2014',''):'')+
     vf('Duration',(s.duration||60)+' mins','')+
-    vf('Type',(s.type==='crossfit'?'Crossfit':s.type==='other'?'Other':s.type==='personal'?'Personal':s.type==='consult'?'Consultation':s.type==='robyn'?'Robyn (drop-off / pick-up)':s.type==='coaching'?'Coaching (mindset / habits)':'PT Session')+(s.recurring?' (Recurring)':' (One-off)'),'')+
+    vf('Type',(s.type==='crossfit'?'Crossfit':s.type==='adidas'?'Adidas':s.type==='other'?'Other':s.type==='personal'?'Personal':s.type==='consult'?'Consultation':s.type==='robyn'?'Robyn (drop-off / pick-up)':s.type==='coaching'?'Coaching (mindset / habits)':'PT Session')+(s.recurring?' (Recurring)':' (One-off)'),'')+
     (s.location?vf('Location',s.location,''):'')+
     (s.focus?vf('Session Focus',s.focus,''):'')+
     (s.phone?'<div class="vf"><div class="vfl">Phone</div><div class="vfv"><a href="tel:'+s.phone+'" style="color:var(--lime);text-decoration:none">'+s.phone+'</a></div></div>':'')+
@@ -1351,7 +1374,7 @@ function rMissed(){
   var ar=0,rc=0;
   Object.keys(sess).forEach(function(k){
     var s=sess[k];
-    if(s.rate&&s.rate>=SET.regularMin&&s.rate<=SET.premiumOver&&s.type!=='crossfit'){ar+=s.rate;rc++;}
+    if(s.rate&&s.rate>=SET.regularMin&&s.rate<=SET.premiumOver&&s.type!=='crossfit'&&s.type!=='adidas'){ar+=s.rate;rc++;}
   });
   ar=rc?Math.round(ar/rc):50;
 
@@ -1374,7 +1397,7 @@ function rMissed(){
   Object.keys(sess).forEach(function(k){
     var s=sess[k];
     // Crossfit/personal block the slot but don't count toward the PT session target; cancelled doesn't count
-    if(dm[s.date]!==undefined&&s.type!=='crossfit'&&s.type!=='personal'&&s.type!=='consult'&&s.type!=='robyn'&&effStatus(s)!=='cancelled') dm[s.date]++;
+    if(dm[s.date]!==undefined&&s.type!=='crossfit'&&s.type!=='personal'&&s.type!=='consult'&&s.type!=='robyn'&&s.type!=='adidas'&&effStatus(s)!=='cancelled') dm[s.date]++;
   });
 
   var tms=0,tme=0,days=[];
@@ -1476,10 +1499,11 @@ function rUpcoming(){
     grd+='<div class="um"><div class="umn">'+MS[d.getMonth()].toUpperCase()+' '+d.getFullYear()+'</div>'+rows+'<div class="umt"><div class="umtl">Month Total</div><div class="umtv">&pound;'+mT.toLocaleString()+'</div></div></div>';
   });
   grd+='</div>';
-  var regTot=0,premTot=0,cfTot=0,visTot=0;
+  var regTot=0,premTot=0,cfTot=0,adiTot=0,visTot=0;
   vis.forEach(function(mk2){mm[mk2].forEach(function(s){
     var e=ef(s);visTot+=e;
     if(s.type==='crossfit') cfTot+=e;
+    else if(s.type==='adidas') adiTot+=e;
     else if(s.rate&&s.rate>SET.premiumOver) premTot+=e;
     else regTot+=e;
   });});
@@ -1493,6 +1517,8 @@ function rUpcoming(){
     '<div style="font-family:Bebas Neue,sans-serif;font-size:18px;color:#f0a020">&pound;'+premTot.toLocaleString()+'</div></div>'+
     (cfTot>0?'<div style="text-align:right"><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Crossfit</div>'+
     '<div style="font-family:Bebas Neue,sans-serif;font-size:18px;color:#f0a020">&pound;'+cfTot.toLocaleString()+'</div></div>':'')+
+    (adiTot>0?'<div style="text-align:right"><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Adidas</div>'+
+    '<div style="font-family:Bebas Neue,sans-serif;font-size:18px;color:#f2f2f2">&pound;'+adiTot.toLocaleString()+'</div></div>':'')+
     '</div></div></div>'+
     '<div class="utabs" id="utabs">'+tabs+'</div>'+grd;
   document.getElementById('utabs').onclick=function(e){var b=e.target.closest('.utab');if(!b)return;uView=b.getAttribute('data-uv');rUpcoming();};
@@ -1515,13 +1541,13 @@ function rSummary(){
     if(!byDay[day])byDay[day]=[];
     byDay[day].push({k:k,s:s});
     monthEarn+=ef(s);monthCount++;
-    if(s.type==='crossfit')cfCount++;
+    if(s.type==='crossfit'||s.type==='adidas')cfCount++;
   });
   document.getElementById('sumStats').innerHTML=
     pl('Month Earnings','&pound;'+monthEarn.toLocaleString(),'var(--lime)')+
     pl('Total Sessions',monthCount,'var(--text)')+
     pl('PT Sessions',monthCount-cfCount,'var(--text)')+
-    pl('Crossfit',cfCount,'#f0a020');
+    pl('Crossfit / Adidas',cfCount,'#f0a020');
   var g=document.getElementById('sumGrid');g.innerHTML='';
   for(var i=0;i<lead;i++){g.appendChild(mk('div','sumc empty'));}
   var todayIso=iso(new Date());
@@ -1538,7 +1564,7 @@ function rSummary(){
     var de=0;
     list.forEach(function(it){
       var s=it.s;de+=ef(s);
-      var col=s.type==='crossfit'?'#f0a020':s.type==='other'?'#b060b0':(s.recurring?'#1090c0':'var(--booked-accent)');
+      var col=s.type==='crossfit'?'#f0a020':s.type==='adidas'?'#f2f2f2':s.type==='other'?'#b060b0':(s.recurring?'#1090c0':'var(--booked-accent)');
       html+='<div class="sumev" data-key="'+it.k+'" style="color:'+col+'">'+esc(m2t(s.startMins)+' '+s.name)+'</div>';
     });
     if(de>0)html+='<div class="sumtot">&pound;'+de+'</div>';
@@ -1923,7 +1949,7 @@ function rToday(){
       var s=o.s,est=effStatus(s);
       var gone=new Date(s.date+'T'+p2(Math.floor(s.startMins/60))+':'+p2(s.startMins%60)+':00')<now;
       var cl=clientOf(s);
-      var typeLbl=s.type==='consult'?'Consultation':s.type==='personal'?'Personal':s.type==='crossfit'?'Crossfit':s.type==='other'?'Away':s.type==='robyn'?'Robyn':s.type==='coaching'?'Coaching':(cl&&cl.tag?cl.tag:'PT');
+      var typeLbl=s.type==='consult'?'Consultation':s.type==='personal'?'Personal':s.type==='crossfit'?'Crossfit':s.type==='adidas'?'Adidas':s.type==='other'?'Away':s.type==='robyn'?'Robyn':s.type==='coaching'?'Coaching':(cl&&cl.tag?cl.tag:'PT');
       var stTag=est==='cancelled'?' · cancelled':est==='noshow'?' · no-show':'';
       var extra=cl&&cl.goals?' · '+cl.goals:(s.focus?' · '+s.focus:'');
       var prep='';
@@ -2296,7 +2322,7 @@ function calName(id){
 // Which Google calendar a session type belongs on.
 function calForType(type){
   if(type==='personal')return 'primary';
-  if(type==='crossfit'||type==='robyn')return selCal3||selCal2||selCal; // shared shifts calendar
+  if(type==='crossfit'||type==='robyn'||type==='adidas')return selCal3||selCal2||selCal; // shared shifts calendar
   if(type==='other'&&selCal2)return selCal2;              // away/holiday
   return selCal;
 }
@@ -2305,7 +2331,7 @@ function pgCal(s,silent){
   var start=new Date(s.date+'T'+p2(Math.floor(s.startMins/60))+':'+p2(s.startMins%60)+':00');
   var end=new Date(start.getTime()+(s.duration||60)*60000);
   var desc=(s.rate?'Fee: \u00a3'+s.rate:'')+(s.focus?'\nFocus: '+s.focus:'')+(s.phone?'\nPhone: '+s.phone:'')+(s.email?'\nEmail: '+s.email:'')+(s.notes?'\nNotes: '+s.notes:'');
-  var summary=s.type==='personal'?('Training: '+s.name):s.type==='crossfit'?('CF: '+s.name):s.type==='consult'?('Consult: '+s.name):s.type==='coaching'?('Coaching: '+s.name):s.type==='robyn'?('Robyn: '+s.name):s.type==='other'?s.name:('PT: '+s.name);
+  var summary=s.type==='personal'?('Training: '+s.name):s.type==='crossfit'?('CF: '+s.name):s.type==='adidas'?(/^adidas$/i.test(s.name)?'Adidas':('Adidas: '+s.name)):s.type==='consult'?('Consult: '+s.name):s.type==='coaching'?('Coaching: '+s.name):s.type==='robyn'?('Robyn: '+s.name):s.type==='other'?s.name:('PT: '+s.name);
   var ev={summary:summary,description:desc,start:{dateTime:start.toISOString(),timeZone:'Europe/London'},end:{dateTime:end.toISOString(),timeZone:'Europe/London'},colorId:'10'};
   if(s.location)ev.location=s.location;
   var calTarget=calForType(s.type);
@@ -2351,7 +2377,7 @@ document.getElementById('bSave').onclick=svSess;
 document.getElementById('viewX').onclick=cView;
 document.getElementById('fST').addEventListener('change', function(){
   var type=document.getElementById('fType').value;
-  if(type==='crossfit'){
+  if(type==='crossfit'||type==='adidas'){
     var sm=t2m(this.value);
     var et=document.getElementById('fET');
     if(!et.value||t2m(et.value)<=sm){
