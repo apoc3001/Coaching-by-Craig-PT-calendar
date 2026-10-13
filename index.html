@@ -515,6 +515,15 @@ header{padding-top:env(safe-area-inset-top);}
     <div id="tlBody"></div>
   </div>
 </div>
+<!-- REPEATS NOT LINKED MODAL -->
+<div class="mo" id="repMo">
+  <div class="md">
+    <button class="mc" id="repX">&times;</button>
+    <div class="mt">REPEATS NOT LINKED</div>
+    <div class="ms" id="repSub"></div>
+    <div id="repBody"></div>
+  </div>
+</div>
 <!-- CANCELLED SESSIONS MODAL -->
 <div class="mo" id="canMo">
   <div class="md">
@@ -578,6 +587,8 @@ header{padding-top:env(safe-area-inset-top);}
         <select class="fi" id="bkSnaps" style="flex:1;min-width:0"></select>
         <button class="bs" id="bkSnapLoad" style="flex:0 0 auto">Restore</button>
       </div>
+      <label class="fl" style="margin-top:14px">Recurring sessions</label>
+      <button class="bs" id="repBtn" style="width:100%">Find repeats not linked as a series</button>
       <div id="bkAcct" style="font-size:10px;color:var(--muted);margin-top:12px;word-break:break-all"></div>
     </div>
   </div>
@@ -1377,6 +1388,14 @@ function oView(key){
   var acts=document.getElementById('viewActs');acts.innerHTML='';
   var eb=mk('button','bs');eb.textContent='Edit';eb.style.flex='1';
   eb.onclick=function(){cView();oEdit(key);};acts.appendChild(eb);
+  var lg=looseGroupOf(key);
+  if(lg){
+    // This session repeats (same person, day and time) but the upcoming ones aren't one series yet.
+    var lb=mk('button','bs');lb.textContent='Link '+lg.up.length+' repeats';lb.style.flex='1';
+    lb.title='Make the upcoming '+DF[lg.dow]+' '+m2t(lg.startMins)+' sessions one series';
+    lb.onclick=function(){var n=linkRepeats(lg);sd();render();toast(n+' sessions linked as one series');oView(key);};
+    acts.appendChild(lb);
+  }
   if(s.recurring){
     var ex=mk('button','bs');ex.textContent='Extend';ex.style.flex='1';
     ex.onclick=function(){oExtend(key);};acts.appendChild(ex);
@@ -1388,6 +1407,7 @@ function oView(key){
     var da=mk('button','bd');da.textContent='Remove all';
     da.onclick=function(){
       var rid=s.recurringId;
+      if(!rid){toast('This session isn’t linked to a series — use Remove this');return;}   // never match "no series" against every one-off
       Object.keys(sess).forEach(function(k){if(sess[k].recurringId===rid)delete sess[k];});
       sd();render();cView();toast('All recurring sessions removed');
     };
@@ -2711,6 +2731,81 @@ document.getElementById('canBody').onclick=function(e){var r=e.target.closest('[
 document.getElementById('sumBar').onclick=function(e){if(e.target.closest('.canpill'))openCancelled(ws);};
 document.getElementById('sumStats').onclick=function(e){if(e.target.closest('.canpill'))openCancelled(sumMonth);};
 
+// ===== REPEATS NOT LINKED AS A SERIES =====
+// Sessions booked one at a time (or in separate batches) for the same person, weekday and time are
+// one-offs as far as the app is concerned, so Extend and Remove all don't cover them. This finds those
+// sets among upcoming sessions and links them. Only upcoming sessions are changed; history is left alone.
+// Same person is decided by the client record where there is one (by id, else by name), so older sessions without a client id still match.
+function repeatKey(s){var c=isClientType(s.type)?clientOf(s):null;return (c?c.id:('n:'+normName(s.name)))+'|'+(s.type||'pt')+'|'+new Date(s.date+'T12:00:00').getDay()+'|'+s.startMins;}
+function findLooseRepeats(){
+  var today=iso(new Date()),from=iso(aD(new Date(),-56)),groups={},out=[];
+  Object.keys(sess).forEach(function(k){
+    var s=sess[k];
+    if(!s.name||s.type==='other'||s.date<from)return;          // multi-day away blocks aren't repeats
+    var rk=repeatKey(s);(groups[rk]=groups[rk]||[]).push({k:k,s:s});
+  });
+  Object.keys(groups).forEach(function(rk){
+    var all=groups[rk],up=all.filter(function(o){return o.s.date>=today;});
+    if(all.length<3||!up.length)return;                          // a pattern needs 3+ in the last 8 weeks or ahead, with at least one still to come
+    var ids={},loose=0;
+    up.forEach(function(o){if(o.s.recurring&&o.s.recurringId)ids[o.s.recurringId]=(ids[o.s.recurringId]||0)+1;else loose++;});
+    var series=Object.keys(ids).length;
+    if(!loose&&series<=1)return;                                 // already one proper series
+    up.sort(function(a,b){return a.s.date<b.s.date?-1:a.s.date>b.s.date?1:0;});
+    out.push({rk:rk,name:up[0].s.name,type:up[0].s.type||'pt',dow:new Date(up[0].s.date+'T12:00:00').getDay(),startMins:up[0].s.startMins,up:up,loose:loose,series:series,ids:ids});
+  });
+  out.sort(function(a,b){return a.name.toLowerCase()<b.name.toLowerCase()?-1:a.name.toLowerCase()>b.name.toLowerCase()?1:a.dow-b.dow||a.startMins-b.startMins;});
+  return out;
+}
+function looseGroupOf(key){
+  var s=sess[key];if(!s||!s.name||s.type==='other'||s.date<iso(new Date()))return null;
+  var rk=repeatKey(s);
+  return findLooseRepeats().filter(function(g){return g.rk===rk;})[0]||null;
+}
+// Puts the group's upcoming sessions into one series (the one most of them already belong to, else a new one).
+function linkRepeats(g){
+  var rid='',top=0;
+  Object.keys(g.ids).forEach(function(id){if(g.ids[id]>top){top=g.ids[id];rid=id;}});
+  if(!rid)rid='r'+Date.now()+Math.floor(Math.random()*1000);
+  var n=0;
+  g.up.forEach(function(o){var s=sess[o.k];if(s){s.recurring=true;s.recurringId=rid;n++;}});
+  return n;
+}
+var repList=[];
+function dShort(ds){var d=new Date(ds+'T12:00:00');return d.getDate()+' '+MS[d.getMonth()];}
+function rRepeats(){
+  repList=findLooseRepeats();
+  document.getElementById('repSub').textContent=repList.length
+    ?'Upcoming sessions for the same person, day and time that aren’t one series, so Extend and Remove all don’t cover them.'
+    :'Every repeating set of upcoming sessions is already one series ✓';
+  var h='';
+  if(repList.length>1)h+='<button class="bp" id="repAll" style="width:100%;margin-bottom:12px">LINK ALL '+repList.length+'</button>';
+  h+=repList.map(function(g,i){
+    var first=g.up[0].s.date,last=g.up[g.up.length-1].s.date,why=[];
+    if(g.loose)why.push(g.loose+' not in a series');
+    if(g.series>1)why.push('split across '+g.series+' series');
+    return '<div class="ur"><div style="flex:1;min-width:0"><div class="ucl">'+esc(g.name)+(g.type!=='pt'?' <span style="font-size:9px;color:var(--muted);letter-spacing:1px">'+esc(g.type.toUpperCase())+'</span>':'')+'</div>'+
+      '<div class="um2">'+DF[g.dow]+'s '+m2t(g.startMins)+' &middot; '+g.up.length+' upcoming ('+dShort(first)+(last!==first?' to '+dShort(last):'')+')</div>'+
+      '<div class="um2" style="color:#f0a020">'+why.join(' &middot; ')+'</div></div>'+
+      '<button class="bs repLink" data-i="'+i+'" style="flex:0 0 auto;padding:8px 14px">Link</button></div>';
+  }).join('');
+  document.getElementById('repBody').innerHTML=h;
+}
+function openRepeats(){rRepeats();document.getElementById('repMo').classList.add('open');}
+document.getElementById('repBtn').onclick=function(){document.getElementById('setMo').classList.remove('open');openRepeats();};
+document.getElementById('repX').onclick=function(){document.getElementById('repMo').classList.remove('open');};
+document.getElementById('repMo').onclick=function(e){if(e.target===this)this.classList.remove('open');};
+document.getElementById('repBody').onclick=function(e){
+  if(e.target.closest('#repAll')){
+    var total=0,sets=repList.length;repList.forEach(function(g){total+=linkRepeats(g);});
+    sd();render();toast(total+' sessions linked into '+sets+' series');rRepeats();return;
+  }
+  var b=e.target.closest('.repLink');if(!b)return;
+  var g=repList[parseInt(b.getAttribute('data-i'),10)];if(!g)return;
+  var n=linkRepeats(g);
+  sd();render();toast(n+' sessions linked for '+g.name);rRepeats();
+};
+
 function expCSV(){
   var rows=['Date,Day,Client,Start Time,Duration (mins),Rate/hr,Earnings,Type,Location,Focus,Phone,Email,Notes,Recurring'];
   function q(v){return '"'+String(v||'').replace(/"/g,'""')+'"';}
@@ -2897,6 +2992,8 @@ function bkRefresh(){
     c.sessions.toLocaleString()+' sessions &middot; '+c.clients+' clients &middot; '+c.assessments+' movement screens &middot; '+c.tasks+' tasks'+
     '<br>Last backup file: <span style="color:'+(last&&Date.now()-last<8*86400000?'var(--text)':'#f0a020')+'">'+fmtAgo(last)+'</span>'+
     '<br>Cloud space for sessions: <span style="color:'+lvl(kb/1024)+'">'+kb.toLocaleString()+' of 1,024 KB</span> &middot; <span style="color:'+lvl(idx/40000)+'">'+idx.toLocaleString()+' of 40,000 index entries</span>';
+  var nRep=findLooseRepeats().length;
+  document.getElementById('repBtn').textContent='Find repeats not linked as a series'+(nRep?' ('+nRep+')':'');
   document.getElementById('bkAcct').textContent=fbUser?('Signed in as '+fbUser.email+' · account ID '+fbUser.uid):'Not signed in — data is on this device only';
   var sel=document.getElementById('bkSnaps');
   sel.innerHTML='<option value="">Loading…</option>';
