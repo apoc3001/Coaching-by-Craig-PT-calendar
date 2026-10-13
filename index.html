@@ -28,6 +28,7 @@ header{background:var(--dark);border-bottom:1px solid var(--border);padding:0 20
 .logo-img{height:42px;width:auto;display:block;}
 .hr{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
 #gcalStatus{font-size:11px;color:var(--lime);display:none;}
+#syncStatus{font-size:11px;font-weight:600;color:var(--muted);cursor:pointer;white-space:nowrap;}
 #cpw{display:none;align-items:center;gap:8px;}
 #cpw span{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);}
 #cp{background:var(--card);border:1px solid var(--lime);color:var(--lime);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;padding:5px 8px;outline:none;cursor:pointer;max-width:160px;}
@@ -205,6 +206,7 @@ canvas{display:block;}
   .hr{width:100%;justify-content:flex-start;gap:6px;}
   .hbtn{font-size:9px;padding:4px 8px;letter-spacing:0.5px;}
   #gcalStatus{display:none!important;}
+  #syncStatus{font-size:10px;}
   #cpw span{display:none;}
   #cp{font-size:10px;max-width:110px;padding:4px 6px;}
   .tabs{position:sticky;top:0;z-index:99;}
@@ -241,6 +243,7 @@ header{padding-top:env(safe-area-inset-top);}
 <header>
   <img src="logo-header.png" alt="Coaching by Craig" class="logo-img">
   <div class="hr">
+    <div id="syncStatus" title="Cloud save status"></div>
     <div id="gcalStatus">● Cal Connected</div>
     <div id="cpw"><span>PT Cal:</span><select id="cp"></select></div>
     <div id="cpw2" style="display:none;align-items:center;gap:8px"><span style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Away/Holiday:</span><select id="cp2" style="background:var(--card);border:1px solid #f0a020;color:#f0a020;font-family:&#39;DM Sans&#39;,sans-serif;font-size:11px;font-weight:600;padding:5px 8px;outline:none;cursor:pointer;max-width:160px"></select></div>
@@ -548,6 +551,21 @@ header{padding-top:env(safe-area-inset-top);}
     </div>
     <div class="fr"><label class="fl" for="setPrem">Premium above (£)</label><input class="fi" id="setPrem" type="number" min="0"></div>
     <div class="ma"><button class="bp" id="setSave">SAVE</button><button class="bs" id="setCancel">Cancel</button></div>
+    <div style="border-top:1px solid var(--border);margin-top:20px;padding-top:16px">
+      <label class="fl">Data &amp; backup</label>
+      <div id="bkInfo" style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.6"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="bs" id="bkSave" style="flex:1">Download backup</button>
+        <button class="bs" id="bkLoad" style="flex:1">Restore from file</button>
+      </div>
+      <input type="file" id="bkFile" accept=".json,application/json,text/plain" style="display:none">
+      <label class="fl" for="bkSnaps" style="margin-top:14px">Automatic daily copies on this device</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <select class="fi" id="bkSnaps" style="flex:1;min-width:0"></select>
+        <button class="bs" id="bkSnapLoad" style="flex:0 0 auto">Restore</button>
+      </div>
+      <div id="bkAcct" style="font-size:10px;color:var(--muted);margin-top:12px;word-break:break-all"></div>
+    </div>
   </div>
 </div>
 <!-- CLOUD SIGN-IN MODAL -->
@@ -575,7 +593,58 @@ var firebaseConfig={
   messagingSenderId:"4708848171",
   appId:"1:4708848171:web:234be6db656cbe3043106e"
 };
-var fbDb=null,fbReady=false,fbSuppressNextWrite=false,fbUser=null,fbUnsub=null,fbUnsubC=null,fbSuppressClients=false,fbReadyC=false,fbUnsubT=null,fbSuppressTasks=false;
+var fbDb=null,fbUser=null,fbAuthKnown=false,fbListenErr=null;
+// ---- Cloud sync ----
+// Each store is one Firestore document (cbc/<name>) mirrored in localStorage. Stores are written one
+// record at a time (a session, a client, a setting), so two devices changing different records never
+// overwrite each other. Every changed record is also noted in a local outbox until the server
+// confirms it: unconfirmed records are kept on top of incoming cloud data and re-sent on the next
+// start, so a change made offline - or just before the app is closed - is not lost.
+var STORES={
+  sessions:{ls:'cbc6',get:function(){return sess;},put:function(v){sess=v;}},
+  clients:{ls:'cbc6_clients',get:function(){return clients;},put:function(v){clients=v;}},
+  assessments:{ls:'cbc6_assess',get:function(){return assessments;},put:function(v){assessments=v;}},
+  tasks:{ls:'cbc6_tasks',get:function(){return tasksStore;},put:function(v){tasksStore={manual:v.manual||[],dismissed:v.dismissed||[]};}},
+  settings:{ls:'cbc6_settings',get:function(){return SET;},put:function(v){applySettings(v);}}
+};
+// Outbox entries are {record key: write number}; a negative number means the record was deleted here.
+var OUTBOX='cbc6_outbox',fbSeq=Date.now(),lsFull=false,fbWaitFrom=0;
+// Stable JSON (sorted keys, undefined dropped) so the same record always compares equal.
+function stj(v){
+  if(v===undefined||v===null)return 'null';
+  if(typeof v!=='object')return JSON.stringify(v)||'null';
+  if(Array.isArray(v))return '['+v.map(stj).join(',')+']';
+  var ks=Object.keys(v).sort(),out=[];
+  for(var i=0;i<ks.length;i++){if(v[ks[i]]!==undefined)out.push(JSON.stringify(ks[i])+':'+stj(v[ks[i]]));}
+  return '{'+out.join(',')+'}';
+}
+function recMap(obj){var m={};Object.keys(obj||{}).forEach(function(k){if(obj[k]!==undefined)m[k]=stj(obj[k]);});return m;}
+function sameMap(a,b){var ka=Object.keys(a);if(ka.length!==Object.keys(b).length)return false;for(var i=0;i<ka.length;i++){if(a[ka[i]]!==b[ka[i]])return false;}return true;}
+function lsPut(key,val){
+  try{localStorage.setItem(key,JSON.stringify(val));return true;}
+  catch(e){console.log('Local save failed:',key,e);if(!lsFull){lsFull=true;toast('This device is out of storage space — changes still go to the cloud');}return false;}
+}
+function outSave(){
+  var o={};Object.keys(STORES).forEach(function(n){var u=STORES[n].unsent;if(u&&Object.keys(u).length)o[n]=u;});
+  try{localStorage.setItem(OUTBOX,JSON.stringify(o));}catch(e){}
+}
+// Runs once the whole script has loaded, i.e. after every store has been read from this device's mirror.
+function fbStart(){
+  var out={};try{out=JSON.parse(localStorage.getItem(OUTBOX)||'{}')||{};}catch(e){out={};}
+  Object.keys(STORES).forEach(function(n){
+    var st=STORES[n];
+    st.shadow=recMap(st.get());                                       // what the cloud is believed to hold, per record
+    st.unsent=(out[n]&&typeof out[n]==='object')?out[n]:{};
+    var cur=st.get()||{};
+    Object.keys(st.unsent).forEach(function(k){
+      var del=st.unsent[k]<0,has=cur[k]!==undefined;
+      if(del===has){delete st.unsent[k];return;}                      // outbox and mirror disagree: never act on it
+      st.shadow[k]='?';                                               // left over from an earlier session: send again
+    });
+    st.flying=0;st.ready=false;st.fail=null;st.first=true;
+  });
+  fbInit();
+}
 function fbInit(){
   firebase.initializeApp(firebaseConfig);
   fbDb=firebase.firestore();
@@ -583,62 +652,148 @@ function fbInit(){
   firebase.auth().onAuthStateChanged(function(user){
     // Clear any leftover anonymous session from an older version.
     if(user&&user.isAnonymous){firebase.auth().signOut();return;}
-    fbUser=user||null;
-    if(fbUnsub){fbUnsub();fbUnsub=null;}
-    if(!user){showAuthModal(true);return;}
+    fbUser=user||null;fbAuthKnown=true;
+    Object.keys(STORES).forEach(function(n){var st=STORES[n];if(st.unsub){st.unsub();st.unsub=null;}});
+    if(!user){showAuthModal(true);updSync();return;}
     showAuthModal(false);
-    fbUnsub=fbDb.collection('cbc').doc('sessions').onSnapshot(function(doc){
-      if(fbSuppressNextWrite){fbSuppressNextWrite=false;return;}
-      if(doc.exists){
-        sess=doc.data().data||{};
-        localStorage.setItem('cbc6',JSON.stringify(sess));
-        render();
-        if(document.getElementById('pAna').classList.contains('active'))rAna();
-        if(document.getElementById('pSum').classList.contains('active'))rSummary();
-        if(document.getElementById('pCli').classList.contains('active'))rClients();
-        if(document.getElementById('pFin').classList.contains('active'))rFinance();
-        if(document.getElementById('pTask').classList.contains('active'))rTasks();
-        if(document.getElementById('pToday').classList.contains('active'))rToday();
-      } else if(!fbReady&&Object.keys(sess).length){
-        // First time signed in and the cloud doc doesn't exist yet - migrate local up.
-        sd();
-        toast('Existing sessions migrated to cloud');
-      }
-      fbReady=true;
-      migrateClients();
-    },function(e){console.log('Firestore listen error:',e);toast('Cloud sync blocked - check sign-in');});
-    if(fbUnsubC){fbUnsubC();fbUnsubC=null;}
-    fbUnsubC=fbDb.collection('cbc').doc('clients').onSnapshot(function(doc){
-      if(fbSuppressClients){fbSuppressClients=false;return;}
-      if(doc.exists){
-        clients=doc.data().data||{};
-        localStorage.setItem('cbc6_clients',JSON.stringify(clients));
-        if(document.getElementById('pCli').classList.contains('active'))rClients();
-        if(document.getElementById('pFin').classList.contains('active'))rFinance();
-        if(document.getElementById('pTask').classList.contains('active'))rTasks();
-        if(document.getElementById('pToday').classList.contains('active'))rToday();
-      }
-      fbReadyC=true;
-      migrateClients();
-    },function(e){console.log('Clients listen error:',e);});
-    if(fbUnsubT){fbUnsubT();fbUnsubT=null;}
-    fbUnsubT=fbDb.collection('cbc').doc('tasks').onSnapshot(function(doc){
-      if(fbSuppressTasks){fbSuppressTasks=false;return;}
-      if(doc.exists){var d=doc.data().data||{};tasksStore={manual:d.manual||[],dismissed:d.dismissed||[]};localStorage.setItem('cbc6_tasks',JSON.stringify(tasksStore));if(document.getElementById('pTask').classList.contains('active'))rTasks();if(document.getElementById('pToday').classList.contains('active'))rToday();if(document.getElementById('pCli').classList.contains('active'))rClients();}
-    },function(e){console.log('Tasks listen error:',e);});
-    if(fbUnsubS){fbUnsubS();fbUnsubS=null;}
-    fbUnsubS=fbDb.collection('cbc').doc('settings').onSnapshot(function(doc){
-      if(fbSuppressSet){fbSuppressSet=false;return;}
-      if(doc.exists){applySettings(doc.data().data||{});localStorage.setItem('cbc6_settings',JSON.stringify(SET));render();if(document.getElementById('pAna').classList.contains('active'))rAna();if(document.getElementById('pToday').classList.contains('active'))rToday();}
-    },function(e){console.log('Settings listen error:',e);});
-    if(fbUnsubA){fbUnsubA();fbUnsubA=null;}
-    fbUnsubA=fbDb.collection('cbc').doc('assessments').onSnapshot(function(doc){
-      if(fbSuppressA){fbSuppressA=false;return;}
-      if(doc.exists){assessments=doc.data().data||{};localStorage.setItem('cbc6_assess',JSON.stringify(assessments));if(document.getElementById('pCli').classList.contains('active'))rClients();if(document.getElementById('pToday').classList.contains('active'))rToday();}
-    },function(e){console.log('Assess listen error:',e);});
+    Object.keys(STORES).forEach(function(n){fbListen(n);});
+    updSync();
   });
 }
-fbInit();
+function fbListen(name){
+  var st=STORES[name];
+  st.first=true;
+  st.unsub=fbDb.collection('cbc').doc(name).onSnapshot(function(doc){
+    var live=!doc.metadata.fromCache;
+    fbListenErr=null;
+    if(!doc.exists){
+      // Only believe "nothing in the cloud yet" when the server says so, never an empty offline cache.
+      if(live&&!st.ready){
+        st.ready=true;st.first=false;
+        if(Object.keys(recMap(st.get())).length){
+          st.shadow={};fbSave(name);
+          if(name==='sessions'&&Object.keys(sess).length)toast('Existing sessions migrated to cloud');
+        }
+      }
+      migrateClients();updSync();return;
+    }
+    var incoming=doc.data().data||{},cur=st.get()||{},inMap=recMap(incoming),un=Object.keys(st.unsent),n0=un.length,merged=incoming,mMap=inMap;
+    if(un.length){
+      // Records changed on this device that the server hasn't confirmed yet stay as they are here.
+      merged={};Object.keys(incoming).forEach(function(k){merged[k]=incoming[k];});
+      un.forEach(function(k){
+        var del=st.unsent[k]<0,has=cur[k]!==undefined;
+        if(del&&!has)delete merged[k];
+        else if(!del&&has)merged[k]=cur[k];
+        else delete st.unsent[k];                                     // outbox and this device disagree: keep the cloud's version
+      });
+      un=Object.keys(st.unsent);
+      mMap=recMap(merged);
+    }
+    var settled=live&&!doc.metadata.hasPendingWrites,cleared=false,shadow={};
+    Object.keys(inMap).forEach(function(k){shadow[k]=inMap[k];});
+    un.forEach(function(k){
+      if(inMap[k]===mMap[k]){if(settled){delete st.unsent[k];cleared=true;}}   // the cloud already has it
+      else shadow[k]='?';                                                     // still needs sending
+    });
+    st.shadow=shadow;
+    if(cleared||un.length!==n0)outSave();
+    if(!sameMap(mMap,recMap(cur))){st.put(merged);lsPut(st.ls,st.get());fbAfter(name);}
+    st.ready=true;
+    if(st.first&&live){st.first=false;fbSave(name);}        // push anything left over from an earlier session
+    migrateClients();updSync();
+  },function(e){
+    console.log('Cloud listen error ('+name+'):',e);fbListenErr=e;updSync();
+    if(name==='sessions')toast('Cloud sync blocked - check sign-in');
+  });
+}
+// Save one store: mirror it on this device, then send only the records that changed.
+function fbSave(name){
+  var st=STORES[name],obj=st.get()||{};
+  var stored=lsPut(st.ls,obj);
+  if(!st.shadow)return;                                   // still starting up
+  var cur=recMap(obj),sh=st.shadow,ch=[];
+  Object.keys(cur).forEach(function(k){if(sh[k]!==cur[k])ch.push(k);});
+  Object.keys(sh).forEach(function(k){if(cur[k]===undefined)ch.push(k);});
+  if(!ch.length){updSync();return;}
+  var seq=++fbSeq;
+  if(stored){ch.forEach(function(k){st.unsent[k]=(cur[k]===undefined)?-seq:seq;});outSave();}
+  if(!fbDb||!fbUser){updSync();return;}                   // signed out: waits in the outbox until sign-in
+  var ref=fbDb.collection('cbc').doc(name),args=[],p;
+  st.shadow=cur;st.flying++;
+  try{
+    ch.forEach(function(k){args.push(new firebase.firestore.FieldPath('data',k),cur[k]===undefined?firebase.firestore.FieldValue.delete():fbClean(obj[k]));});
+    p=ref.update.apply(ref,args);
+  }catch(e){p=Promise.reject(e);}
+  p.catch(function(e){
+    if(e&&e.code==='not-found')return ref.set({data:fbClean(st.get())});     // first ever save of this store
+    throw e;
+  }).then(function(){
+    st.flying--;st.fail=null;
+    ch.forEach(function(k){if(Math.abs(st.unsent[k]||0)<=seq)delete st.unsent[k];});   // a later write of the same record keeps its own entry
+    outSave();updSync();
+  },function(e){
+    st.flying--;st.fail=e;
+    ch.forEach(function(k){st.shadow[k]='?';});           // not accepted: goes again on the next save or retry
+    console.log('Cloud save error ('+name+'):',e);
+    toast('Not saved to cloud — '+fbErrText(e));
+    updSync();
+  });
+  updSync();
+}
+// Redraw whatever is on screen after cloud data for a store has been applied.
+function fbAfter(name){
+  function on(p){return document.getElementById(p).classList.contains('active');}
+  if(name==='sessions'||name==='clients'||name==='settings')render();
+  if(on('pAna')&&(name==='sessions'||name==='settings'))rAna();
+  if(on('pSum')&&name==='sessions')rSummary();
+  if(on('pCli')&&name!=='settings')rClients();
+  if(on('pFin')&&(name==='sessions'||name==='clients'))rFinance();
+  if(on('pTask')&&name!=='settings'&&name!=='assessments')rTasks();
+  if(on('pToday'))rToday();
+}
+function fbErrText(e){
+  var c=(e&&e.code)||'';
+  if(c==='permission-denied')return 'not allowed, check sign-in';
+  if(c==='unavailable')return 'no connection';
+  if(c==='resource-exhausted')return 'cloud quota reached';
+  return (e&&e.message)||c||'unknown error';
+}
+function fbRetry(){Object.keys(STORES).forEach(function(n){STORES[n].fail=null;fbSave(n);});updSync();}
+// Cloud save status shown in the header.
+function syncInfo(){
+  var waiting=0,flying=0,failed=false;
+  Object.keys(STORES).forEach(function(n){var st=STORES[n];waiting+=Object.keys(st.unsent||{}).length;flying+=st.flying||0;if(st.fail)failed=true;});
+  var off=(navigator.onLine===false),busy=waiting>0||flying>0;
+  if(busy){if(!fbWaitFrom){fbWaitFrom=Date.now();setTimeout(updSync,9000);}}else fbWaitFrom=0;
+  if(!fbAuthKnown)return {s:'load',t:'',c:'var(--muted)'};
+  if(!fbUser)return {s:'out',t:'● Not signed in'+(waiting?' · '+waiting+' unsaved':''),c:'#f0a020'};
+  if(failed||fbListenErr)return {s:'fail',t:'⚠ Not saved'+(waiting?' ('+waiting+')':'')+' — tap',c:'var(--danger)'};
+  if(busy){
+    if(off)return {s:'wait',t:'● Offline · '+waiting+' waiting',c:'#f0a020'};
+    if(Date.now()-fbWaitFrom>8000)return {s:'wait',t:'● '+waiting+' waiting to save',c:'#f0a020'};
+    return {s:'saving',t:'● Saving…',c:'#f0a020'};
+  }
+  if(off)return {s:'off',t:'● Offline',c:'#f0a020'};
+  // No word from the server yet this session: don't claim everything is saved.
+  if(Object.keys(STORES).some(function(n){return !STORES[n].ready;}))return {s:'conn',t:'● Connecting…',c:'var(--muted)'};
+  return {s:'ok',t:'✓ Saved',c:'var(--muted)'};
+}
+function updSync(){
+  var el=document.getElementById('syncStatus');if(!el)return;
+  var i=syncInfo();el.textContent=i.t;el.style.color=i.c;el.setAttribute('data-s',i.s);
+}
+function syncTap(){
+  var i=syncInfo();
+  if(i.s==='out'){showAuthModal(true);return;}
+  if(i.s==='ok'){toast('All changes are saved to the cloud');return;}
+  if(i.s==='conn'){toast('Connecting to the cloud…');return;}
+  if(i.s==='off'){toast('Offline — nothing waiting to save');return;}
+  var why='';Object.keys(STORES).forEach(function(n){if(STORES[n].fail)why=fbErrText(STORES[n].fail);});
+  if(!why&&fbListenErr)why=fbErrText(fbListenErr);
+  fbRetry();
+  toast(why?('Trying again — last error: '+why):'Trying again…');
+}
 
 function fbAuthErr(e){
   var c=e&&e.code||'';
@@ -671,11 +826,7 @@ function applySettings(o){
 }
 function targetFor(dow){var t=SET.dayTargets;return (t&&typeof t[dow]==='number')?t[dow]:0;}
 applySettings(ldSet());
-var fbUnsubS=null,fbSuppressSet=false;
-function sdSet(){
-  localStorage.setItem('cbc6_settings',JSON.stringify(SET));
-  if(fbDb&&fbUser){fbSuppressSet=true;fbDb.collection('cbc').doc('settings').set({data:fbClean(SET)}).catch(function(e){console.log('Settings save error:',e);fbSuppressSet=false;});}
-}
+function sdSet(){fbSave('settings');}
 var DS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 var DF=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 var MS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -690,37 +841,9 @@ var tasksStore=ldt();
 function ld(){try{return JSON.parse(localStorage.getItem('cbc6')||'{}');}catch(e){return {};}}
 // Firestore rejects undefined field values; JSON round-trip strips them cleanly.
 function fbClean(o){return JSON.parse(JSON.stringify(o));}
-function sd(){
-  localStorage.setItem('cbc6',JSON.stringify(sess));
-  if(fbDb&&fbUser){
-    fbSuppressNextWrite=true;
-    fbDb.collection('cbc').doc('sessions').set({data:fbClean(sess)}).catch(function(e){
-      console.log('Firestore save error:',e);
-      fbSuppressNextWrite=false;
-      toast('Could not save to cloud - check connection');
-    });
-  }
-}
-function sdc(){
-  localStorage.setItem('cbc6_clients',JSON.stringify(clients));
-  if(fbDb&&fbUser){
-    fbSuppressClients=true;
-    fbDb.collection('cbc').doc('clients').set({data:fbClean(clients)}).catch(function(e){
-      console.log('Clients save error:',e);
-      fbSuppressClients=false;
-      toast('Could not save client - check connection');
-    });
-  }
-}
-function sdt(){
-  localStorage.setItem('cbc6_tasks',JSON.stringify(tasksStore));
-  if(fbDb&&fbUser){
-    fbSuppressTasks=true;
-    fbDb.collection('cbc').doc('tasks').set({data:fbClean(tasksStore)}).catch(function(e){
-      console.log('Tasks save error:',e);fbSuppressTasks=false;
-    });
-  }
-}
+function sd(){fbSave('sessions');}
+function sdc(){fbSave('clients');}
+function sdt(){fbSave('tasks');}
 // --- Client records (first-class, shared) ---
 function normName(n){return (n||'').trim().toLowerCase().replace(/\s+/g,' ');}
 function findClientByName(name){
@@ -732,8 +855,9 @@ function findClientByName(name){
 // Returns a client id for the given name, creating/updating the record from supplied details.
 function ensureClient(name,details){
   details=details||{};
-  var c=findClientByName(name);
+  var c=findClientByName(name),created=false;
   if(!c){
+    created=true;
     var id='c'+Date.now()+Math.floor(Math.random()*1000);
     c={id:id,name:(name||'').trim(),phone:'',email:'',tag:'',goals:'',defaultRate:0,status:'active',startDate:details.date||iso(new Date()),notes:'',createdAt:Date.now()};
     clients[id]=c;
@@ -744,14 +868,14 @@ function ensureClient(name,details){
   if(details.email&&details.email!==c.email){c.email=details.email;changed=true;}
   if(details.rate&&!c.defaultRate){c.defaultRate=details.rate;changed=true;}
   if(c.status!=='active'){c.status='active';changed=true;}
-  sdc();
+  if(created||changed)sdc();
   return c.id;
 }
 // One-time link of legacy sessions to client records; runs after both stores have loaded.
 var _cliMigrated=false;
 function migrateClients(){
   if(_cliMigrated)return;
-  if(!fbReady||!fbReadyC)return; // wait until both cloud docs have reported
+  if(!STORES.sessions.ready||!STORES.clients.ready)return; // wait until both cloud docs have reported
   _cliMigrated=true;
   var changedS=false;
   Object.keys(sess).forEach(function(k){
@@ -908,6 +1032,7 @@ function moveSession(key,newDate,newMins){try{
   if(s.date===newDate&&s.startMins===newMins)return;
   var newKey=sk(newDate,newMins);
   if(sess[newKey]){toast('That slot is taken');return;}
+  if(!confirmClashes(overlapsAt(newDate,newMins,s.duration||60,[key])))return;
   delete sess[key];
   s.date=newDate;s.startMins=newMins;
   sess[newKey]=s;
@@ -1081,6 +1206,31 @@ function fExtra(){return {
   email:document.getElementById('fEm').value.trim()
 };}
 
+// Sessions on `date` that overlap the slot starting at sm and lasting dur minutes. Cancelled ones don't take up time.
+// `skip` lists keys to ignore (the session being edited or moved).
+function overlapsAt(date,sm,dur,skip){
+  var end=sm+(dur||60),out=[];
+  Object.keys(sess).forEach(function(k){
+    if(skip&&skip.indexOf(k)!==-1)return;
+    var s=sess[k];if(s.date!==date||effStatus(s)==='cancelled')return;
+    if(s.startMins<end&&sm<s.startMins+(s.duration||60))out.push({k:k,s:s});
+  });
+  out.sort(function(a,b){return a.s.startMins-b.s.startMins;});
+  return out;
+}
+// Overlaps are allowed, but only after a warning.
+function confirmClashes(list){
+  if(!list.length)return true;
+  var lines=list.slice(0,6).map(function(o){return '• '+fd(o.s.date)+', '+m2t(o.s.startMins)+'–'+m2t(o.s.startMins+(o.s.duration||60))+'  '+o.s.name;});
+  if(list.length>6)lines.push('…and '+(list.length-6)+' more');
+  return window.confirm('This overlaps with:\n\n'+lines.join('\n')+'\n\nSave it anyway?');
+}
+function skipNote(taken){
+  if(!taken.length)return '';
+  var ds=taken.slice(0,3).map(function(p){var d=new Date(p.date+'T12:00:00');return d.getDate()+' '+MS[d.getMonth()];}).join(', ');
+  return ' · skipped '+ds+(taken.length>3?' +'+(taken.length-3)+' more':'')+' (slot taken)';
+}
+
 function svSess(){try{
   var name=document.getElementById('fN').value.trim();if(!name){document.getElementById('fN').focus();return;}
   var type=document.getElementById('fType').value||'pt';
@@ -1091,85 +1241,87 @@ function svSess(){try{
   var xt=fExtra();
   var rec=document.getElementById('fRec').checked;
   var date=aSlot.date;
+  var old=aEk?(sess[aEk]||{}):null;
+  // Work out every slot this save will fill, then check them all before changing anything.
+  var plan=[];
+  if(!aEk&&!rec&&type==='other'){
+    // Multi-day block. First day: chosen start to 9pm; last day: 6am to the end time; days between: 6am-9pm.
+    var endDate=document.getElementById('fED').value||date;
+    var endDt=new Date(endDate+'T12:00:00');
+    for(var dd=new Date(date+'T12:00:00');dd<=endDt;dd.setDate(dd.getDate()+1)){
+      var dayStr=iso(dd),daySm=sm,dayDur;
+      if(dayStr===date&&dayStr===endDate)dayDur=dur;
+      else if(dayStr===date)dayDur=(21*60)-sm;
+      else if(dayStr===endDate){daySm=6*60;dayDur=t2m(document.getElementById('fET').value)-(6*60);}
+      else{daySm=6*60;dayDur=15*60;}
+      plan.push({date:dayStr,sm:daySm,dur:dayDur});
+    }
+  }
+  if(!plan.length)plan.push({date:date,sm:sm,dur:dur});
+  if(rec){
+    var intv=parseInt(document.getElementById('fFq').value,10)||1;
+    var wks=parseInt(document.getElementById('fW').value,10)||12;
+    for(var w=intv;w<wks;w+=intv){
+      var dt=new Date(date+'T12:00:00');dt.setDate(dt.getDate()+w*7);
+      plan.push({date:iso(dt),sm:sm,dur:dur});
+    }
+  }
+  var taken=[],clash=[],seen={};
+  plan.forEach(function(p,i){
+    p.key=sk(p.date,p.sm);
+    if(sess[p.key]&&p.key!==aEk){p.taken=true;taken.push(p);return;}   // never write over another session
+    // Editing without moving it: don't ask again about an overlap that was already there.
+    if(i===0&&aEk&&old.date===p.date&&old.startMins===p.sm&&(old.duration||60)===p.dur)return;
+    overlapsAt(p.date,p.sm,p.dur,aEk?[aEk]:[]).forEach(function(o){if(!seen[o.k]){seen[o.k]=1;clash.push(o);}});
+  });
+  if(plan[0].taken){
+    var t0=sess[plan[0].key];
+    window.alert('There is already a session starting at '+m2t(plan[0].sm)+' on '+fd(plan[0].date)+' ('+t0.name+(effStatus(t0)==='cancelled'?', cancelled':'')+').\n\nPick a different start time, or move or remove that one first.');
+    return;
+  }
+  if(!confirmClashes(clash))return;
   // Link PT sessions to a client record (creating/updating it); other types aren't clients.
   var cid=isClientType(type)?ensureClient(name,{phone:xt.phone,email:xt.email,rate:rate,date:date}):'';
   if(aEk){
-    var old=sess[aEk]||{};delete sess[aEk];
-    var baseKey=sk(date,sm);
+    delete sess[aEk];
     var ridE=old.recurringId||('r'+Date.now());
     var base=Object.assign({name:name,type:type,date:date,startMins:sm,duration:dur,rate:rate,notes:notes,clientId:cid,makeup:old.makeup||false,status:old.status,recurring:(rec||!!old.recurring),recurringId:((rec||old.recurring)?ridE:old.recurringId),gcalId:old.gcalId},xt);
-    sess[baseKey]=base;
+    sess[plan[0].key]=base;
     var addedE=0;
-    if(rec){
-      var intvE=parseInt(document.getElementById('fFq').value,10)||1;
-      var wksE=parseInt(document.getElementById('fW').value,10)||12;
-      for(var wE=intvE;wE<wksE;wE+=intvE){
-        var dtE=new Date(date+'T12:00:00');dtE.setDate(dtE.getDate()+wE*7);
-        var d2E=iso(dtE),kE=sk(d2E,sm);
-        if(!sess[kE]){
-          var cp=Object.assign({},base,{date:d2E,recurring:true,recurringId:ridE,makeup:false});
-          delete cp.gcalId;delete cp.status;
-          sess[kE]=cp;addedE++;
-        }
-      }
-    }
+    plan.forEach(function(p,i){
+      if(i===0||p.taken)return;
+      var cp=Object.assign({},base,{date:p.date,recurring:true,recurringId:ridE,makeup:false});
+      delete cp.gcalId;delete cp.status;
+      sess[p.key]=cp;addedE++;
+    });
     sd();render();cAdd();
-    toast(addedE?('Updated · '+addedE+' recurring sessions added'):'Session updated');
+    toast((addedE?('Updated · '+addedE+' recurring sessions added'):'Session updated')+skipNote(taken));
     if(addedE&&gConn&&gTok)syncAllUnsynced();
     return;
   }
   if(rec){
-    var intv=parseInt(document.getElementById('fFq').value,10)||1;
-    var wks=parseInt(document.getElementById('fW').value,10)||12;
-    var rid='r'+Date.now();var cnt=0;
-    for(var w=0;w<wks;w+=intv){
-      var dt=new Date(date+'T12:00:00');dt.setDate(dt.getDate()+w*7);
-      var d2=iso(dt);var k=sk(d2,sm);
-      if(!sess[k]){sess[k]=Object.assign({name:name,type:type,date:d2,startMins:sm,duration:dur,rate:rate,notes:notes,clientId:cid,recurring:true,recurringId:rid},xt);cnt++;}
-    }
-    sd();render();cAdd();toast(cnt+' recurring sessions added');
+    var rid='r'+Date.now(),cnt=0;
+    plan.forEach(function(p){
+      if(p.taken)return;
+      sess[p.key]=Object.assign({name:name,type:type,date:p.date,startMins:sm,duration:dur,rate:rate,notes:notes,clientId:cid,recurring:true,recurringId:rid},xt);cnt++;
+    });
+    sd();render();cAdd();toast(cnt+' recurring sessions added'+skipNote(taken));
     if(gConn&&gTok)syncAllUnsynced();
+  } else if(type==='other'){
+    var rid2='r'+Date.now(),cnt2=0;
+    plan.forEach(function(p){
+      if(p.taken)return;
+      sess[p.key]=Object.assign({name:name,type:type,date:p.date,startMins:p.sm,duration:p.dur,rate:rate,notes:notes,recurring:false,recurringId:rid2},xt);cnt2++;
+    });
+    sd();render();cAdd();
+    toast((cnt2>1?name+' blocked '+cnt2+' days':name+' blocked')+skipNote(taken));
   } else {
-    if(type==='other'){
-      // Handle multi-day blocking
-      var endDateVal=document.getElementById('fED').value;
-      var endDate=endDateVal||date;
-      var startDt=new Date(date+'T12:00:00');
-      var endDt=new Date(endDate+'T12:00:00');
-      var rid2='r'+Date.now();
-      var cnt2=0;
-      for(var dd=new Date(startDt);dd<=endDt;dd.setDate(dd.getDate()+1)){
-        var dayStr=iso(dd);
-        // First day: use selected start time; last day: end at fET; middle days: full day 6am-9pm
-        var daySm=sm;
-        var dayDur;
-        if(dayStr===date&&dayStr===endDate){
-          dayDur=dur; // single day
-        } else if(dayStr===date){
-          dayDur=(21*60)-sm; // start time to 9pm
-        } else if(dayStr===endDate){
-          daySm=6*60; // 6am
-          dayDur=t2m(document.getElementById('fET').value)-(6*60);
-        } else {
-          daySm=6*60;
-          dayDur=15*60; // full day 6am-9pm
-        }
-        var dayKey=sk(dayStr,daySm);
-        if(!sess[dayKey]){
-          sess[dayKey]=Object.assign({name:name,type:type,date:dayStr,startMins:daySm,duration:dayDur,rate:rate,notes:notes,recurring:false,recurringId:rid2},xt);
-          cnt2++;
-        }
-      }
-      sd();render();cAdd();
-      toast(cnt2>1?name+' blocked '+cnt2+' days':name+' blocked');
-    } else {
-      var newKey=sk(date,sm);
-      var useMakeup=isClientType(type)&&document.getElementById('fMakeup').checked&&cid&&clients[cid]&&bankedCount(clients[cid])>0;
-      sess[newKey]=Object.assign({name:name,type:type,date:date,startMins:sm,duration:dur,rate:rate,notes:notes,clientId:cid,makeup:useMakeup||false,recurring:false},xt);
-      if(useMakeup){redeemBankedCredit(clients[cid]);sdc();}
-      sd();render();cAdd();toast(useMakeup?('Make-up booked · '+bankedCount(clients[cid])+' credit(s) left'):'Session booked');
-      if(gConn&&gTok) pgCal(sess[newKey],true);
-    }
+    var newKey=plan[0].key;
+    var useMakeup=isClientType(type)&&document.getElementById('fMakeup').checked&&cid&&clients[cid]&&bankedCount(clients[cid])>0;
+    sess[newKey]=Object.assign({name:name,type:type,date:date,startMins:sm,duration:dur,rate:rate,notes:notes,clientId:cid,makeup:useMakeup||false,recurring:false},xt);
+    if(useMakeup){redeemBankedCredit(clients[cid]);sdc();}
+    sd();render();cAdd();toast(useMakeup?('Make-up booked · '+bankedCount(clients[cid])+' credit(s) left'):'Session booked');
+    if(gConn&&gTok) pgCal(sess[newKey],true);
   }
 }catch(e){console.error('svSess error:',e);toast('Save error: '+(e&&e.message||e));}}
 
@@ -1190,11 +1342,11 @@ function oView(key){
     (s.type==='crossfit'?vf('Session Earnings',earned?'\u00a3'+earned:'\u2014',''):'')+
     vf('Duration',(s.duration||60)+' mins','')+
     vf('Type',(s.type==='crossfit'?'Crossfit':s.type==='adidas'?'Adidas':s.type==='other'?'Other':s.type==='personal'?'Personal':s.type==='consult'?'Consultation':s.type==='robyn'?'Robyn (drop-off / pick-up)':s.type==='coaching'?'Coaching (mindset / habits)':'PT Session')+(s.recurring?' (Recurring)':' (One-off)'),'')+
-    (s.location?vf('Location',s.location,''):'')+
-    (s.focus?vf('Session Focus',s.focus,''):'')+
-    (s.phone?'<div class="vf"><div class="vfl">Phone</div><div class="vfv"><a href="tel:'+s.phone+'" style="color:var(--lime);text-decoration:none">'+s.phone+'</a></div></div>':'')+
-    (s.email?'<div class="vf"><div class="vfl">Email</div><div class="vfv"><a href="mailto:'+s.email+'" style="color:var(--lime);text-decoration:none">'+s.email+'</a></div></div>':'')+
-    (s.notes?vf('Notes',s.notes,''):'')+
+    (s.location?vf('Location',esc(s.location),''):'')+
+    (s.focus?vf('Session Focus',esc(s.focus),''):'')+
+    (s.phone?'<div class="vf"><div class="vfl">Phone</div><div class="vfv"><a href="tel:'+esc(s.phone)+'" style="color:var(--lime);text-decoration:none">'+esc(s.phone)+'</a></div></div>':'')+
+    (s.email?'<div class="vf"><div class="vfl">Email</div><div class="vfv"><a href="mailto:'+esc(s.email)+'" style="color:var(--lime);text-decoration:none">'+esc(s.email)+'</a></div></div>':'')+
+    (s.notes?vf('Notes',esc(s.notes),''):'')+
     statusRow+
     '<button class="gb" id="gpBtn"'+(gConn?'':' disabled')+'>'+gSVG()+(s.gcalId?' Re-sync to Google Calendar':' Sync to Google Calendar')+'</button>';
   if(isPT){document.getElementById('stRow').onclick=function(e){
@@ -1293,14 +1445,19 @@ function oExtend(key){
   }
   var more=parseInt(window.prompt('Extend '+s.name+'’s recurring sessions by how many more weeks?\n(repeats every '+intervalWeeks+' week'+(intervalWeeks>1?'s':'')+', last session currently '+fd(last)+')','12'),10);
   if(!more||more<=0)return;
-  var cnt=0,lastDt=new Date(last+'T12:00:00');
+  var lastDt=new Date(last+'T12:00:00'),add=[],clash=[],seen={},taken=0;
   for(var w=intervalWeeks;w<=more;w+=intervalWeeks){
     var dt=new Date(lastDt);dt.setDate(dt.getDate()+w*7);
     var d2=iso(dt),k2=sk(d2,s.startMins);
-    if(!sess[k2]){sess[k2]={name:s.name,type:s.type,date:d2,startMins:s.startMins,duration:s.duration,rate:s.rate,notes:s.notes,location:s.location,focus:s.focus,phone:s.phone,email:s.email,clientId:s.clientId||'',recurring:true,recurringId:rid};cnt++;}
+    if(sess[k2]){taken++;continue;}
+    add.push({d:d2,k:k2});
+    overlapsAt(d2,s.startMins,s.duration||60,[]).forEach(function(o){if(!seen[o.k]){seen[o.k]=1;clash.push(o);}});
   }
-  if(!cnt){toast('No new sessions added');return;}
-  sd();render();cView();toast(cnt+' more session'+(cnt>1?'s':'')+' added');
+  if(!add.length){toast(taken?'No new sessions added — those slots are already taken':'No new sessions added');return;}
+  if(!confirmClashes(clash))return;
+  add.forEach(function(a){sess[a.k]={name:s.name,type:s.type,date:a.d,startMins:s.startMins,duration:s.duration,rate:s.rate,notes:s.notes,location:s.location,focus:s.focus,phone:s.phone,email:s.email,clientId:s.clientId||'',recurring:true,recurringId:rid};});
+  var cnt=add.length;
+  sd();render();cView();toast(cnt+' more session'+(cnt>1?'s':'')+' added'+(taken?' · '+taken+' skipped (slot taken)':''));
   if(gConn&&gTok){Object.keys(sess).forEach(function(k){if(sess[k].recurringId===rid&&!sess[k].gcalId)pgCal(sess[k],true);});}
 }
 function vf(l,v,c){return '<div class="vf"><div class="vfl">'+l+'</div><div class="vfv '+c+'">'+v+'</div></div>';}
@@ -1494,7 +1651,7 @@ function rUpcoming(){
       var isPrem=s.rate&&s.rate>SET.premiumOver;
       var sStart=new Date(s.date+'T'+p2(Math.floor(s.startMins/60))+':'+p2(s.startMins%60)+':00');
       var gone=sStart<nowTs;
-      rows+='<div class="ur"'+(gone?' style="opacity:.4"':'')+'><div><div class="ucl">'+s.name+(gone?' <span style="font-size:9px;color:var(--muted);letter-spacing:1px">DONE</span>':'')+(isPrem?' <span style="font-size:9px;color:#f0a020;letter-spacing:1px">PREMIUM</span>':'')+'</div><div class="um2">'+DS[dt.getDay()]+' '+dt.getDate()+'&nbsp;&middot;&nbsp;'+m2t(s.startMins)+(s.recurring?'&nbsp;&middot;&nbsp;REC':'')+'</div></div><div class="ue" style="color:'+(gone?'var(--muted)':(isPrem?'#f0a020':'var(--lime)'))+'">'+(e?'&pound;'+e:'&mdash;')+'</div></div>';
+      rows+='<div class="ur"'+(gone?' style="opacity:.4"':'')+'><div><div class="ucl">'+esc(s.name)+(gone?' <span style="font-size:9px;color:var(--muted);letter-spacing:1px">DONE</span>':'')+(isPrem?' <span style="font-size:9px;color:#f0a020;letter-spacing:1px">PREMIUM</span>':'')+'</div><div class="um2">'+DS[dt.getDay()]+' '+dt.getDate()+'&nbsp;&middot;&nbsp;'+m2t(s.startMins)+(s.recurring?'&nbsp;&middot;&nbsp;REC':'')+'</div></div><div class="ue" style="color:'+(gone?'var(--muted)':(isPrem?'#f0a020':'var(--lime)'))+'">'+(e?'&pound;'+e:'&mdash;')+'</div></div>';
     });
     grd+='<div class="um"><div class="umn">'+MS[d.getMonth()].toUpperCase()+' '+d.getFullYear()+'</div>'+rows+'<div class="umt"><div class="umtl">Month Total</div><div class="umtv">&pound;'+mT.toLocaleString()+'</div></div></div>';
   });
@@ -2059,8 +2216,8 @@ var WARMUP=[
   {ex:"World's Greatest Stretch",dur:'60 sec / side',cue:'Lunge → elbow to floor → rotate to sky → hamstring stretch.'}
 ];
 function ldA(){try{return JSON.parse(localStorage.getItem('cbc6_assess')||'{}');}catch(e){return {};}}
-var assessments=ldA(),fbUnsubA=null,fbSuppressA=false,curAssess=null;
-function sdA(){localStorage.setItem('cbc6_assess',JSON.stringify(assessments));if(fbDb&&fbUser){fbSuppressA=true;fbDb.collection('cbc').doc('assessments').set({data:fbClean(assessments)}).catch(function(e){console.log('Assess save error:',e);fbSuppressA=false;});}}
+var assessments=ldA(),curAssess=null;
+function sdA(){fbSave('assessments');}
 function clientAssessments(c){if(!c)return [];var a=[];Object.keys(assessments).forEach(function(id){if(assessments[id].clientId===c.id)a.push(assessments[id]);});a.sort(function(x,y){return x.date<y.date?1:x.date>y.date?-1:0;});return a;}
 function latestAssessment(c){return clientAssessments(c)[0]||null;}
 
@@ -2394,6 +2551,7 @@ function openSettings(){
   document.getElementById('setDur').value=SET.defaultDur;
   document.getElementById('setMin').value=SET.regularMin;
   document.getElementById('setPrem').value=SET.premiumOver;
+  bkRefresh();
   document.getElementById('setMo').classList.add('open');
 }
 function saveSettings(){
@@ -2416,6 +2574,168 @@ document.getElementById('setBtn').onclick=openSettings;
 document.getElementById('setX').onclick=function(){document.getElementById('setMo').classList.remove('open');};
 document.getElementById('setCancel').onclick=function(){document.getElementById('setMo').classList.remove('open');};
 document.getElementById('setSave').onclick=saveSettings;
+
+// ===== BACKUP & RESTORE =====
+// A backup holds all five stores. Besides the downloadable file, one copy a day is kept on this
+// device (IndexedDB) so a bad sync or a mistake can be rolled back even if no file was saved.
+var BK_SCHEMA=1,SNAP_KEEP=14;
+function backupData(){return fbClean({sessions:sess,clients:clients,assessments:assessments,tasks:tasksStore,settings:SET});}
+function backupCounts(d){d=d||{};return {sessions:Object.keys(d.sessions||{}).length,clients:Object.keys(d.clients||{}).length,assessments:Object.keys(d.assessments||{}).length,tasks:((d.tasks&&d.tasks.manual)||[]).length};}
+function backupObj(){var d=backupData();return {app:'cbc-os',schema:BK_SCHEMA,exportedAt:new Date().toISOString(),counts:backupCounts(d),data:d};}
+function fileStamp(d){return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate())+'-'+p2(d.getHours())+p2(d.getMinutes());}
+function fmtWhen(isoStr){var d=new Date(isoStr);if(isNaN(d))return 'unknown date';return d.getDate()+' '+MS[d.getMonth()]+' '+d.getFullYear()+', '+p2(d.getHours())+':'+p2(d.getMinutes());}
+function fmtAgo(ts){if(!ts)return 'never';var d=Math.floor((Date.now()-ts)/86400000);return d<=0?'today':d===1?'yesterday':d+' days ago';}
+function leafCount(v){if(v===null||typeof v!=='object')return 1;var n=0;Object.keys(v).forEach(function(k){n+=leafCount(v[k]);});return n;}
+function saveFile(name,text,mime){
+  var blob=new Blob([text],{type:mime});
+  // An iPhone home-screen app can't download directly: hand the file to the share sheet (Save to Files).
+  try{
+    if(/iPhone|iPad|iPod/.test(navigator.userAgent)&&navigator.canShare&&typeof File!=='undefined'){
+      var f=new File([blob],name,{type:mime});
+      if(!navigator.canShare({files:[f]}))f=new File([blob],name,{type:'text/plain'});
+      if(navigator.canShare({files:[f]})){navigator.share({files:[f],title:name}).catch(function(){});return;}
+    }
+  }catch(e){}
+  var url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  setTimeout(function(){URL.revokeObjectURL(url);},4000);
+}
+function readBackup(text){
+  var o;try{o=JSON.parse(text);}catch(e){return {err:'That file isn’t a readable backup.'};}
+  function isMap(x){return !!x&&typeof x==='object'&&!Array.isArray(x);}
+  if(!isMap(o)||o.app!=='cbc-os'||!isMap(o.data))return {err:'That file isn’t a Coaching by Craig backup.'};
+  if(o.schema>BK_SCHEMA)return {err:'This backup was made by a newer version of the app. Refresh the app and try again.'};
+  var d=o.data;
+  if(!isMap(d.sessions)||!isMap(d.clients))return {err:'The backup is missing its sessions or clients.'};
+  if(d.assessments!==undefined&&!isMap(d.assessments))return {err:'The movement screens in this backup are damaged.'};
+  var bad=Object.keys(d.sessions).filter(function(k){var s=d.sessions[k];return !isMap(s)||typeof s.date!=='string'||typeof s.startMins!=='number';});
+  if(bad.length)return {err:bad.length+' session record(s) in this backup are damaged, so nothing was restored.'};
+  return {ok:o};
+}
+function applyRestore(o){
+  var d=o.data||{};
+  sess=d.sessions||{};clients=d.clients||{};assessments=d.assessments||{};
+  tasksStore={manual:(d.tasks&&d.tasks.manual)||[],dismissed:(d.tasks&&d.tasks.dismissed)||[]};
+  if(d.settings)applySettings(d.settings);
+  Object.keys(STORES).forEach(function(n){fbSave(n);});     // sends the records that differ and removes ones not in the backup
+  render();
+  ['Today','Sum','Cli','Fin','Task','Ana'].forEach(function(t){if(document.getElementById('p'+t).classList.contains('active'))showTab(t);});
+}
+function restoreAsk(o,from){
+  var n=backupCounts(o.data),c=backupCounts(backupData());
+  var msg='Restore '+from+'?\n\nSaved: '+fmtWhen(o.exportedAt)+
+    '\nIt holds: '+n.sessions+' sessions, '+n.clients+' clients, '+n.assessments+' movement screens, '+n.tasks+' tasks'+
+    '\nYou have now: '+c.sessions+' sessions, '+c.clients+' clients, '+c.assessments+' movement screens, '+c.tasks+' tasks'+
+    '\n\nThis replaces what you have now on ALL your devices. Google Calendar is not changed.\nA copy of the current data is kept on this device first, so you can undo it.';
+  if(!window.confirm(msg))return;
+  snapPut('pre-'+Date.now(),function(ok){
+    if(!ok&&!window.confirm('A safety copy of the current data could not be kept on this device.\n\nRestore anyway?'))return;
+    applyRestore(o);
+    document.getElementById('setMo').classList.remove('open');
+    toast('Restored — '+n.sessions+' sessions, '+n.clients+' clients');
+    snapPrune();
+  });
+}
+function snapDb(cb){
+  try{
+    var rq=indexedDB.open('cbc_snapshots',1);
+    rq.onupgradeneeded=function(){rq.result.createObjectStore('snaps',{keyPath:'id'});};
+    rq.onsuccess=function(){cb(rq.result);};
+    rq.onerror=function(){cb(null);};
+    rq.onblocked=function(){cb(null);};
+  }catch(e){cb(null);}
+}
+function snapPut(id,cb,obj){
+  snapDb(function(db){
+    if(!db){if(cb)cb(false);return;}
+    try{
+      var o=obj||backupObj();o.id=id;
+      var tx=db.transaction('snaps','readwrite');tx.objectStore('snaps').put(o);
+      tx.oncomplete=function(){db.close();if(cb)cb(true);};
+      tx.onerror=tx.onabort=function(){db.close();if(cb){cb(false);cb=null;}};
+    }catch(e){try{db.close();}catch(e2){}if(cb)cb(false);}
+  });
+}
+function snapAll(cb){
+  snapDb(function(db){
+    if(!db){cb([]);return;}
+    try{
+      var rq=db.transaction('snaps','readonly').objectStore('snaps').getAll();
+      rq.onsuccess=function(){db.close();var a=rq.result||[];a.sort(function(x,y){return x.exportedAt<y.exportedAt?1:x.exportedAt>y.exportedAt?-1:0;});cb(a);};
+      rq.onerror=function(){db.close();cb([]);};
+    }catch(e){try{db.close();}catch(e2){}cb([]);}
+  });
+}
+function snapPrune(){
+  snapAll(function(a){
+    var days=a.filter(function(s){return s.id.indexOf('day-')===0;}),others=a.filter(function(s){return s.id.indexOf('day-')!==0;});
+    var extra=days.slice(SNAP_KEEP).concat(others.slice(5));
+    if(!extra.length)return;
+    snapDb(function(db){
+      if(!db)return;
+      try{var tx=db.transaction('snaps','readwrite'),os=tx.objectStore('snaps');extra.forEach(function(s){os.delete(s.id);});tx.oncomplete=function(){db.close();};tx.onerror=tx.onabort=function(){db.close();};}catch(e){try{db.close();}catch(e2){}}
+    });
+  });
+}
+// A one-off copy of what this device held before a new sync version first runs on it.
+function snapOnUpdate(tag){
+  var key='cbc_copy_'+tag;
+  try{if(localStorage.getItem(key))return;}catch(e){return;}
+  if(!Object.keys(sess).length&&!Object.keys(clients).length)return;
+  snapPut('upd-'+tag,function(ok){if(ok){try{localStorage.setItem(key,'1');}catch(e){}}},backupObj());   // captured now, before anything else runs
+}
+// One automatic copy per day, taken shortly after the app opens.
+function snapDaily(){
+  if(!Object.keys(sess).length&&!Object.keys(clients).length)return;
+  var id='day-'+iso(new Date());
+  snapAll(function(a){
+    if(a.some(function(s){return s.id===id;}))return;
+    snapPut(id,function(ok){if(ok)snapPrune();});
+  });
+}
+function bkRefresh(){
+  var d=backupData(),c=backupCounts(d),last=parseInt(localStorage.getItem('cbc_lastBackup')||'0',10);
+  var kb=Math.round(JSON.stringify(d.sessions).length/1024),idx=leafCount(d.sessions)*2;
+  function lvl(f){return f>=0.8?'var(--danger)':f>=0.6?'#f0a020':'var(--text)';}
+  document.getElementById('bkInfo').innerHTML=
+    c.sessions.toLocaleString()+' sessions &middot; '+c.clients+' clients &middot; '+c.assessments+' movement screens &middot; '+c.tasks+' tasks'+
+    '<br>Last backup file: <span style="color:'+(last&&Date.now()-last<8*86400000?'var(--text)':'#f0a020')+'">'+fmtAgo(last)+'</span>'+
+    '<br>Cloud space for sessions: <span style="color:'+lvl(kb/1024)+'">'+kb.toLocaleString()+' of 1,024 KB</span> &middot; <span style="color:'+lvl(idx/40000)+'">'+idx.toLocaleString()+' of 40,000 index entries</span>';
+  document.getElementById('bkAcct').textContent=fbUser?('Signed in as '+fbUser.email+' · account ID '+fbUser.uid):'Not signed in — data is on this device only';
+  var sel=document.getElementById('bkSnaps');
+  sel.innerHTML='<option value="">Loading…</option>';
+  snapAll(function(a){
+    sel.innerHTML=a.length?'':'<option value="">None yet — the first is made today</option>';
+    a.forEach(function(s){
+      var o=document.createElement('option');o.value=s.id;
+      o.textContent=(s.id.indexOf('day-')===0?'':s.id.indexOf('upd-')===0?'Before update · ':'Before restore · ')+fmtWhen(s.exportedAt)+' — '+((s.counts&&s.counts.sessions)||0)+' sessions';
+      sel.appendChild(o);
+    });
+  });
+}
+document.getElementById('bkSave').onclick=function(){
+  var o=backupObj();
+  saveFile('cbc-backup-'+fileStamp(new Date())+'.json',JSON.stringify(o),'application/json');
+  try{localStorage.setItem('cbc_lastBackup',String(Date.now()));}catch(e){}
+  bkRefresh();
+  toast('Backup made — '+o.counts.sessions+' sessions, '+o.counts.clients+' clients');
+};
+document.getElementById('bkLoad').onclick=function(){var f=document.getElementById('bkFile');f.value='';f.click();};
+document.getElementById('bkFile').onchange=function(){
+  var f=this.files&&this.files[0];if(!f)return;
+  var rd=new FileReader();
+  rd.onload=function(){var r=readBackup(String(rd.result||''));if(r.err){window.alert(r.err);return;}restoreAsk(r.ok,'the backup file');};
+  rd.onerror=function(){window.alert('That file could not be read.');};
+  rd.readAsText(f);
+};
+document.getElementById('bkSnapLoad').onclick=function(){
+  var id=document.getElementById('bkSnaps').value;if(!id){toast('No copy selected');return;}
+  snapAll(function(a){
+    var o=a.filter(function(s){return s.id===id;})[0];
+    if(!o){toast('That copy is no longer on this device');return;}
+    restoreAsk(o,'this device’s copy');
+  });
+};
 document.getElementById('setMo').onclick=function(e){if(e.target===this)this.classList.remove('open');};
 document.getElementById('aX').onclick=cAssess;
 document.getElementById('aCancel').onclick=cAssess;
@@ -2497,8 +2817,14 @@ document.getElementById('ptg').onclick=function(e){
 
 function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2800);}
 console.log("CBC Calendar v6 loaded");
+snapOnUpdate('sync2');      // taken from this device's mirror before any cloud data is applied
+fbStart();
 render();
 rToday();
+updSync();
+document.getElementById('syncStatus').onclick=syncTap;
+setTimeout(snapDaily,8000);
+document.addEventListener('visibilitychange',function(){if(!document.hidden){updSync();snapDaily();}});
 // Reuse a cached, still-valid token if we have one; otherwise try a silent reconnect.
 setTimeout(function(){if(!restoreTok())tryAutoConnect();}, 200);
 
@@ -2539,9 +2865,11 @@ function tryAutoConnect(){
 // Online/offline recovery
 window.addEventListener('online', function(){
   toast('Back online');
+  fbRetry();
 });
 window.addEventListener('offline', function(){
   toast('Offline mode');
+  updSync();
 });
 
 // Register service worker for PWA offline support
