@@ -515,6 +515,26 @@ header{padding-top:env(safe-area-inset-top);}
     <div id="tlBody"></div>
   </div>
 </div>
+<!-- CLEAR ALL BOOKINGS MODAL -->
+<div class="mo" id="clrMo">
+  <div class="md">
+    <button class="mc" id="clrX">&times;</button>
+    <div class="mt" style="color:var(--danger)">CLEAR ALL BOOKINGS</div>
+    <div class="ms" id="clrSub"></div>
+    <div id="clrStep1">
+      <div style="font-size:13px;line-height:1.6;margin-bottom:14px">
+        &bull; Removes all <b id="clrCount"></b> booked sessions, past and future, on all your devices, and their events from Google Calendar.<br>
+        &bull; Keeps clients (billing, direct-debit ticks, make-up credits, programme links), movement screens, tasks and settings.<br>
+        &bull; Downloads a backup file and keeps a copy on this device first, so it can be undone.<br>
+        &bull; Carries prepaid blocks and programme weeks across to the date below.
+      </div>
+      <div class="fr"><label class="fl" for="clrFrom">You'll re-enter bookings from</label><input class="fi" id="clrFrom" type="date"></div>
+      <div class="fr"><label class="fl" for="clrType">Type CLEAR to confirm</label><input class="fi" id="clrType" autocomplete="off" autocapitalize="characters" spellcheck="false"></div>
+      <div class="ma"><button class="bd" id="clrGo" style="flex:1">Clear all bookings</button><button class="bs" id="clrCancel">Cancel</button></div>
+    </div>
+    <div id="clrDone" style="display:none"></div>
+  </div>
+</div>
 <!-- REPEATS NOT LINKED MODAL -->
 <div class="mo" id="repMo">
   <div class="md">
@@ -589,6 +609,8 @@ header{padding-top:env(safe-area-inset-top);}
       </div>
       <label class="fl" style="margin-top:14px">Recurring sessions</label>
       <button class="bs" id="repBtn" style="width:100%">Find repeats not linked as a series</button>
+      <label class="fl" style="margin-top:14px">Start fresh</label>
+      <button class="bd" id="clrBtn" style="width:100%">Clear all bookings&hellip;</button>
       <div id="bkAcct" style="font-size:10px;color:var(--muted);margin-top:12px;word-break:break-all"></div>
     </div>
   </div>
@@ -748,8 +770,11 @@ function fbSave(name){
   var ref=fbDb.collection('cbc').doc(name),args=[],p;
   st.shadow=cur;st.flying++;
   try{
-    ch.forEach(function(k){args.push(new firebase.firestore.FieldPath('data',k),cur[k]===undefined?firebase.firestore.FieldValue.delete():fbClean(obj[k]));});
-    p=ref.update.apply(ref,args);
+    if(ch.length>400)p=ref.set({data:fbClean(obj)});           // a very large change (clear or restore): write the whole store at once
+    else{
+      ch.forEach(function(k){args.push(new firebase.firestore.FieldPath('data',k),cur[k]===undefined?firebase.firestore.FieldValue.delete():fbClean(obj[k]));});
+      p=ref.update.apply(ref,args);
+    }
   }catch(e){p=Promise.reject(e);}
   p.catch(function(e){
     if(e&&e.code==='not-found')return ref.set({data:fbClean(st.get())});     // first ever save of this store
@@ -844,7 +869,8 @@ var MAX=7,SH=6,EH=21,RH=30,HR=(EH-SH)*2;
 // --- Settings (editable, synced) ---
 // dayTargets is indexed by JS getDay(): [Sun,Mon,Tue,Wed,Thu,Fri,Sat]
 // cals = which Google calendar each kind of session goes on (shared so every device files events the same way)
-var SET={dayStart:6,dayEnd:21,dayTargets:[0,7,7,7,7,7,0],defaultDur:60,regularMin:20,premiumOver:70,cals:{pt:'',away:'',shifts:''}};
+// freshFrom = date bookings were re-entered from after "Clear all bookings" ('' if never)
+var SET={dayStart:6,dayEnd:21,dayTargets:[0,7,7,7,7,7,0],defaultDur:60,regularMin:20,premiumOver:70,cals:{pt:'',away:'',shifts:''},freshFrom:''};
 function ldSet(){try{var o=JSON.parse(localStorage.getItem('cbc6_settings')||'null');if(o&&typeof o==='object')return o;}catch(e){}return null;}
 function applySettings(o){
   if(o){
@@ -852,6 +878,7 @@ function applySettings(o){
     if(Array.isArray(o.dayTargets)&&o.dayTargets.length===7)SET.dayTargets=o.dayTargets.map(function(n){return (typeof n==='number'&&!isNaN(n))?n:0;});
     else if(typeof o.dailyTarget==='number'){var t=o.dailyTarget;SET.dayTargets=[0,t,t,t,t,t,0];} // migrate old single target
     if(o.cals&&typeof o.cals==='object')['pt','away','shifts'].forEach(function(k){if(typeof o.cals[k]==='string')SET.cals[k]=o.cals[k];});
+    if(typeof o.freshFrom==='string')SET.freshFrom=o.freshFrom;
   }
   SH=SET.dayStart;EH=SET.dayEnd;HR=(EH-SH)*2;
 }
@@ -1790,7 +1817,9 @@ function progWeekAt(c,refDateStr){
   if(refWk<start)return 0;
   var wk={};
   Object.keys(sess).forEach(function(k){var s=sess[k];if(!isClientType(s.type))return;if(s.clientId!==c.id&&normName(s.name)!==normName(c.name))return;if(effStatus(s)==='cancelled')return;var m=gMon(new Date(s.date+'T12:00:00'));if(m>=start&&m<=refWk)wk[iso(m)]=1;});
-  var count=0;for(var d=new Date(start);d<=refWk;d=aD(d,7)){if(wk[iso(d)])count++;}
+  // Weeks before a fresh start have no bookings any more, so they count as done.
+  var cut=SET.freshFrom?gMon(new Date(SET.freshFrom+'T12:00:00')):null;
+  var count=0;for(var d=new Date(start);d<=refWk;d=aD(d,7)){if(wk[iso(d)]||(cut&&d<cut))count++;}
   return count;
 }
 function progWeek(c){return progWeekAt(c,iso(new Date()));}
@@ -2551,8 +2580,9 @@ function gcalOutstanding(){
   return n;
 }
 function updGcalBtn(){
-  clearTimeout(gBtnT);
+  if(gBtnT)return;                                   // at most one refresh queued, so a long run still counts down
   gBtnT=setTimeout(function(){
+    gBtnT=null;
     var b=document.getElementById('syncAllBtn');if(!b)return;
     var n=gcalOutstanding();
     b.textContent=n?('↻ Sync ('+n+')'):'↻ Sync all';
@@ -2576,7 +2606,7 @@ function gcalDoDelete(id){
   var e=gdel[id];if(!e)return Promise.resolve();
   return gReq('DELETE',e.cal||calForType(e.type),id).then(function(r){
     if(!(r.ok||gGone(r)))return gErr(r);
-    delete gdel[id];fbSave('gcaldel');
+    delete gdel[id];fbSave('gcaldel');updGcalBtn();
   });
 }
 function gcalCreate(k){
@@ -2806,6 +2836,94 @@ document.getElementById('repBody').onclick=function(e){
   sd();render();toast(n+' sessions linked for '+g.name);rRepeats();
 };
 
+// ===== START FRESH: CLEAR ALL BOOKINGS =====
+// Removes every session (and, through the normal save, their Google events) while keeping clients, movement
+// screens, tasks and settings. A backup file and a device copy are made first. Prepaid blocks and programme
+// weeks are carried across to the re-entry date (SET.freshFrom) so they stay right once bookings are re-entered.
+function openClear(){
+  var n=Object.keys(sess).length,last=parseInt(localStorage.getItem('cbc_lastBackup')||'0',10);
+  document.getElementById('clrSub').textContent=n+' booked session'+(n===1?'':'s')+' on the calendar · last backup file: '+fmtAgo(last);
+  document.getElementById('clrCount').textContent=n;
+  document.getElementById('clrFrom').value=SET.freshFrom||'2026-09-25';
+  document.getElementById('clrType').value='';
+  document.getElementById('clrGo').disabled=false;
+  document.getElementById('clrStep1').style.display='block';
+  document.getElementById('clrDone').style.display='none';
+  document.getElementById('clrMo').classList.add('open');
+}
+// Run before the sessions go: sets block balances as at the re-entry date and notes programme week numbers.
+function carryAcross(from){
+  var blocks=[],progs=[],cut=gMon(new Date(from+'T12:00:00'));
+  Object.keys(clients).forEach(function(id){
+    var c=clients[id];
+    if(c.billing==='block'&&c.blockTotal&&(!c.blockStart||c.blockStart<from)){
+      var used=0;
+      Object.keys(sess).forEach(function(k){
+        var s=sess[k];if(!isClientType(s.type))return;
+        if(s.clientId!==c.id&&normName(s.name)!==normName(c.name))return;
+        if((c.blockStart&&s.date<c.blockStart)||s.date>=from)return;
+        if(usesBlock(s))used++;
+      });
+      var left=Math.max(0,c.blockTotal-used);
+      blocks.push({name:c.name,before:c.blockTotal,start:c.blockStart||'',used:used,left:left});
+      c.blockTotal=left;c.blockStart=from;
+    }
+    if(c.programmeStart&&c.programmeStart<from&&c.status!=='lapsed'){
+      var weeks=0;for(var d=gMon(new Date(c.programmeStart+'T12:00:00'));d<cut;d=aD(d,7))weeks++;
+      progs.push({name:c.name,oldWk:progWeekAt(c,from),newWk:weeks+1});
+    }
+  });
+  return {blocks:blocks,progs:progs};
+}
+function doClear(){
+  if(document.getElementById('clrType').value.trim().toUpperCase()!=='CLEAR'){toast('Type CLEAR to confirm');document.getElementById('clrType').focus();return;}
+  var from=document.getElementById('clrFrom').value;
+  if(!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(from)){toast('Pick the date you’ll re-enter bookings from');return;}
+  var o=backupObj(),n=Object.keys(sess).length,fname='cbc-backup-before-clear-'+fileStamp(new Date())+'.json';
+  saveFile(fname,JSON.stringify(o),'application/json');           // first, while the tap still counts (iPhone share sheet)
+  try{localStorage.setItem('cbc_lastBackup',String(Date.now()));}catch(e){}
+  var btn=document.getElementById('clrGo');btn.disabled=true;
+  snapPut('pre-clear-'+Date.now(),function(ok){
+    btn.disabled=false;
+    if(!ok&&!window.confirm('A copy could not be kept on this device, so the downloaded file is your only backup.\n\nClear all bookings anyway?'))return;
+    var notes=carryAcross(from);
+    Object.keys(sess).forEach(function(k){delete sess[k];});
+    SET.freshFrom=from;
+    sdSet();sdc();sd();                                            // sd() also queues their Google events for removal
+    render();
+    ['Today','Sum','Cli','Fin','Task','Ana'].forEach(function(t){if(document.getElementById('p'+t).classList.contains('active'))showTab(t);});
+    showClearDone(n,fname,notes,from);
+    snapPrune();
+  },o);
+}
+function showClearDone(n,fname,notes,from){
+  var h='<div style="font-size:13px;line-height:1.6">';
+  h+='<div style="color:var(--lime);font-weight:600;margin-bottom:8px">✓ '+n+' booking'+(n===1?'':'s')+' cleared</div>';
+  h+='<div>Backup: <b>'+esc(fname)+'</b> was downloaded, and a copy is kept on this device (Settings → automatic copies → “Before clearing”). Restoring that copy undoes this.</div>';
+  h+='<div style="margin-top:8px">Google Calendar: their events are being removed in the background and the Sync button counts down. If Google isn’t connected here, they go when it is.</div>';
+  if(notes.blocks.length){
+    h+='<div class="vfl" style="margin:14px 0 4px">Prepaid blocks carried across</div>';
+    notes.blocks.forEach(function(b){h+='<div>'+esc(b.name)+': <span style="color:var(--lime)">'+b.left+' left from '+dShort(from)+'</span> <span style="color:var(--muted)">('+b.used+' of '+b.before+' used before'+(b.start?', block started '+dShort(b.start):'')+')</span></div>';});
+    h+='<div style="color:var(--muted);font-size:12px">Check these against what you know; edit the client if one is wrong.</div>';
+  }
+  if(notes.progs.length){
+    h+='<div class="vfl" style="margin:14px 0 4px">Programme weeks</div>';
+    notes.progs.forEach(function(p){h+='<div>'+esc(p.name)+': the week of '+dShort(from)+' will show as <b>week '+p.newWk+'</b>'+(p.oldWk!==p.newWk?' <span style="color:#f0a020">(the old bookings said week '+p.oldWk+')</span>':'')+'</div>';});
+    h+='<div style="color:var(--muted);font-size:12px">Weeks before '+dShort(from)+' now count as done. If a number is too high (a holiday, say), move that client’s programme start later by the difference.</div>';
+  }
+  h+='<div class="vfl" style="margin:14px 0 4px">Re-entering</div><div>For each regular slot, book the first session on or after '+dShort(from)+', tick <b>Recurring client</b> and choose enough weeks to run into the future. That fills in the past weeks and books ahead as one series. Then mark any cancellations or no-shows.</div>';
+  h+='<div class="ma"><button class="bp" id="clrClose">DONE</button></div></div>';
+  document.getElementById('clrDone').innerHTML=h;
+  document.getElementById('clrStep1').style.display='none';
+  document.getElementById('clrDone').style.display='block';
+  document.getElementById('clrSub').textContent='Done';
+  document.getElementById('clrClose').onclick=function(){document.getElementById('clrMo').classList.remove('open');};
+}
+document.getElementById('clrBtn').onclick=function(){document.getElementById('setMo').classList.remove('open');openClear();};
+document.getElementById('clrX').onclick=function(){document.getElementById('clrMo').classList.remove('open');};
+document.getElementById('clrCancel').onclick=function(){document.getElementById('clrMo').classList.remove('open');};
+document.getElementById('clrGo').onclick=doClear;
+
 function expCSV(){
   var rows=['Date,Day,Client,Start Time,Duration (mins),Rate/hr,Earnings,Type,Location,Focus,Phone,Email,Notes,Recurring'];
   function q(v){return '"'+String(v||'').replace(/"/g,'""')+'"';}
@@ -2991,6 +3109,7 @@ function bkRefresh(){
   document.getElementById('bkInfo').innerHTML=
     c.sessions.toLocaleString()+' sessions &middot; '+c.clients+' clients &middot; '+c.assessments+' movement screens &middot; '+c.tasks+' tasks'+
     '<br>Last backup file: <span style="color:'+(last&&Date.now()-last<8*86400000?'var(--text)':'#f0a020')+'">'+fmtAgo(last)+'</span>'+
+    (SET.freshFrom?'<br>Fresh start from '+fd(SET.freshFrom)+' (programme weeks before it count as done)':'')+
     '<br>Cloud space for sessions: <span style="color:'+lvl(kb/1024)+'">'+kb.toLocaleString()+' of 1,024 KB</span> &middot; <span style="color:'+lvl(idx/40000)+'">'+idx.toLocaleString()+' of 40,000 index entries</span>';
   var nRep=findLooseRepeats().length;
   document.getElementById('repBtn').textContent='Find repeats not linked as a series'+(nRep?' ('+nRep+')':'');
@@ -3001,7 +3120,7 @@ function bkRefresh(){
     sel.innerHTML=a.length?'':'<option value="">None yet — the first is made today</option>';
     a.forEach(function(s){
       var o=document.createElement('option');o.value=s.id;
-      o.textContent=(s.id.indexOf('day-')===0?'':s.id.indexOf('upd-')===0?'Before update · ':'Before restore · ')+fmtWhen(s.exportedAt)+' — '+((s.counts&&s.counts.sessions)||0)+' sessions';
+      o.textContent=(s.id.indexOf('day-')===0?'':s.id.indexOf('pre-clear-')===0?'Before clearing · ':s.id.indexOf('upd-')===0?'Before update · ':'Before restore · ')+fmtWhen(s.exportedAt)+' — '+((s.counts&&s.counts.sessions)||0)+' sessions';
       sel.appendChild(o);
     });
   });
