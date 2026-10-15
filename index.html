@@ -289,7 +289,7 @@ header{padding-top:env(safe-area-inset-top);}
       <button class="nb" id="bNext">→</button>
     </div>
   </div>
-  <div class="sb" id="sumBar"><div class="pill"><div class="pl">Week Earnings</div><div class="pv" style="color:var(--lime)">£0</div></div><div class="pill"><div class="pl">Sessions Booked</div><div class="pv" style="color:var(--text)">0</div></div><div class="pill"><div class="pl">Slots Available</div><div class="pv" style="color:var(--danger)">49</div></div><div class="pill"><div class="pl">Capacity</div><div class="pv" style="color:var(--danger)">0%</div></div></div>
+  <div class="sb" id="sumBar"><div class="pill"><div class="pl">Booked this week</div><div class="pv" style="color:var(--lime)">£0</div></div><div class="pill"><div class="pl">Client sessions</div><div class="pv" style="color:var(--text)">0</div></div><div class="pill"><div class="pl">Slots Available</div><div class="pv" style="color:var(--danger)">49</div></div><div class="pill"><div class="pl">Capacity</div><div class="pv" style="color:var(--danger)">0%</div></div></div>
   <div class="leg">
     <div class="li"><div class="ld" style="background:#4090d022;border-color:#4090d0"></div>General PT</div>
     <div class="li"><div class="ld" style="background:#e0653c22;border-color:#e0653c"></div>Muscle Building</div>
@@ -326,8 +326,8 @@ header{padding-top:env(safe-area-inset-top);}
       </div>
     </div>
     <div class="ag" id="aStats"></div>
-    <div class="cc"><div class="ct">MONTHLY EARNINGS</div><div class="ca"><canvas id="echart"></canvas></div></div>
-    <div class="cc"><div class="ct">SESSIONS PER MONTH</div><div class="ca"><canvas id="schart"></canvas></div></div>
+    <div class="cc"><div class="ct">BOOKED VALUE BY MONTH</div><div class="ca"><canvas id="echart"></canvas></div></div>
+    <div class="cc"><div class="ct">CLIENT SESSIONS PER MONTH</div><div class="ca"><canvas id="schart"></canvas></div></div>
   </div>
 </div>
 <!-- TASKS PAGE -->
@@ -430,7 +430,7 @@ header{padding-top:env(safe-area-inset-top);}
       <div><label class="fl" for="ceProgWeeks">Total weeks</label><input class="fi" id="ceProgWeeks" type="number" min="0" placeholder="e.g. 38"></div>
     </div>
     <div class="fr"><label class="fl" for="ceNotes">Notes</label><input class="fi" id="ceNotes" placeholder="Optional"></div>
-    <div class="ma"><button class="bp" id="ceSave">SAVE</button><button class="bs" id="ceCancel">Cancel</button><button class="bd" id="ceDelete">Delete</button></div>
+    <div class="ma"><button class="bp" id="ceSave">SAVE</button><button class="bs" id="ceCancel">Cancel</button><button class="bs" id="ceLapse">Mark lapsed</button><button class="bd" id="ceDelete">Delete&hellip;</button></div>
   </div>
 </div>
 <!-- MONTH SUMMARY PAGE -->
@@ -461,7 +461,7 @@ header{padding-top:env(safe-area-inset-top);}
     <div class="fr"><label class="fl" for="fType">Session Type</label><select class="fi" id="fType" onchange="onTypeChange(this.value)"><option value="pt">PT Session</option><option value="coaching">Coaching (mindset / habits)</option><option value="consult">Consultation (free)</option><option value="personal">Personal (my training)</option><option value="robyn">Robyn (drop-off / pick-up)</option><option value="crossfit">Crossfit</option><option value="adidas">Adidas</option><option value="other">Other</option></select></div>
     <div class="tr2" id="adidasRow" style="display:none">
       <label class="tw"><input type="checkbox" id="fAdiFull" onchange="onAdidasFull(this.checked)"><div class="tt"></div><div class="th"></div></label>
-      <span style="font-size:13px">Full day (7am &ndash; 3pm) <span style="color:var(--lime)">&pound;150</span></span>
+      <span style="font-size:13px" id="adiFullLbl">Full day (7am &ndash; 3pm) <span style="color:var(--lime)">&pound;150</span></span>
     </div>
     <div class="fr3">
       <div><label class="fl" for="fST">Start Time</label><input class="fi" id="fST" type="time" step="1800"></div>
@@ -609,6 +609,20 @@ header{padding-top:env(safe-area-inset-top);}
     <div class="fr2">
       <div><label class="fl" for="setPrem">Premium above (£)</label><input class="fi" id="setPrem" type="number" min="0"></div>
       <div><label class="fl" for="setCycle">Pay cycle starts on day</label><input class="fi" id="setCycle" type="number" min="1" max="28"></div>
+    </div>
+    <label class="fl" style="margin-top:6px">Business rules</label>
+    <div class="fr3">
+      <div><label class="fl" for="setAdiFrom">Adidas day from (hour)</label><input class="fi" id="setAdiFrom" type="number" min="0" max="23"></div>
+      <div><label class="fl" for="setAdiTo">To (hour)</label><input class="fi" id="setAdiTo" type="number" min="1" max="24"></div>
+      <div><label class="fl" for="setAdiFee">Day rate (£)</label><input class="fi" id="setAdiFee" type="number" min="0"></div>
+    </div>
+    <div class="fr2">
+      <div><label class="fl" for="setCredit">Make-up credit lasts (days)</label><input class="fi" id="setCredit" type="number" min="1"></div>
+      <div><label class="fl" for="setBlockLow">Block low warning at (left)</label><input class="fi" id="setBlockLow" type="number" min="0"></div>
+    </div>
+    <div class="fr2">
+      <div><label class="fl" for="setNotSeen">Flag not seen after (days)</label><input class="fi" id="setNotSeen" type="number" min="1"></div>
+      <div><label class="fl" for="setRescreen">Re-screen due after (weeks)</label><input class="fi" id="setRescreen" type="number" min="1"></div>
     </div>
     <div class="ma"><button class="bp" id="setSave">SAVE</button><button class="bs" id="setCancel">Cancel</button></div>
     <div style="border-top:1px solid var(--border);margin-top:20px;padding-top:16px">
@@ -887,11 +901,12 @@ var MAX=7,SH=6,EH=21,RH=30,HR=(EH-SH)*2;
 // dayTargets is indexed by JS getDay(): [Sun,Mon,Tue,Wed,Thu,Fri,Sat]
 // cals = which Google calendar each kind of session goes on (shared so every device files events the same way)
 // freshFrom = date bookings were re-entered from after "Clear all bookings" ('' if never)
-var SET={dayStart:6,dayEnd:21,dayTargets:[0,7,7,7,7,7,0],defaultDur:60,regularMin:20,premiumOver:70,cals:{pt:'',away:'',shifts:''},freshFrom:'',cycleDay:27};   // cycleDay = the day each pay cycle starts (the spreadsheet runs 27th to 26th)
+var SET={dayStart:6,dayEnd:21,dayTargets:[0,7,7,7,7,7,0],defaultDur:60,regularMin:20,premiumOver:70,cals:{pt:'',away:'',shifts:''},freshFrom:'',cycleDay:27,
+  adiFrom:7,adiTo:15,adiFee:150,creditDays:30,blockLow:2,notSeenDays:28,rescreenWeeks:12};   // business rules, editable in Settings   // cycleDay = the day each pay cycle starts (the spreadsheet runs 27th to 26th)
 function ldSet(){try{var o=JSON.parse(localStorage.getItem('cbc6_settings')||'null');if(o&&typeof o==='object')return o;}catch(e){}return null;}
 function applySettings(o){
   if(o){
-    ['dayStart','dayEnd','defaultDur','regularMin','premiumOver','cycleDay'].forEach(function(k){if(typeof o[k]==='number'&&!isNaN(o[k]))SET[k]=o[k];});
+    ['dayStart','dayEnd','defaultDur','regularMin','premiumOver','cycleDay','adiFrom','adiTo','adiFee','creditDays','blockLow','notSeenDays','rescreenWeeks'].forEach(function(k){if(typeof o[k]==='number'&&!isNaN(o[k]))SET[k]=o[k];});
     if(Array.isArray(o.dayTargets)&&o.dayTargets.length===7)SET.dayTargets=o.dayTargets.map(function(n){return (typeof n==='number'&&!isNaN(n))?n:0;});
     else if(typeof o.dailyTarget==='number'){var t=o.dailyTarget;SET.dayTargets=[0,t,t,t,t,t,0];} // migrate old single target
     if(o.cals&&typeof o.cals==='object')['pt','away','shifts'].forEach(function(k){if(typeof o.cals[k]==='string')SET.cals[k]=o.cals[k];});
@@ -900,6 +915,28 @@ function applySettings(o){
   SH=SET.dayStart;EH=SET.dayEnd;HR=(EH-SH)*2;
 }
 function targetFor(dow){var t=SET.dayTargets;return (t&&typeof t[dow]==='number')?t[dow]:0;}
+// ---- Session types: how each kind of booking behaves, in one place ----
+//  client:   gets a client record, attendance, blocks, make-ups, programme weeks
+//  target:   counts towards the daily session target
+//  paid:     paid work, listed on the Sessions tab
+//  hourly:   the fee is per hour
+//  endTime:  booked with an end time instead of a length;  multiDay: can span several days (time away)
+//  cal:      which Google calendar ('pt', 'shifts', 'away' or 'primary');  shared: the shifts calendar Jess sees
+//  g:        prefix for the Google event title;  badge/col/cls: how it looks on the calendar
+var TYPES={
+  pt:      {label:'PT Session',name:'PT',client:1,target:1,paid:1,cal:'pt',g:'PT: '},
+  coaching:{label:'Coaching (mindset / habits)',name:'Coaching',client:1,target:1,paid:1,cal:'pt',g:'Coaching: ',badge:'COACHING',col:'#8b7cf0'},
+  consult: {label:'Consultation (free)',name:'Consultation',cal:'pt',g:'Consult: ',badge:'CONSULT',col:'#6a90d0',cls:'tcon'},
+  personal:{label:'Personal (my training)',name:'Personal',cal:'primary',g:'Training: ',badge:'ME',col:'#30c0b0',cls:'tpers'},
+  robyn:   {label:'Robyn (drop-off / pick-up)',name:'Robyn',cal:'shifts',shared:1,g:'Robyn: ',badge:'ROBYN',col:'#ec6ba4',cls:'trob'},
+  crossfit:{label:'Crossfit',name:'Crossfit',paid:1,hourly:1,endTime:1,cal:'shifts',shared:1,g:'CF: ',badge:'CF',col:'#f0a020',cls:'tcf'},
+  adidas:  {label:'Adidas',name:'Adidas',paid:1,endTime:1,cal:'shifts',shared:1,g:'Adidas: ',badge:'ADIDAS',col:'#f2f2f2',cls:'tadi'},
+  other:   {label:'Other (time away)',name:'Away',endTime:1,multiDay:1,cal:'away',g:'',badge:'AWAY',col:'#b060b0',cls:'toth'}
+};
+function TY(t){return TYPES[t||'pt']||TYPES.pt;}
+// Session types that are paid client work (client record, attendance, alerts).
+function isClientType(t){return !!TY(t).client;}
+function hexA(h,a){var n=parseInt(h.slice(1),16);return 'rgba('+((n>>16)&255)+','+((n>>8)&255)+','+(n&255)+','+a+')';}
 applySettings(ldSet());
 function sdSet(){fbSave('settings');}
 var DS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -988,7 +1025,7 @@ function t2m(t){var p=t.split(':');return parseInt(p[0],10)*60+parseInt(p[1],10)
 function m2i(m){return p2(Math.floor(m/60))+':'+p2(m%60);}
 function m2r(m){return(m-SH*60)/30;}
 function r2m(r){return SH*60+r*30;}
-function ef(s){if(!s.rate)return 0;if(effStatus(s)==='cancelled')return 0;if((s.type||'pt')==='crossfit')return Math.round(s.rate*(s.duration||60)/60);return Math.round(s.rate);}
+function ef(s){if(!s.rate)return 0;if(effStatus(s)==='cancelled')return 0;if(TY(s.type).hourly)return Math.round(s.rate*(s.duration||60)/60);return Math.round(s.rate);}
 function fd(ds){var d=new Date(ds+'T12:00:00');return DF[d.getDay()]+' '+d.getDate()+' '+MS[d.getMonth()];}
 
 function render(){rWL();rSum();rGrid();}
@@ -1001,13 +1038,13 @@ function rWL(){
 
 function rSum(){
   var earn=0,bk=0,tgtBk=0;
-  for(var d=0;d<7;d++){var ds=iso(aD(ws,d));Object.keys(sess).forEach(function(k){if(k.indexOf(ds+'_')===0){var s=sess[k];earn+=ef(s);bk++;if(s.type!=='crossfit'&&s.type!=='personal'&&s.type!=='consult'&&s.type!=='other'&&s.type!=='robyn'&&s.type!=='adidas'&&effStatus(s)!=='cancelled')tgtBk++;}});}
+  for(var d=0;d<7;d++){var ds=iso(aD(ws,d));Object.keys(sess).forEach(function(k){if(k.indexOf(ds+'_')===0){var s=sess[k];earn+=ef(s);if(TY(s.type).target&&effStatus(s)!=='cancelled')tgtBk++;}});}
   var weekTgt=0;for(var d2=0;d2<7;d2++)weekTgt+=targetFor(aD(ws,d2).getDay());
   var av=Math.max(0,weekTgt-tgtBk),pct=weekTgt?Math.round(tgtBk/weekTgt*100):0;
   var col=pct>=80?'var(--lime)':pct>=50?'#f0a020':'var(--danger)';
   document.getElementById('sumBar').innerHTML=
-    pl('Week Earnings','&pound;'+earn.toLocaleString(),'var(--lime)')+
-    pl('Sessions Booked',bk,'var(--text)')+
+    pl('Booked this week','&pound;'+earn.toLocaleString(),'var(--lime)')+
+    pl('Client sessions',tgtBk,'var(--text)')+
     pl('Slots Available',av,col)+
     pl('Capacity',pct+'%',col)+
     canPill(cancelledIn(iso(ws),iso(aD(ws,6))).length);
@@ -1019,7 +1056,7 @@ function rGrid(){
   g.appendChild(mk('div','tc'));
   for(var d=0;d<7;d++){
     var dt=aD(ws,d),ds=iso(dt),de=0,db=0;
-    Object.keys(sess).forEach(function(k){if(k.indexOf(ds+'_')===0){de+=ef(sess[k]);db++;}});
+    Object.keys(sess).forEach(function(k){if(k.indexOf(ds+'_')===0){var s0=sess[k];de+=ef(s0);if(TY(s0.type).client&&effStatus(s0)!=='cancelled')db++;}});
     var h=mk('div','dh'+(isTod(dt)?' it':''));
     h.innerHTML='<div class="dn">'+DS[dt.getDay()]+'</div><div class="dd">'+dt.getDate()+'</div><div class="de">'+(de>0?'&pound;'+de:'')+'</div><div class="ds">'+(db>0?db+' session'+(db>1?'s':''):'')+'</div>';
     g.appendChild(h);
@@ -1064,14 +1101,8 @@ function bCell(col,row,mins,isH,csm,g){
 }
 
 function bBlock(key,s,past,bh){
-  var isCF=s.type==='crossfit';
-  var isOth=s.type==='other';
-  var isPers=s.type==='personal';
-  var isCons=s.type==='consult';
-  var isRob=s.type==='robyn';
-  var isAdi=s.type==='adidas';
-  var isClientSess=(!isCF&&!isOth&&!isPers&&!isCons&&!isRob&&!isAdi);
-  var blockCls=isCF?'tcf':isOth?'toth':isPers?'tpers':isCons?'tcon':isRob?'trob':isAdi?'tadi':(s.recurring?'tr':'tb2');
+  var ty=TY(s.type),isOth=!!ty.multiDay,isClientSess=!!ty.client;
+  var blockCls=ty.cls||(s.recurring?'tr':'tb2');
   var blk=mk('div','blk '+blockCls+(past?' isp':''));
   blk.style.height=bh+'px';
   // PT sessions: colour the block by the client's training type.
@@ -1083,13 +1114,7 @@ function bBlock(key,s,past,bh){
   if(est==='noshow'){var nsb=mk('div','bb');nsb.textContent='NO-SHOW';nsb.style.color='#e05555';nsb.style.borderColor='rgba(224,85,85,0.4)';nsb.style.background='rgba(224,85,85,0.15)';blk.appendChild(nsb);}
   if(cl&&bh>=40){var pw=progWeekAt(cl,s.date);var cue=cl.motivation||cl.goals||'';var sub2=((pw!==null&&pw>0)?('Wk'+pw+(cue?' · ':'')):'')+cue;if(sub2){var gl=mk('div','bgoal');gl.textContent=sub2;blk.appendChild(gl);}
     if(cl.motivation&&cl.goals){var gr=mk('div','bgr');gr.textContent=cl.goals;blk.appendChild(gr);}}
-  if(isCF){var cfbdg=mk('div','bb');cfbdg.textContent='CF';cfbdg.style.color='#f0a020';cfbdg.style.borderColor='rgba(240,160,32,0.4)';cfbdg.style.background='rgba(240,160,32,0.15)';blk.appendChild(cfbdg);}
-  if(isOth){var othbdg=mk('div','bb');othbdg.textContent='AWAY';othbdg.style.color='#b060b0';othbdg.style.borderColor='rgba(176,96,176,0.4)';othbdg.style.background='rgba(176,96,176,0.15)';blk.appendChild(othbdg);}
-  if(isPers){var pbdg=mk('div','bb');pbdg.textContent='ME';pbdg.style.color='#30c0b0';pbdg.style.borderColor='rgba(48,192,176,0.4)';pbdg.style.background='rgba(48,192,176,0.15)';blk.appendChild(pbdg);}
-  if(isCons){var cnbdg=mk('div','bb');cnbdg.textContent='CONSULT';cnbdg.style.color='#6a90d0';cnbdg.style.borderColor='rgba(106,144,208,0.4)';cnbdg.style.background='rgba(106,144,208,0.15)';blk.appendChild(cnbdg);}
-  if(isRob){var rbdg=mk('div','bb');rbdg.textContent='ROBYN';rbdg.style.color='#ec6ba4';rbdg.style.borderColor='rgba(236,107,164,0.4)';rbdg.style.background='rgba(236,107,164,0.15)';blk.appendChild(rbdg);}
-  if(isAdi){var abdg=mk('div','bb');abdg.textContent='ADIDAS';abdg.style.color='#f2f2f2';abdg.style.borderColor='rgba(242,242,242,0.45)';abdg.style.background='rgba(242,242,242,0.12)';blk.appendChild(abdg);}
-  if(s.type==='coaching'){var cbdg=mk('div','bb');cbdg.textContent='COACHING';cbdg.style.color='#8b7cf0';cbdg.style.borderColor='rgba(139,124,240,0.45)';cbdg.style.background='rgba(139,124,240,0.18)';blk.appendChild(cbdg);}
+  if(ty.badge){var tbg=mk('div','bb');tbg.textContent=ty.badge;tbg.style.color=ty.col;tbg.style.borderColor=hexA(ty.col,0.45);tbg.style.background=hexA(ty.col,0.15);blk.appendChild(tbg);}
   if(s.makeup){blk.style.borderStyle='dashed';var mub=mk('div','bb');mub.textContent='MAKE-UP';mub.style.color='var(--lime)';mub.style.borderColor='rgba(198,241,53,0.4)';mub.style.background='rgba(198,241,53,0.15)';blk.appendChild(mub);}
   var tm=mk('div','bt');tm.textContent=m2t(s.startMins)+' - '+m2t(s.startMins+(s.duration||60));blk.appendChild(tm);
   if(s.rate){var rt=mk('div','br');rt.textContent='\u00a3'+ef(s);blk.appendChild(rt);}
@@ -1126,11 +1151,12 @@ function onTypeChange(type){
   var etWrap=document.getElementById('endTimeWrap');
   var edWrap=document.getElementById('endDateWrap');
   var stRow=document.getElementById('fST').closest?document.getElementById('fST').parentElement:null;
-  var rl=document.getElementById('fRlabel');if(rl)rl.textContent=(type==='crossfit')?'Rate (£/hr)':'Session fee (£)';
+  var rl=document.getElementById('fRlabel');if(rl)rl.textContent=TY(type).hourly?'Rate (£/hr)':'Session fee (£)';
   var adiRow=document.getElementById('adidasRow');if(adiRow)adiRow.style.display=(type==='adidas')?'flex':'none';
   if(type!=='adidas')document.getElementById('fAdiFull').checked=false;
+  if(type==='adidas'){var af=adiFull();document.getElementById('adiFullLbl').innerHTML='Full day ('+m2t(af.start)+' &ndash; '+m2t(af.end)+') <span style="color:var(--lime)">&pound;'+af.fee+'</span>';}
   if(type==='adidas'&&!document.getElementById('fN').value.trim())document.getElementById('fN').value='Adidas';
-  if(type==='crossfit'||type==='adidas'){
+  if(TY(type).endTime&&!TY(type).multiDay){
     durWrap.style.display='none';
     etWrap.style.display='block';
     edWrap.style.display='none';
@@ -1138,7 +1164,7 @@ function onTypeChange(type){
     if(st&&!document.getElementById('fET').value){
       document.getElementById('fET').value=m2i(t2m(st)+60);
     }
-  } else if(type==='other'){
+  } else if(TY(type).multiDay){
     durWrap.style.display='none';
     etWrap.style.display='block';
     edWrap.style.display='block';
@@ -1157,19 +1183,19 @@ function onTypeChange(type){
   }
 }
 
-// Adidas full day = fixed 7am-3pm at 150; unticking leaves the times/fee free to edit for a one-off session.
-var ADI_FULL={start:7*60,end:15*60,fee:150};
+// Adidas full day: the hours and day rate come from Settings; unticking leaves the times/fee free to edit for a one-off session.
+function adiFull(){return {start:SET.adiFrom*60,end:SET.adiTo*60,fee:SET.adiFee};}
 function onAdidasFull(on){
   if(!on)return;
-  document.getElementById('fST').value=m2i(ADI_FULL.start);
-  document.getElementById('fET').value=m2i(ADI_FULL.end);
-  document.getElementById('fR').value=ADI_FULL.fee;
-  if(aSlot)document.getElementById('addSub').textContent=fd(aSlot.date)+'  ·  '+m2t(ADI_FULL.start);
+  document.getElementById('fST').value=m2i(adiFull().start);
+  document.getElementById('fET').value=m2i(adiFull().end);
+  document.getElementById('fR').value=adiFull().fee;
+  if(aSlot)document.getElementById('addSub').textContent=fd(aSlot.date)+'  ·  '+m2t(adiFull().start);
 }
 
 function getDuration(){
   var type=document.getElementById('fType').value;
-  if(type==='crossfit'||type==='adidas'||type==='other'){
+  if(TY(type).endTime){
     var st=t2m(document.getElementById('fST').value);
     var et=t2m(document.getElementById('fET').value);
     var diff=et-st;
@@ -1239,11 +1265,11 @@ function oEdit(key){
   var editType=s.type||'pt';
   document.getElementById('fType').value=editType;
   onTypeChange(editType);
-  if(editType==='crossfit'||editType==='adidas'){
+  if(TY(editType).endTime&&!TY(editType).multiDay){
     document.getElementById('fET').value=m2i(s.startMins+(s.duration||60));
-    document.getElementById('fAdiFull').checked=(editType==='adidas'&&s.startMins===ADI_FULL.start&&(s.duration||60)===ADI_FULL.end-ADI_FULL.start);
+    document.getElementById('fAdiFull').checked=(editType==='adidas'&&s.startMins===adiFull().start&&(s.duration||60)===adiFull().end-adiFull().start);
     document.getElementById('fED').value='';
-  } else if(editType==='other'){
+  } else if(TY(editType).multiDay){
     document.getElementById('fET').value=m2i(s.startMins+(s.duration||60));
     document.getElementById('fED').value=s.date;
   } else {
@@ -1313,7 +1339,7 @@ function svSess(){try{
   var old=aEk?(sess[aEk]||{}):null;
   // Work out every slot this save will fill, then check them all before changing anything.
   var plan=[];
-  if(!aEk&&!rec&&type==='other'){
+  if(!aEk&&!rec&&TY(type).multiDay){
     // Multi-day block. First day: chosen start to 9pm; last day: 6am to the end time; days between: 6am-9pm.
     var endDate=document.getElementById('fED').value||date;
     var endDt=new Date(endDate+'T12:00:00');
@@ -1375,7 +1401,7 @@ function svSess(){try{
       sess[p.key]=Object.assign({name:name,type:type,date:p.date,startMins:sm,duration:dur,rate:rate,notes:notes,clientId:cid,recurring:true,recurringId:rid},xt);cnt++;
     });
     sd();render();cAdd();toast(cnt+' recurring sessions added'+skipNote(taken));
-  } else if(type==='other'){
+  } else if(TY(type).multiDay){
     var rid2='r'+Date.now(),cnt2=0;
     plan.forEach(function(p){
       if(p.taken)return;
@@ -1405,10 +1431,10 @@ function oView(key){
   var _vcm=clientOf(s);
   document.getElementById('viewBody').innerHTML=
     (_vcm&&_vcm.motivation?'<div style="border-left:3px solid var(--lime);background:var(--card);padding:9px 12px;margin-bottom:12px;font-size:13px;color:var(--lime);font-weight:600">\ud83d\udcaa '+esc(_vcm.motivation)+'</div>':'')+
-    vf(s.type==='crossfit'?'Rate':'Session fee',s.rate?('\u00a3'+s.rate+(s.type==='crossfit'?'/hr':'')):'\u2014',s.rate?'vfl2':'')+
-    (s.type==='crossfit'?vf('Session Earnings',earned?'\u00a3'+earned:'\u2014',''):'')+
+    vf(TY(s.type).hourly?'Rate':'Session fee',s.rate?('\u00a3'+s.rate+(TY(s.type).hourly?'/hr':'')):'\u2014',s.rate?'vfl2':'')+
+    (TY(s.type).hourly?vf('Session value',earned?'\u00a3'+earned:'\u2014',''):'')+
     vf('Duration',(s.duration||60)+' mins','')+
-    vf('Type',(s.type==='crossfit'?'Crossfit':s.type==='adidas'?'Adidas':s.type==='other'?'Other':s.type==='personal'?'Personal':s.type==='consult'?'Consultation':s.type==='robyn'?'Robyn (drop-off / pick-up)':s.type==='coaching'?'Coaching (mindset / habits)':'PT Session')+(s.recurring?' (Recurring)':' (One-off)'),'')+
+    vf('Type',TY(s.type).label+(s.recurring?' (Recurring)':' (One-off)'),'')+
     (s.location?vf('Location',esc(s.location),''):'')+
     (s.focus?vf('Session Focus',esc(s.focus),''):'')+
     (s.phone?'<div class="vf"><div class="vfl">Phone</div><div class="vfv"><a href="tel:'+esc(s.phone)+'" style="color:var(--lime);text-decoration:none">'+esc(s.phone)+'</a></div></div>':'')+
@@ -1456,7 +1482,7 @@ function oView(key){
       sd();render();cView();toast('All recurring sessions removed');
     };
     acts.appendChild(d1);acts.appendChild(da);
-  } else if(s.type==='other'&&s.recurringId){
+  } else if(TY(s.type).multiDay&&s.recurringId){
     // Multi-day Other block — offer to remove all days at once
     var db=mk('button','bd');db.textContent='Remove this day';
     db.onclick=function(){
@@ -1527,7 +1553,7 @@ function rAna(){
     if(d>tod||d<cut)return;
     var mon=s.date.slice(0,7);
     if(!mm[mon])mm[mon]={earn:0,count:0};
-    mm[mon].earn+=ef(s);mm[mon].count++;
+    mm[mon].earn+=ef(s);if(TY(s.type).client&&effStatus(s)!=='cancelled')mm[mon].count++;
   });
   var months=Object.keys(mm).sort(),tE=0,tS=0;
   months.forEach(function(k){tE+=mm[k].earn;tS+=mm[k].count;});
@@ -1535,10 +1561,10 @@ function rAna(){
   var aS=months.length?(tS/months.length).toFixed(1):0;
   var per=aPer===0?'All time':'Last '+aPer+' months';
   document.getElementById('aStats').innerHTML=
-    sc('Total Earnings','&pound;'+tE.toLocaleString(),per,'var(--lime)')+
-    sc('Total Sessions',tS,per,'var(--text)')+
-    sc('Avg Monthly Earnings','&pound;'+aE,'Per month',aE>0?'var(--lime)':'var(--muted)')+
-    sc('Avg Sessions/Month',aS,'Per month','var(--text)');
+    sc('Booked value','&pound;'+tE.toLocaleString(),per,'var(--lime)')+
+    sc('Client sessions',tS,per+' (not cancelled)','var(--text)')+
+    sc('Avg value / month','&pound;'+aE,'Per month',aE>0?'var(--lime)':'var(--muted)')+
+    sc('Avg sessions / month',aS,'Per month','var(--text)');
   var disp=months.map(function(k){var d=new Date(k+'-01T12:00:00');return MS[d.getMonth()]+(months.length>8?' '+(''+d.getFullYear()).slice(2):'');});
   dChart('echart',disp,months.map(function(k){return mm[k].earn;}),'£','#C6F135');
   dChart('schart',disp,months.map(function(k){return mm[k].count;}),'','#4090d0');
@@ -1585,7 +1611,7 @@ function rMissed(){
   var ar=0,rc=0;
   Object.keys(sess).forEach(function(k){
     var s=sess[k];
-    if(s.rate&&s.rate>=SET.regularMin&&s.rate<=SET.premiumOver&&s.type!=='crossfit'&&s.type!=='adidas'){ar+=s.rate;rc++;}
+    if(s.rate&&s.rate>=SET.regularMin&&s.rate<=SET.premiumOver&&TY(s.type).client){ar+=s.rate;rc++;}
   });
   ar=rc?Math.round(ar/rc):50;
 
@@ -1608,7 +1634,7 @@ function rMissed(){
   Object.keys(sess).forEach(function(k){
     var s=sess[k];
     // Crossfit/personal block the slot but don't count toward the PT session target; cancelled doesn't count
-    if(dm[s.date]!==undefined&&s.type!=='crossfit'&&s.type!=='personal'&&s.type!=='consult'&&s.type!=='robyn'&&s.type!=='adidas'&&effStatus(s)!=='cancelled') dm[s.date]++;
+    if(dm[s.date]!==undefined&&TY(s.type).target&&effStatus(s)!=='cancelled') dm[s.date]++;
   });
 
   var tms=0,tme=0,days=[];
@@ -1666,7 +1692,7 @@ function rMissed(){
     tabs+
     '<div style="display:flex;gap:20px;margin-bottom:16px">'+
     '<div><div class="sl">Available Slots</div><div class="sv" style="color:var(--danger)">'+tms+'</div></div>'+
-    '<div><div class="sl">Potential Earnings</div><div class="sv" style="color:var(--danger)">&pound;'+tme.toLocaleString()+'</div></div></div>'+
+    '<div><div class="sl">Potential value</div><div class="sv" style="color:var(--danger)">&pound;'+tme.toLocaleString()+'</div></div></div>'+
     contentHtml;
 
   document.getElementById('mTabs').onclick=function(e){
@@ -1690,7 +1716,7 @@ function rUpcoming(){
   var mks=Object.keys(mm).sort();
   var card=document.getElementById('uCard');
   if(!mks.length){
-    card.innerHTML='<div class="uh"><div class="ut">UPCOMING EARNINGS</div></div><div style="color:var(--muted);font-size:13px">No upcoming sessions booked yet.</div>';
+    card.innerHTML='<div class="uh"><div class="ut">UPCOMING BOOKED VALUE</div></div><div style="color:var(--muted);font-size:13px">No upcoming sessions booked yet.</div>';
     return;
   }
   var tot=0;mks.forEach(function(mk2){mm[mk2].forEach(function(s){tot+=ef(s);});});
@@ -1710,15 +1736,15 @@ function rUpcoming(){
     grd+='<div class="um"><div class="umn">'+MS[d.getMonth()].toUpperCase()+' '+d.getFullYear()+'</div>'+rows+'<div class="umt"><div class="umtl">Month Total</div><div class="umtv">&pound;'+mT.toLocaleString()+'</div></div></div>';
   });
   grd+='</div>';
-  var regTot=0,premTot=0,cfTot=0,adiTot=0,visTot=0;
+  // Client work splits into regular and premium; other paid work (Crossfit, Adidas) is shown per type.
+  var regTot=0,premTot=0,visTot=0,other={};
   vis.forEach(function(mk2){mm[mk2].forEach(function(s){
-    var e=ef(s);visTot+=e;
-    if(s.type==='crossfit') cfTot+=e;
-    else if(s.type==='adidas') adiTot+=e;
+    var e=ef(s),ty=TY(s.type);visTot+=e;
+    if(!ty.client){if(e){var o=other[ty.name]||(other[ty.name]={v:0,col:ty.col});o.v+=e;}}
     else if(s.rate&&s.rate>SET.premiumOver) premTot+=e;
     else regTot+=e;
   });});
-  card.innerHTML='<div class="uh"><div class="ut">UPCOMING EARNINGS'+(uView!=='all'?' — '+MS[new Date(uView+'-01T12:00:00').getMonth()].toUpperCase():'')+'</div>'+
+  card.innerHTML='<div class="uh"><div class="ut">UPCOMING BOOKED VALUE'+(uView!=='all'?' — '+MS[new Date(uView+'-01T12:00:00').getMonth()].toUpperCase():'')+'</div>'+
     '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">'+
     '<div class="utt">&pound;'+visTot.toLocaleString()+'<span> total booked</span></div>'+
     '<div style="display:flex;gap:14px;margin-top:2px;flex-wrap:wrap">'+
@@ -1726,10 +1752,7 @@ function rUpcoming(){
     '<div style="font-family:Bebas Neue,sans-serif;font-size:18px;color:var(--lime)">&pound;'+regTot.toLocaleString()+'</div></div>'+
     '<div style="text-align:right"><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Premium (above £'+SET.premiumOver+')</div>'+
     '<div style="font-family:Bebas Neue,sans-serif;font-size:18px;color:#f0a020">&pound;'+premTot.toLocaleString()+'</div></div>'+
-    (cfTot>0?'<div style="text-align:right"><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Crossfit</div>'+
-    '<div style="font-family:Bebas Neue,sans-serif;font-size:18px;color:#f0a020">&pound;'+cfTot.toLocaleString()+'</div></div>':'')+
-    (adiTot>0?'<div style="text-align:right"><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Adidas</div>'+
-    '<div style="font-family:Bebas Neue,sans-serif;font-size:18px;color:#f2f2f2">&pound;'+adiTot.toLocaleString()+'</div></div>':'')+
+    Object.keys(other).map(function(n){return '<div style="text-align:right"><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">'+esc(n)+'</div><div style="font-family:Bebas Neue,sans-serif;font-size:18px;color:'+other[n].col+'">&pound;'+other[n].v.toLocaleString()+'</div></div>';}).join('')+
     '</div></div></div>'+
     '<div class="utabs" id="utabs">'+tabs+'</div>'+grd;
   document.getElementById('utabs').onclick=function(e){var b=e.target.closest('.utab');if(!b)return;uView=b.getAttribute('data-uv');rUpcoming();};
@@ -1744,21 +1767,23 @@ function rSummary(){
   var daysInMonth=new Date(y,mo+1,0).getDate();
   var firstDow=new Date(y,mo,1).getDay();
   var lead=(firstDow===0?6:firstDow-1);
-  var byDay={},monthEarn=0,monthCount=0,cfCount=0;
+  var byDay={},monthEarn=0,clientN=0,otherN=0;
   Object.keys(sess).forEach(function(k){
     var s=sess[k];
     if(s.date.slice(0,7)!==monKey)return;
     var day=parseInt(s.date.slice(8,10),10);
     if(!byDay[day])byDay[day]=[];
     byDay[day].push({k:k,s:s});
-    monthEarn+=ef(s);monthCount++;
-    if(s.type==='crossfit'||s.type==='adidas')cfCount++;
+    monthEarn+=ef(s);
+    if(effStatus(s)==='cancelled')return;
+    var ty=TY(s.type);
+    if(ty.client)clientN++;else if(ty.paid)otherN++;
   });
+  var otherLbl=Object.keys(TYPES).filter(function(t){return TYPES[t].paid&&!TYPES[t].client;}).map(function(t){return TYPES[t].name;}).join(' / ');
   document.getElementById('sumStats').innerHTML=
-    pl('Month Earnings','&pound;'+monthEarn.toLocaleString(),'var(--lime)')+
-    pl('Total Sessions',monthCount,'var(--text)')+
-    pl('PT Sessions',monthCount-cfCount,'var(--text)')+
-    pl('Crossfit / Adidas',cfCount,'#f0a020')+
+    pl('Booked value','&pound;'+monthEarn.toLocaleString(),'var(--lime)')+
+    pl('Client sessions',clientN,'var(--text)')+
+    pl(otherLbl,otherN,'#f0a020')+
     canPill(cancelledIn(monKey+'-01',monKey+'-31').length);
   var g=document.getElementById('sumGrid');g.innerHTML='';
   for(var i=0;i<lead;i++){g.appendChild(mk('div','sumc empty'));}
@@ -1776,8 +1801,8 @@ function rSummary(){
     var de=0;
     list.forEach(function(it){
       var s=it.s;de+=ef(s);
-      var col=s.type==='crossfit'?'#f0a020':s.type==='adidas'?'#f2f2f2':s.type==='other'?'#b060b0':(s.recurring?'#1090c0':'var(--booked-accent)');
-      html+='<div class="sumev" data-key="'+it.k+'" style="color:'+col+'">'+esc(m2t(s.startMins)+' '+s.name)+'</div>';
+      var ty=TY(s.type),col=ty.client?(s.recurring?'#1090c0':'var(--booked-accent)'):ty.col;
+      html+='<div class="sumev" data-key="'+it.k+'" style="color:'+col+(effStatus(s)==='cancelled'?';text-decoration:line-through;opacity:.5':'')+'">'+esc(m2t(s.startMins)+' '+s.name)+'</div>';
     });
     if(de>0)html+='<div class="sumtot">&pound;'+de+'</div>';
     cell.innerHTML=html;
@@ -1785,7 +1810,7 @@ function rSummary(){
   }
 }
 
-var cliFilter='',curCli=null,brainCollapsed=localStorage.getItem('cbc_brainCollapsed')==='1';
+var cliFilter='',cliShowLapsed=false,curCli=null,brainCollapsed=localStorage.getItem('cbc_brainCollapsed')==='1';
 
 function tagColor(t){
   t=(t||'').toLowerCase().replace(/^online\s*-\s*/,'');
@@ -1798,8 +1823,7 @@ function tagColor(t){
   if(t.indexOf('mindset')!==-1||t.indexOf('habit')!==-1)return '#8b7cf0';
   return '#888780';
 }
-// Session types that represent paid client work (get a client record, earnings, attendance, alerts).
-function isClientType(t){t=t||'pt';return t==='pt'||t==='coaching';}
+
 function clientOf(s){return clients[s.clientId]||findClientByName(s.name)||null;}
 // Programme week for a given date = number of weeks from start up to that date's week that had a non-cancelled session (holiday weeks don't count).
 function progWeekAt(c,refDateStr){
@@ -1834,7 +1858,7 @@ function blockRemaining(c){
 // --- Session bank: make-up credits owed (e.g. DD client cancels with notice). 30-day expiry. ---
 function bankedList(c){
   if(!c||!c.bankedCredits)return [];
-  var cutoff=Date.now()-30*86400000;
+  var cutoff=Date.now()-(SET.creditDays||30)*86400000;
   return c.bankedCredits.filter(function(cr){return new Date(cr.date+'T12:00:00').getTime()>=cutoff;});
 }
 function bankedCount(c){return bankedList(c).length;}
@@ -1855,14 +1879,19 @@ function rClients(){
     var key=(s.clientId&&map[s.clientId])?s.clientId:null;
     if(!key){var c=findClientByName(s.name);if(c&&map[c.id])key=c.id;}
     if(!key){key='n:'+normName(s.name);if(!map[key])map[key]={id:null,name:s.name,phone:s.phone||'',email:s.email||'',tag:'',status:'active',count:0,earn:0,last:null,next:null};}
-    var a=map[key];a.count++;a.earn+=ef(s);
-    if(s.date<=nowIso){if(!a.last||s.date>a.last)a.last=s.date;}
-    if(s.date>=nowIso){if(!a.next||s.date<a.next)a.next=s.date;}
+    var a=map[key],est=effStatus(s);a.earn+=ef(s);
+    if(est!=='cancelled')a.count++;
+    if(est==='completed'){if(!a.last||s.date>a.last)a.last=s.date;}
+    if(est==='scheduled'){if(!a.next||s.date<a.next)a.next=s.date;}
     if(!a.phone&&s.phone)a.phone=s.phone;if(!a.email&&s.email)a.email=s.email;
   });
   var list=Object.keys(map).map(function(k){return map[k];});
   if(cliFilter){var f=cliFilter.toLowerCase();list=list.filter(function(c){return c.name.toLowerCase().indexOf(f)!==-1;});}
-  list.sort(function(a,b){if(!!a.next!==!!b.next)return a.next?-1:1;return b.count-a.count;});
+  // Lapsed clients stay out of the way unless asked for (a search always finds them).
+  var lapsedN=list.filter(function(c){return c.status==='lapsed';}).length;
+  if(!cliFilter&&!cliShowLapsed)list=list.filter(function(c){return c.status!=='lapsed';});
+  var lapsedRow=(lapsedN&&!cliFilter)?'<div id="cliLapsedToggle" style="cursor:pointer;font-size:12px;color:var(--muted);padding:12px 0">'+(cliShowLapsed?'Hide':'Show')+' '+lapsedN+' lapsed client'+(lapsedN===1?'':'s')+' &rsaquo;</div>':'';
+  list.sort(function(a,b){if((a.status==='lapsed')!==(b.status==='lapsed'))return a.status==='lapsed'?1:-1;if(!!a.next!==!!b.next)return a.next?-1:1;return b.count-a.count;});
   // Consolidated Coach's Brain board — every client needing attention, at a glance.
   var bEl=document.getElementById('cliBrain'),brain=[];
   Object.keys(clients).forEach(function(id){var c=clients[id];if(c.status==='lapsed')return;var cb=clientAlerts(c);if(cb.flags.length)brain.push({c:c,cb:cb});});
@@ -1886,7 +1915,7 @@ function rClients(){
     };
   } else bEl.innerHTML='';
   var el=document.getElementById('cliList');
-  if(!list.length){el.innerHTML='<div style="color:var(--muted);font-size:13px">'+(cliFilter?'No matching clients.':'No clients yet.')+'</div>';return;}
+  if(!list.length){el.innerHTML='<div style="color:var(--muted);font-size:13px">'+(cliFilter?'No matching clients.':lapsedN?'No active clients.':'No clients yet.')+'</div>'+lapsedRow;return;}
   el.innerHTML=list.map(function(c){
     var sub='';
     if(c.next){sub='<span class="clim">Next: '+fd(c.next)+'</span>';}
@@ -1895,7 +1924,7 @@ function rClients(){
     var lapsed=c.status==='lapsed'?'<span style="font-size:9px;color:var(--muted);letter-spacing:1px;margin-left:6px">LAPSED</span>':'';
     var bankChip=c.banked>0?'<span style="font-size:9px;font-weight:700;letter-spacing:1px;margin-left:6px;padding:1px 6px;border:1px solid var(--lime);color:var(--lime);border-radius:3px">OWED +'+c.banked+'</span>':'';
     return '<div class="clic" data-cid="'+esc(c.id||'')+'" data-cli="'+esc(c.name)+'"><div><div class="clin">'+esc(c.name)+tagChip(c.tag)+bankChip+lapsed+'</div><div class="clim">'+c.count+' session'+(c.count===1?'':'s')+(c.phone?' · '+esc(c.phone):'')+'</div>'+sub+'</div><div style="text-align:right"><div class="clie">&pound;'+c.earn.toLocaleString()+'</div></div></div>';
-  }).join('');
+  }).join('')+lapsedRow;
 }
 
 // Coach's Brain: per-client dismissible flags + a single suggested next action.
@@ -1907,19 +1936,20 @@ function clientAlerts(c){
   var last=null,next=null,noShow=0,completed=0,cancelled=0;
   var cut=iso(aD(now,-56));
   Object.keys(sess).forEach(function(k){var s=sess[k];if(!isClientType(s.type))return;if(s.clientId!==c.id&&normName(s.name)!==normName(c.name))return;
-    if(s.date<=today){if(!last||s.date>last)last=s.date;}
-    if(s.date>=today){if(!next||s.date<next)next=s.date;}
+    var est=effStatus(s);
+    if(est==='completed'){if(!last||s.date>last)last=s.date;}      // last seen = last session that happened
+    if(est==='scheduled'){if(!next||s.date<next)next=s.date;}      // next = next one still to come
     if(s.date>=cut&&s.date<=today){var e=effStatus(s);if(e==='completed')completed++;else if(e==='noshow')noShow++;else if(e==='cancelled')cancelled++;}
   });
   function f(type,key,text){if(dismissed.indexOf(key)===-1)flags.push({type:type,key:key,text:text});}
 
   var br=c.billing==='block'?blockRemaining(c):null;
   if(br&&br.left<=0)f('block','block:'+c.id+':'+(c.blockStart||''),'Block used up');
-  else if(br&&br.left<=2)f('block','block:'+c.id+':'+(c.blockStart||''),'Block running low — '+br.left+' left');
+  else if(br&&br.left<=SET.blockLow)f('block','block:'+c.id+':'+(c.blockStart||''),'Block running low — '+br.left+' left');
   var owed=bankedCount(c);
   if(owed>0)f('makeup','makeup:'+c.id+':'+owed,'Owes '+owed+' make-up session'+(owed>1?'s':''));
   var daysSince=last?Math.round((now-new Date(last+'T12:00:00'))/86400000):null;
-  if(last&&!next&&daysSince>=28)f('notseen','notseen:'+c.id+':'+last,'Not seen in '+daysSince+' days, nothing booked');
+  if(last&&!next&&daysSince>=SET.notSeenDays)f('notseen','notseen:'+c.id+':'+last,'Not seen in '+daysSince+' days, nothing booked');
   else if(!next&&last)f('noupcoming','noupcoming:'+c.id+':'+last,'No upcoming session booked');
   if(noShow>0)f('noshow','noshow:'+c.id+':'+noShow,noShow+' no-show'+(noShow>1?'s':'')+' in last 8 weeks');
   if(!c.programmeUrl)f('noprog','noprog:'+c.id,'No programme link saved');
@@ -1927,7 +1957,7 @@ function clientAlerts(c){
   if(pw!==null&&c.programmeWeeks&&pw>=c.programmeWeeks)f('progend','progend:'+c.id+':'+c.programmeWeeks,'Programme finished (Week '+pw+'/'+c.programmeWeeks+') — plan next block');
   var la=latestAssessment(c);
   if(!la)f('noscreen','noscreen:'+c.id,'No movement screen on file');
-  else{var sd=Math.round((now-new Date(la.date+'T12:00:00'))/86400000);if(sd>=84)f('rescreen','rescreen:'+c.id+':'+la.date,'Movement re-screen due ('+Math.round(sd/7)+'w)');}
+  else{var sd=Math.round((now-new Date(la.date+'T12:00:00'))/86400000);if(sd>=SET.rescreenWeeks*7)f('rescreen','rescreen:'+c.id+':'+la.date,'Movement re-screen due ('+Math.round(sd/7)+'w)');}
   if(completed>0&&noShow===0&&cancelled===0)oks.push('Attendance 100% (last 8 weeks)');
   if(next)oks.push('Next session '+fd(next));
 
@@ -1947,7 +1977,8 @@ function oCli(id,name){
   Object.keys(sess).forEach(function(k){var s=sess[k];if(!isClientType(s.type))return;var match=(c&&s.clientId===c.id)||(normName(s.name)===normName(dispName));if(match){items.push(s);total+=ef(s);}});
   items.sort(function(a,b){return a.date<b.date?1:a.date>b.date?-1:b.startMins-a.startMins;});
   document.getElementById('cliTit').textContent=(dispName||'').toUpperCase();
-  document.getElementById('cliSub').textContent=items.length+' session'+(items.length===1?'':'s')+'  ·  £'+total.toLocaleString()+' total';
+  var nBooked=items.filter(function(s){return effStatus(s)!=='cancelled';}).length,nHeld=items.filter(function(s){return effStatus(s)==='completed';}).length;
+  document.getElementById('cliSub').textContent=nBooked+' session'+(nBooked===1?'':'s')+' ('+nHeld+' held)  ·  £'+total.toLocaleString()+' booked value';
   var ph=c?c.phone:'',em=c?c.email:'';
   if(!ph||!em){items.forEach(function(s){if(!ph&&s.phone)ph=s.phone;if(!em&&s.email)em=s.email;});}
   var body='';
@@ -1985,7 +2016,7 @@ function oCli(id,name){
     } else body+='<div style="color:var(--muted);font-size:12px">No movement screens yet.</div>';
   }
   body+='<div class="vfl" style="margin:16px 0 6px">Session history</div>';
-  body+=items.length?items.map(function(s){var fut=s.date>=nowIso;return '<div class="ur"><div><div class="ucl">'+fd(s.date)+'</div><div class="um2">'+m2t(s.startMins)+(s.focus?' &middot; '+esc(s.focus):'')+(fut?' &middot; upcoming':'')+'</div></div><div class="ue">'+(ef(s)?'&pound;'+ef(s):'&mdash;')+'</div></div>';}).join(''):'<div style="color:var(--muted);font-size:12px">No sessions yet.</div>';
+  body+=items.length?items.map(function(s){var st=effStatus(s);return '<div class="ur"><div><div class="ucl">'+fd(s.date)+'</div><div class="um2">'+m2t(s.startMins)+(s.focus?' &middot; '+esc(s.focus):'')+(st==='cancelled'?' &middot; <span style="color:#f0a020">cancelled</span>':st==='noshow'?' &middot; <span style="color:var(--danger)">no-show</span>':st==='scheduled'?' &middot; upcoming':'')+'</div></div><div class="ue">'+(ef(s)?'&pound;'+ef(s):'&mdash;')+'</div></div>';}).join(''):'<div style="color:var(--muted);font-size:12px">No sessions yet.</div>';
   document.getElementById('cliBody').innerHTML=body;
   document.getElementById('cliBody').onclick=function(e){
     var dm=e.target.closest('.cbDismiss');if(dm){dismissAlert(dm.getAttribute('data-dk'));oCli(curCli,dispName);return;}
@@ -2022,6 +2053,7 @@ function oCliEdit(name){
   document.getElementById('ceBlockStart').value=c.blockStart||'';
   onBillingChange(c.billing||'');
   document.getElementById('ceNotes').value=c.notes||'';
+  document.getElementById('ceLapse').style.display=(c.status==='lapsed')?'none':'';
   document.getElementById('cliEditMo').classList.add('open');
 }
 function onBillingChange(v){
@@ -2056,16 +2088,37 @@ function saveCliEdit(){
   render();rClients();toast('Client updated');
 }
 function cCliEdit(){document.getElementById('cliEditMo').classList.remove('open');}
+// The normal way to stop with a client: history is kept, anything still booked is removed.
+function lapseClient(){
+  var c=clients[curCli];if(!c)return;
+  var up=Object.keys(sess).filter(function(k){var s=sess[k];return isClientType(s.type)&&(s.clientId===c.id||normName(s.name)===normName(c.name))&&effStatus(s)==='scheduled';});
+  var msg='Mark '+c.name+' as lapsed?\n\nTheir past sessions, notes and movement screens are kept.'+
+    (up.length?'\nTheir '+up.length+' upcoming session'+(up.length===1?' is':'s are')+' removed, and taken off Google Calendar.':'')+
+    '\n\nLapsed clients drop out of Needs attention and the client list. Set them back to Active any time.';
+  if(!window.confirm(msg))return;
+  up.forEach(function(k){delete sess[k];});
+  c.status='lapsed';
+  sdc();if(up.length)sd();
+  document.getElementById('cliEditMo').classList.remove('open');
+  document.getElementById('cliMo').classList.remove('open');
+  curCli=null;render();rClients();
+  toast(c.name+' marked lapsed'+(up.length?' · '+up.length+' upcoming removed':''));
+}
+// Permanent removal of a client and everything linked to them. Asks for their name first.
 function deleteClient(){
   var c=clients[curCli];if(!c)return;
   var keys=Object.keys(sess).filter(function(k){var s=sess[k];return isClientType(s.type)&&(s.clientId===c.id||normName(s.name)===normName(c.name));});
-  if(!window.confirm('Delete '+c.name+'?\n\nThis removes the client and their '+keys.length+' session'+(keys.length===1?'':'s')+' (including past earnings). This cannot be undone.'))return;
+  var scr=Object.keys(assessments).filter(function(id){return assessments[id].clientId===c.id;});
+  var typed=window.prompt('Permanently delete '+c.name+'?\n\nThis removes the client, all '+keys.length+' of their sessions (past ones too, with their fees and notes) and '+scr.length+' movement screen'+(scr.length===1?'':'s')+'. Only restoring a backup brings them back.\n\nTo stop working with them but keep their history, use Mark lapsed instead.\n\nType their name to confirm:','');
+  if(typed===null)return;
+  if(normName(typed)!==normName(c.name)){toast('Name didn’t match — nothing deleted');return;}
   keys.forEach(function(k){delete sess[k];});
+  scr.forEach(function(id){delete assessments[id];});
   delete clients[curCli];
-  sdc();sd();
+  sdc();sd();if(scr.length)sdA();
   document.getElementById('cliEditMo').classList.remove('open');
   document.getElementById('cliMo').classList.remove('open');
-  curCli=null;render();rClients();toast('Client removed');
+  curCli=null;render();rClients();toast(c.name+' deleted');
 }
 
 // Auto-generated tasks from existing data (unpaid DD, low blocks, no-shows, not-seen).
@@ -2074,12 +2127,12 @@ function genAutoTasks(){
   function add(key,text){if(dismissed.indexOf(key)===-1)out.push({key:key,text:text});}
   var now=new Date(),today=iso(now),monthKey=today.slice(0,7);
 
-  Object.keys(clients).forEach(function(id){var c=clients[id];if(c.billing==='block'){var br=blockRemaining(c);if(br&&br.left<=2)add('block:'+id,'Rebook block — '+c.name+' ('+br.left+' left)');}});
+  Object.keys(clients).forEach(function(id){var c=clients[id];if(c.billing==='block'){var br=blockRemaining(c);if(br&&br.left<=SET.blockLow)add('block:'+id,'Rebook block — '+c.name+' ('+br.left+' left)');}});
   var lastMap={},nextMap={};
-  Object.keys(sess).forEach(function(k){var s=sess[k];if(!isClientType(s.type)||!s.clientId)return;if(s.date<=today){if(!lastMap[s.clientId]||s.date>lastMap[s.clientId])lastMap[s.clientId]=s.date;}if(s.date>=today){if(!nextMap[s.clientId]||s.date<nextMap[s.clientId])nextMap[s.clientId]=s.date;}});
+  Object.keys(sess).forEach(function(k){var s=sess[k];if(!isClientType(s.type)||!s.clientId)return;var est=effStatus(s);if(est==='completed'){if(!lastMap[s.clientId]||s.date>lastMap[s.clientId])lastMap[s.clientId]=s.date;}if(est==='scheduled'){if(!nextMap[s.clientId]||s.date<nextMap[s.clientId])nextMap[s.clientId]=s.date;}});
   var cut=iso(aD(now,-14));
   Object.keys(sess).forEach(function(k){var s=sess[k];if(!isClientType(s.type))return;if(s.date<cut||s.date>today)return;if(effStatus(s)==='noshow')add('noshow:'+k,'Follow up no-show — '+s.name+' ('+fd(s.date)+')');});
-  Object.keys(clients).forEach(function(id){var c=clients[id];if(c.status==='lapsed')return;var last=lastMap[id],next=nextMap[id];if(last&&!next){var days=Math.round((now-new Date(last+'T12:00:00'))/86400000);if(days>=28)add('notseen:'+id,'Re-engage — '+c.name+' (not seen '+days+'d)');}});
+  Object.keys(clients).forEach(function(id){var c=clients[id];if(c.status==='lapsed')return;var last=lastMap[id],next=nextMap[id];if(last&&!next){var days=Math.round((now-new Date(last+'T12:00:00'))/86400000);if(days>=SET.notSeenDays)add('notseen:'+id,'Re-engage — '+c.name+' (not seen '+days+'d)');}});
   return out;
 }
 function todoistUrl(text){return 'https://todoist.com/add?content='+encodeURIComponent(text);}
@@ -2114,11 +2167,17 @@ function rToday(){
   var todays=[];
   Object.keys(sess).forEach(function(k){if(sess[k].date===today)todays.push({k:k,s:sess[k]});});
   todays.sort(function(a,b){return a.s.startMins-b.s.startMins;});
-  var earn=0,appts=0,mins=0;
-  todays.forEach(function(o){var s=o.s;if(effStatus(s)==='cancelled'||s.type==='other')return;appts++;mins+=(s.duration||60);earn+=ef(s);});
+  // Client sessions and hours are PT and Coaching only; Crossfit/Adidas show as other work.
+  var earn=0,appts=0,mins=0,otherMins=0;
+  todays.forEach(function(o){
+    var s=o.s,ty=TY(s.type);if(effStatus(s)==='cancelled')return;
+    earn+=ef(s);
+    if(ty.client){appts++;mins+=(s.duration||60);}else if(ty.paid)otherMins+=(s.duration||60);
+  });
   document.getElementById('todayStats').innerHTML=
-    pl('Sessions today',appts,'var(--text)')+
-    pl('Coaching hours',(mins/60).toFixed(mins%60?1:0),'var(--text)')+
+    pl('Client sessions',appts,'var(--text)')+
+    pl('Client hours',hrs(mins),'var(--text)')+
+    (otherMins?pl('Other work (hrs)',hrs(otherMins),'var(--text)'):'')+
     pl('Booked today','&pound;'+earn.toLocaleString(),'var(--lime)');
   var html='<div class="cc"><div class="ct">TODAY’S SCHEDULE</div>';
   if(todays.length){
@@ -2126,7 +2185,7 @@ function rToday(){
       var s=o.s,est=effStatus(s);
       var gone=new Date(s.date+'T'+p2(Math.floor(s.startMins/60))+':'+p2(s.startMins%60)+':00')<now;
       var cl=clientOf(s);
-      var typeLbl=s.type==='consult'?'Consultation':s.type==='personal'?'Personal':s.type==='crossfit'?'Crossfit':s.type==='adidas'?'Adidas':s.type==='other'?'Away':s.type==='robyn'?'Robyn':s.type==='coaching'?'Coaching':(cl&&cl.tag?cl.tag:'PT');
+      var typeLbl=(s.type!=='coaching'&&TY(s.type).client&&cl&&cl.tag)?cl.tag:TY(s.type).name;
       var stTag=est==='cancelled'?' · cancelled':est==='noshow'?' · no-show':'';
       var extra=cl&&cl.goals?' · '+cl.goals:(s.focus?' · '+s.focus:'');
       var prep='';
@@ -2438,7 +2497,7 @@ document.getElementById('gBtn').onclick=function(){
 // A device sends on its own only what it changed itself; the Sync button sends everything outstanding.
 var G_API='https://www.googleapis.com/calendar/v3/calendars/';
 var G_FIELDS=['gcalId','gcalCal','gcalSig','gcalTry'];
-var G_SHARED={crossfit:1,robyn:1,adidas:1};          // types that go on the calendar shared with Jess
+
 var gCals=[],gCalsReady=false,gSeen={},gRun={busy:false,again:false,allNext:false},gKickT=null,gBtnT=null;
 function ldGmap(key){try{var o=JSON.parse(localStorage.getItem(key)||'{}');return (o&&typeof o==='object'&&!Array.isArray(o))?o:{};}catch(e){return {};}}
 var gdel=ldGmap('cbc6_gcaldel'),gDirty=ldGmap('cbc_gdirty');      // gDirty = sessions this device changed and hasn't confirmed in Google
@@ -2492,16 +2551,17 @@ function calName(id){
 }
 // Which Google calendar a session type belongs on.
 function calForType(type){
-  if(type==='personal')return 'primary';
-  if(type==='crossfit'||type==='robyn'||type==='adidas')return selCal3||selCal2||selCal; // shared shifts calendar
-  if(type==='other'&&selCal2)return selCal2;              // away/holiday
+  var c=TY(type).cal;
+  if(c==='primary')return 'primary';
+  if(c==='shifts')return selCal3||selCal2||selCal;        // shared with Jess
+  if(c==='away')return selCal2||selCal;
   return selCal;
 }
 // Local clock time as text, e.g. 2026-10-12T09:00:00; sent with the London time zone so it is right from any device.
 function gWall(date,mins){var d=new Date(date+'T00:00:00Z');d.setUTCMinutes(mins);return d.toISOString().slice(0,19);}
 function gcalEvent(s){
   var t=s.type||'pt',lines=[];
-  if(G_SHARED[t]){if(t==='robyn'&&s.notes)lines.push(s.notes);}        // shared calendar: no fees or contact details
+  if(TY(t).shared){if(t==='robyn'&&s.notes)lines.push(s.notes);}        // shared calendar: no fees or contact details
   else{
     if(s.rate)lines.push('Fee: £'+s.rate);
     if(s.focus)lines.push('Focus: '+s.focus);
@@ -2509,7 +2569,7 @@ function gcalEvent(s){
     if(s.email)lines.push('Email: '+s.email);
     if(s.notes)lines.push('Notes: '+s.notes);
   }
-  var summary=t==='personal'?('Training: '+s.name):t==='crossfit'?('CF: '+s.name):t==='adidas'?(/^adidas$/i.test(s.name)?'Adidas':('Adidas: '+s.name)):t==='consult'?('Consult: '+s.name):t==='coaching'?('Coaching: '+s.name):t==='robyn'?('Robyn: '+s.name):t==='other'?s.name:('PT: '+s.name);
+  var summary=(t==='adidas'&&/^adidas$/i.test(s.name))?'Adidas':(TY(t).g||'')+s.name;
   return {summary:summary,description:lines.join('\n'),location:s.location||'',
     start:{dateTime:gWall(s.date,s.startMins),timeZone:'Europe/London'},
     end:{dateTime:gWall(s.date,s.startMins+(s.duration||60)),timeZone:'Europe/London'},colorId:'10'};
@@ -2752,7 +2812,7 @@ function findLooseRepeats(){
   var today=iso(new Date()),from=iso(aD(new Date(),-56)),groups={},out=[];
   Object.keys(sess).forEach(function(k){
     var s=sess[k];
-    if(!s.name||s.type==='other'||s.date<from)return;          // multi-day away blocks aren't repeats
+    if(!s.name||TY(s.type).multiDay||s.date<from)return;          // multi-day away blocks aren't repeats
     var rk=repeatKey(s);(groups[rk]=groups[rk]||[]).push({k:k,s:s});
   });
   Object.keys(groups).forEach(function(rk){
@@ -2769,7 +2829,7 @@ function findLooseRepeats(){
   return out;
 }
 function looseGroupOf(key){
-  var s=sess[key];if(!s||!s.name||s.type==='other'||s.date<iso(new Date()))return null;
+  var s=sess[key];if(!s||!s.name||TY(s.type).multiDay||s.date<iso(new Date()))return null;
   var rk=repeatKey(s);
   return findLooseRepeats().filter(function(g){return g.rk===rk;})[0]||null;
 }
@@ -2908,7 +2968,8 @@ document.getElementById('clrGo').onclick=doClear;
 // ===== SESSIONS: WHAT WAS BOOKED AND HELD PER PERSON IN A PAY CYCLE =====
 // Money lives in the finance spreadsheet; this gives it the counts only the calendar knows, for its
 // "Units This Month" column. Paid work only.
-var SES_TYPES={pt:'PT',coaching:'Coaching',crossfit:'Crossfit',adidas:'Adidas'},sesRange=null;
+var SES_TYPES={},sesRange=null;
+Object.keys(TYPES).forEach(function(t){if(TYPES[t].paid)SES_TYPES[t]=TYPES[t].name;});
 // The pay cycle containing date d: from day SET.cycleDay of one month to the day before it in the next.
 function cycleRange(d){
   var cd=SET.cycleDay||1,y=d.getFullYear(),m=d.getMonth();
@@ -2976,9 +3037,9 @@ document.getElementById('sesFrom').onchange=document.getElementById('sesTo').onc
 };
 
 function expCSV(){
-  var rows=['Date,Day,Client,Start Time,Duration (mins),Rate/hr,Earnings,Type,Location,Focus,Phone,Email,Notes,Recurring'];
+  var rows=['Date,Day,Client,Start Time,Duration (mins),Fee (per hour for Crossfit),Value,Type,Status,Location,Focus,Phone,Email,Notes,Recurring'];
   function q(v){return '"'+String(v||'').replace(/"/g,'""')+'"';}
-  Object.keys(sess).sort().forEach(function(k){var s=sess[k];var d=new Date(s.date+'T12:00:00');rows.push([s.date,DF[d.getDay()],q(s.name),m2t(s.startMins),s.duration||60,s.rate||0,ef(s),s.type||'pt',q(s.location),q(s.focus),q(s.phone),q(s.email),q(s.notes),s.recurring?'Yes':'No'].join(','));});
+  Object.keys(sess).sort().forEach(function(k){var s=sess[k];var d=new Date(s.date+'T12:00:00');rows.push([s.date,DF[d.getDay()],q(s.name),m2t(s.startMins),s.duration||60,s.rate||0,ef(s),s.type||'pt',effStatus(s),q(s.location),q(s.focus),q(s.phone),q(s.email),q(s.notes),s.recurring?'Yes':'No'].join(','));});
   var blob=new Blob([rows.join('\n')],{type:'text/csv'});
   var url=URL.createObjectURL(blob);
   var a=document.createElement('a');a.href=url;a.download='coaching-by-craig.csv';a.click();URL.revokeObjectURL(url);toast('CSV exported');
@@ -2993,7 +3054,7 @@ document.getElementById('bSave').onclick=svSess;
 document.getElementById('viewX').onclick=cView;
 document.getElementById('fST').addEventListener('change', function(){
   var type=document.getElementById('fType').value;
-  if(type==='crossfit'||type==='adidas'){
+  if(TY(type).endTime&&!TY(type).multiDay){
     var sm=t2m(this.value);
     var et=document.getElementById('fET');
     if(!et.value||t2m(et.value)<=sm){
@@ -3011,6 +3072,13 @@ function openSettings(){
   document.getElementById('setMin').value=SET.regularMin;
   document.getElementById('setPrem').value=SET.premiumOver;
   document.getElementById('setCycle').value=SET.cycleDay||1;
+  document.getElementById('setAdiFrom').value=SET.adiFrom;
+  document.getElementById('setAdiTo').value=SET.adiTo;
+  document.getElementById('setAdiFee').value=SET.adiFee;
+  document.getElementById('setCredit').value=SET.creditDays;
+  document.getElementById('setBlockLow').value=SET.blockLow;
+  document.getElementById('setNotSeen').value=SET.notSeenDays;
+  document.getElementById('setRescreen').value=SET.rescreenWeeks;
   bkRefresh();
   document.getElementById('setMo').classList.add('open');
 }
@@ -3028,6 +3096,14 @@ function saveSettings(){
   SET.premiumOver=isNaN(po)?70:po;
   var cy=parseInt(document.getElementById('setCycle').value,10);
   SET.cycleDay=(cy>=1&&cy<=28)?cy:1;
+  function num(id,min,max,def){var v=parseFloat(document.getElementById(id).value);return (isNaN(v)||v<min||v>max)?def:v;}
+  SET.adiFrom=Math.round(num('setAdiFrom',0,23,7));
+  SET.adiTo=Math.round(num('setAdiTo',1,24,15));if(SET.adiTo<=SET.adiFrom)SET.adiTo=Math.min(24,SET.adiFrom+1);
+  SET.adiFee=num('setAdiFee',0,100000,150);
+  SET.creditDays=Math.round(num('setCredit',1,365,30));
+  SET.blockLow=Math.round(num('setBlockLow',0,100,2));
+  SET.notSeenDays=Math.round(num('setNotSeen',1,365,28));
+  SET.rescreenWeeks=Math.round(num('setRescreen',1,104,12));
   sesRange=null;                                              // the Sessions tab picks up the new cycle
   applySettings(SET);sdSet();
   document.getElementById('setMo').classList.remove('open');
@@ -3259,7 +3335,7 @@ document.getElementById('tSes').onclick=function(){showTab('Ses');};
 document.getElementById('tTask').onclick=function(){showTab('Task');};
 document.getElementById('tAna').onclick=function(){showTab('Ana');};
 
-document.getElementById('cliList').onclick=function(e){var c=e.target.closest('.clic');if(!c)return;oCli(c.getAttribute('data-cid'),c.getAttribute('data-cli'));};
+document.getElementById('cliList').onclick=function(e){if(e.target.closest('#cliLapsedToggle')){cliShowLapsed=!cliShowLapsed;rClients();return;}var c=e.target.closest('.clic');if(!c)return;oCli(c.getAttribute('data-cid'),c.getAttribute('data-cli'));};
 document.getElementById('cliSearch').oninput=function(){cliFilter=this.value;rClients();};
 document.getElementById('cliX').onclick=cCli;
 document.getElementById('cliMo').onclick=function(e){if(e.target===this)cCli();};
@@ -3267,6 +3343,7 @@ document.getElementById('ceX').onclick=cCliEdit;
 document.getElementById('ceCancel').onclick=cCliEdit;
 document.getElementById('ceSave').onclick=saveCliEdit;
 document.getElementById('ceDelete').onclick=deleteClient;
+document.getElementById('ceLapse').onclick=lapseClient;
 document.getElementById('cliEditMo').onclick=function(e){if(e.target===this)cCliEdit();};
 document.getElementById('sPrev').onclick=function(){sumMonth.setMonth(sumMonth.getMonth()-1);rSummary();};
 document.getElementById('sNext').onclick=function(){sumMonth.setMonth(sumMonth.getMonth()+1);rSummary();};
