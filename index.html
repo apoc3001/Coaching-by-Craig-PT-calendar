@@ -55,10 +55,12 @@ header{background:var(--dark);border-bottom:1px solid var(--border);padding:0 20
 .leg{display:flex;gap:16px;padding:0 20px 10px;align-items:center;flex-wrap:wrap;}
 .li{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);}
 .ld{width:9px;height:9px;border:1px solid;flex-shrink:0;}
-.cw{padding:0 20px 60px;overflow-x:auto;}
+.cw{margin:0 20px;padding:0 0 60px;overflow-x:auto;}   /* margin, not padding: nothing slides into a side strip beside the pinned times */
 /* Day names stay in view under the top bar while the week scrolls. The row sits outside .cw (a sideways scroller would stop it sticking) and follows its sideways scroll. */
-.cwh{position:sticky;top:var(--stk,56px);z-index:50;padding:0 20px;overflow:hidden;background:var(--black);}
+.cwh{position:sticky;top:var(--stk,56px);z-index:50;margin:0 20px;overflow:hidden;background:var(--black);}
 .cgb{border-top:none;}
+/* The times (and the corner above them) stay in view when the week is scrolled sideways, above any session blocks. */
+.cgb .tl,.cgh .tc{position:sticky;left:0;z-index:30;}
 /* Month summary (wall calendar) */
 .sumwrap{padding:0 20px 60px;overflow-x:auto;}
 .sumg{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;min-width:760px;}
@@ -230,8 +232,8 @@ canvas{display:block;}
   .pl{font-size:9px;}
   .pv{font-size:16px;}
   .leg{padding:0 12px 6px;gap:8px;font-size:10px;}
-  .cw{padding:0 0 80px;}
-  .cwh{padding:0;}
+  .cw{margin:0;padding:0 0 80px;}
+  .cwh{margin:0;}
   .cg{min-width:460px;}
   .aw{padding:12px;}
   .ag{grid-template-columns:1fr 1fr;}
