@@ -102,7 +102,7 @@ header{background:var(--dark);border-bottom:1px solid var(--border);padding:0 20
 .sc.dragover{background:rgba(198,241,53,.2);outline:1px dashed var(--lime);outline-offset:-2px;}
 .blk[draggable=true]{cursor:grab;}
 .blk.dragging{opacity:.4;}
-.ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:18px;color:rgba(198,241,53,.18);opacity:0;transition:opacity .1s;pointer-events:none;}
+.ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;letter-spacing:.5px;color:rgba(198,241,53,.6);opacity:0;transition:opacity .1s;pointer-events:none;white-space:nowrap;}
 .sck:hover .ph{opacity:1;}
 .blk{position:absolute;left:1px;right:1px;top:0;z-index:20;padding:3px 5px;overflow:hidden;cursor:pointer;border-radius:1px;}
 .blk.tb2{background:var(--booked-bg);border:1px solid var(--booked-border);border-left:3px solid var(--booked-accent);}
@@ -1216,7 +1216,7 @@ function bCell(col,row,mins,isH,csm,g){
     }
   }
   // Empty cells (incl. past, for retrospective entry) open the add modal.
-  var ph=mk('div','ph');ph.textContent='+';cell.appendChild(ph);
+  var ph=mk('div','ph');ph.textContent=m2t(mins);cell.appendChild(ph);   // shown on hover: the time this slot starts
   (function(ds2,m2){
     cell.onclick=function(){oAdd(ds2,m2);};
     cell.addEventListener('dragover',function(e){if(!draggingKey)return;e.preventDefault();e.dataTransfer.dropEffect='move';cell.classList.add('dragover');});
