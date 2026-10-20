@@ -1283,7 +1283,11 @@ function onTypeChange(type){
   var adiRow=document.getElementById('adidasRow');if(adiRow)adiRow.style.display=(type==='adidas')?'flex':'none';
   if(type!=='adidas')document.getElementById('fAdiFull').checked=false;
   if(type==='adidas'){var af=adiFull();document.getElementById('adiFullLbl').innerHTML='Full day ('+m2t(af.start)+' &ndash; '+m2t(af.end)+') <span style="color:var(--lime)">&pound;'+af.fee+'</span>';}
-  if(type==='adidas'&&!document.getElementById('fN').value.trim())document.getElementById('fN').value='Adidas';
+  // Crossfit and Adidas aren't client sessions: the name fills in with the type (still editable). Switching a new
+  // booking from one to the other swaps it; switching a new booking back to a client type clears it.
+  var fN=document.getElementById('fN'),nm=fN.value.trim(),auto={crossfit:'Crossfit',adidas:'Adidas'};
+  if(auto[type]&&(!nm||nm===auto.crossfit||nm===auto.adidas))fN.value=auto[type];
+  else if(!auto[type]&&!aEk&&(nm===auto.crossfit||nm===auto.adidas))fN.value='';
   if(TY(type).endTime&&!TY(type).multiDay){
     durWrap.style.display='none';
     etWrap.style.display='block';
