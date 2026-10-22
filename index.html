@@ -624,6 +624,10 @@ header{padding-top:env(safe-area-inset-top);}
       <div><label class="fl" for="setAdiFee">Day rate (£)</label><input class="fi" id="setAdiFee" type="number" min="0"></div>
     </div>
     <div class="fr2">
+      <div><label class="fl" for="setCfRate">Crossfit rate (£/hr)</label><input class="fi" id="setCfRate" type="number" min="0" step="0.01"></div>
+      <div></div>
+    </div>
+    <div class="fr2">
       <div><label class="fl" for="setCredit">Make-up credit lasts (days)</label><input class="fi" id="setCredit" type="number" min="1"></div>
       <div><label class="fl" for="setBlockLow">Block low warning at (left)</label><input class="fi" id="setBlockLow" type="number" min="0"></div>
     </div>
@@ -1014,11 +1018,11 @@ var MAX=7,SH=6,EH=21,RH=30,HR=(EH-SH)*2;
 // cals = which Google calendar each kind of session goes on (shared so every device files events the same way)
 // freshFrom = date bookings were re-entered from after "Clear all bookings" ('' if never)
 var SET={dayStart:6,dayEnd:21,dayTargets:[0,7,7,7,7,7,0],defaultDur:60,regularMin:20,premiumOver:70,cals:{pt:'',away:'',shifts:''},freshFrom:'',cycleDay:27,
-  adiFrom:7,adiTo:15,adiFee:150,creditDays:30,blockLow:2,notSeenDays:28,rescreenWeeks:12};   // business rules, editable in Settings   // cycleDay = the day each pay cycle starts (the spreadsheet runs 27th to 26th)
+  adiFrom:7,adiTo:15,adiFee:150,cfRate:13.5,creditDays:30,blockLow:2,notSeenDays:28,rescreenWeeks:12};   // business rules, editable in Settings   // cycleDay = the day each pay cycle starts (the spreadsheet runs 27th to 26th)
 function ldSet(){try{var o=JSON.parse(localStorage.getItem('cbc6_settings')||'null');if(o&&typeof o==='object')return o;}catch(e){}return null;}
 function applySettings(o){
   if(o){
-    ['dayStart','dayEnd','defaultDur','regularMin','premiumOver','cycleDay','adiFrom','adiTo','adiFee','creditDays','blockLow','notSeenDays','rescreenWeeks'].forEach(function(k){if(typeof o[k]==='number'&&!isNaN(o[k]))SET[k]=o[k];});
+    ['dayStart','dayEnd','defaultDur','regularMin','premiumOver','cycleDay','adiFrom','adiTo','adiFee','cfRate','creditDays','blockLow','notSeenDays','rescreenWeeks'].forEach(function(k){if(typeof o[k]==='number'&&!isNaN(o[k]))SET[k]=o[k];});
     if(Array.isArray(o.dayTargets)&&o.dayTargets.length===7)SET.dayTargets=o.dayTargets.map(function(n){return (typeof n==='number'&&!isNaN(n))?n:0;});
     else if(typeof o.dailyTarget==='number'){var t=o.dailyTarget;SET.dayTargets=[0,t,t,t,t,t,0];} // migrate old single target
     if(o.cals&&typeof o.cals==='object')['pt','away','shifts'].forEach(function(k){if(typeof o.cals[k]==='string')SET.cals[k]=o.cals[k];});
@@ -1313,6 +1317,8 @@ function onTypeChange(type){
     etWrap.style.display='none';
     edWrap.style.display='none';
   }
+  // New bookings: Crossfit fills in its rate and the last shift's details; switching away undoes what it filled.
+  if(!aEk&&aSlot){if(type==='crossfit')copyLastCrossfit();else if(pf&&pf.id==='type:crossfit')uncopyLastSession();}
 }
 
 // Adidas full day: the hours and day rate come from Settings; unticking leaves the times/fee free to edit for a one-off session.
@@ -1344,11 +1350,61 @@ function fillClientList(){
   Object.keys(sess).forEach(function(k){var s=sess[k];if(isClientType(s.type)&&s.name)names[s.name]=1;});
   dl.innerHTML=Object.keys(names).sort().map(function(n){return '<option value="'+esc(n)+'">';}).join('');
 }
-// When a known client's name is entered, prefill their saved contact + default rate.
+// New bookings: when the name matches a client, copy the details of their latest session (the last one on or before
+// this date, else their next one), so a changed focus or location carries forward. Only fields still empty, at their
+// default, or holding what an earlier copy put there are filled: anything typed by hand is left alone.
+// Crossfit works the same way: its hourly rate from Settings, plus the location, focus and length of the last shift.
+var pf=null;   // {id: client id or 'type:crossfit' copied from, <field id>: value it put there}
+function lastSessionWhere(match,date){
+  var best=null,next=null;
+  function later(a,b){return a.date>b.date||(a.date===b.date&&a.startMins>b.startMins);}
+  Object.keys(sess).forEach(function(k){
+    var s=sess[k];if(!match(s))return;
+    if(s.date<=date){if(!best||later(s,best))best=s;}
+    else if(!next||later(next,s))next=s;
+  });
+  return best||next;
+}
+function lastSessionOf(c,date){
+  return lastSessionWhere(function(s){return isClientType(s.type)&&(s.clientId===c.id||normName(s.name)===normName(c.name));},date);
+}
+function pfDefaults(){var st=t2m(document.getElementById('fST').value);return {fType:'pt',fD:String(SET.defaultDur),fR:'',fLoc:'',fFoc:'',fET:isNaN(st)?'':m2i(st+60)};}
+function pfPut(id,v,prev,now){
+  var el=document.getElementById(id),cur=el.value,d=pfDefaults()[id];v=(v===undefined||v===null)?'':String(v);
+  if(cur!==''&&cur!==d&&cur!==prev[id])return;                       // changed by hand: keep
+  if(id==='fD'&&!el.querySelector('option[value="'+v+'"]'))return;    // a length the list doesn't offer
+  if(id==='fType'){if(cur!==v){el.value=v;onTypeChange(v);}}else el.value=v;
+  now[id]=v;
+}
+function copyLastSession(c){
+  if(aEk||!aSlot||(pf&&pf.id===c.id))return;
+  var s=lastSessionOf(c,aSlot.date),prev=pf||{},now={id:c.id};
+  if(s){pfPut('fType',s.type||'pt',prev,now);pfPut('fD',s.duration||60,prev,now);pfPut('fR',s.rate||'',prev,now);pfPut('fLoc',s.location||'',prev,now);pfPut('fFoc',s.focus||'',prev,now);}
+  pf=now;
+}
+function copyLastCrossfit(){
+  if(aEk||!aSlot||(pf&&pf.id==='type:crossfit'))return;
+  var s=lastSessionWhere(function(x){return x.type==='crossfit';},aSlot.date),prev=pf||{},now={id:'type:crossfit'};
+  pfPut('fR',SET.cfRate.toFixed(2),prev,now);
+  if(s){
+    pfPut('fLoc',s.location||'',prev,now);pfPut('fFoc',s.focus||'',prev,now);
+    var st=t2m(document.getElementById('fST').value);if(!isNaN(st))pfPut('fET',m2i(st+(s.duration||60)),prev,now);
+  }
+  pf=now;
+}
+function uncopyLastSession(){                                         // name no longer matches: undo what was copied
+  if(!pf)return;var d=pfDefaults();
+  Object.keys(pf).forEach(function(id){if(id==='id')return;var el=document.getElementById(id);if(el.value!==pf[id])return;
+    if(id==='fType'){el.value=d.fType;onTypeChange(d.fType);}else el.value=d[id];});
+  pf=null;
+}
+// When a known client's name is entered, prefill their saved contact, default rate and latest session's details.
 function prefillFromClient(){
-  if(!isClientType(document.getElementById('fType').value)){document.getElementById('makeupRow').style.display='none';return;}
   var c=findClientByName(document.getElementById('fN').value);
+  if(!c&&!aEk&&pf&&String(pf.id).indexOf('type:')!==0)uncopyLastSession();   // a Crossfit copy isn't tied to the name
+  if(!isClientType(document.getElementById('fType').value)){document.getElementById('makeupRow').style.display='none';return;}
   if(!c){document.getElementById('makeupRow').style.display='none';return;}
+  copyLastSession(c);
   if(c.phone&&!document.getElementById('fPh').value)document.getElementById('fPh').value=c.phone;
   if(c.email&&!document.getElementById('fEm').value)document.getElementById('fEm').value=c.email;
   if(c.defaultRate&&!document.getElementById('fR').value)document.getElementById('fR').value=c.defaultRate;
@@ -1360,7 +1416,7 @@ function prefillFromClient(){
 }
 
 function oAdd(date,sm){
-  aSlot={date:date,sm:sm};aEk=null;
+  aSlot={date:date,sm:sm};aEk=null;pf=null;
   fillClientList();
   document.getElementById('addTit').textContent='BOOK SESSION';
   document.getElementById('addSub').textContent=fd(date)+'  \u00b7  '+m2t(sm);
@@ -1390,7 +1446,7 @@ function oAdd(date,sm){
 function oEdit(key){
   var s=sess[key];if(!s)return;
   fillClientList();
-  aSlot={date:s.date,sm:s.startMins};aEk=key;
+  aSlot={date:s.date,sm:s.startMins};aEk=key;pf=null;
   document.getElementById('addTit').textContent='EDIT SESSION';
   document.getElementById('addSub').textContent=fd(s.date)+'  \u00b7  '+m2t(s.startMins);
   document.getElementById('fN').value=s.name;
@@ -3233,6 +3289,7 @@ function openSettings(){
   document.getElementById('setAdiFrom').value=SET.adiFrom;
   document.getElementById('setAdiTo').value=SET.adiTo;
   document.getElementById('setAdiFee').value=SET.adiFee;
+  document.getElementById('setCfRate').value=SET.cfRate.toFixed(2);
   document.getElementById('setCredit').value=SET.creditDays;
   document.getElementById('setBlockLow').value=SET.blockLow;
   document.getElementById('setNotSeen').value=SET.notSeenDays;
@@ -3258,6 +3315,7 @@ function saveSettings(){
   SET.adiFrom=Math.round(num('setAdiFrom',0,23,7));
   SET.adiTo=Math.round(num('setAdiTo',1,24,15));if(SET.adiTo<=SET.adiFrom)SET.adiTo=Math.min(24,SET.adiFrom+1);
   SET.adiFee=num('setAdiFee',0,100000,150);
+  SET.cfRate=num('setCfRate',0,1000,13.5);
   SET.creditDays=Math.round(num('setCredit',1,365,30));
   SET.blockLow=Math.round(num('setBlockLow',0,100,2));
   SET.notSeenDays=Math.round(num('setNotSeen',1,365,28));
