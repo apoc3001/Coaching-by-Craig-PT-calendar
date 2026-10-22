@@ -1037,15 +1037,16 @@ function targetFor(dow){var t=SET.dayTargets;return (t&&typeof t[dow]==='number'
 //  paid:     paid work, listed on the Sessions tab
 //  hourly:   the fee is per hour
 //  endTime:  booked with an end time instead of a length;  multiDay: can span several days (time away)
-//  cal:      which Google calendar ('pt', 'shifts', 'away' or 'primary');  shared: the shifts calendar Jess sees
+//  cal:      which Google calendar ('pt', 'shifts', 'away' or 'primary'; 'none' = not sent);  shared: the shifts calendar Jess sees
 //  g:        prefix for the Google event title;  badge/col/cls: how it looks on the calendar
+// Crossfit isn't sent: Craig keeps it in the calendar he shares with Jess by hand (2026-10-22).
 var TYPES={
   pt:      {label:'PT Session',name:'PT',client:1,target:1,paid:1,cal:'pt',g:'PT: '},
   coaching:{label:'Coaching (mindset / habits)',name:'Coaching',client:1,target:1,paid:1,cal:'pt',g:'Coaching: ',badge:'COACHING',col:'#8b7cf0'},
   consult: {label:'Consultation (free)',name:'Consultation',cal:'pt',g:'Consult: ',badge:'CONSULT',col:'#6a90d0',cls:'tcon'},
   personal:{label:'Personal (my training)',name:'Personal',cal:'primary',g:'Training: ',badge:'ME',col:'#30c0b0',cls:'tpers'},
   robyn:   {label:'Robyn (drop-off / pick-up)',name:'Robyn',cal:'shifts',shared:1,g:'Robyn: ',badge:'ROBYN',col:'#ec6ba4',cls:'trob'},
-  crossfit:{label:'Crossfit',name:'Crossfit',paid:1,hourly:1,endTime:1,cal:'shifts',shared:1,g:'CF: ',badge:'CF',col:'#f0a020',cls:'tcf'},
+  crossfit:{label:'Crossfit',name:'Crossfit',paid:1,hourly:1,endTime:1,cal:'none',shared:1,g:'CF: ',badge:'CF',col:'#f0a020',cls:'tcf'},
   adidas:  {label:'Adidas',name:'Adidas',paid:1,endTime:1,cal:'shifts',shared:1,g:'Adidas: ',badge:'ADIDAS',col:'#f2f2f2',cls:'tadi'},
   other:   {label:'Other (time away)',name:'Away',endTime:1,multiDay:1,cal:'away',g:'',badge:'AWAY',col:'#b060b0',cls:'toth'}
 };
@@ -1629,7 +1630,8 @@ function oView(key){
     (s.email?'<div class="vf"><div class="vfl">Email</div><div class="vfv"><a href="mailto:'+esc(s.email)+'" style="color:var(--lime);text-decoration:none">'+esc(s.email)+'</a></div></div>':'')+
     (s.notes?vf('Notes',esc(s.notes),''):'')+
     statusRow+
-    '<button class="gb" id="gpBtn"'+(gConn?'':' disabled')+'>'+gSVG()+(s.gcalId?' Re-sync to Google Calendar':' Sync to Google Calendar')+'</button>';
+    (inGoogle(s.type)||s.gcalId?'<button class="gb" id="gpBtn"'+(gConn?'':' disabled')+'>'+gSVG()+(!inGoogle(s.type)?' Remove from Google Calendar':s.gcalId?' Re-sync to Google Calendar':' Sync to Google Calendar')+'</button>':
+      '<div style="font-size:12px;color:var(--muted);margin-top:10px">Not sent to Google Calendar</div>');
   if(TY(s.type).multiDay){
     // Time away: list everything booked during the whole trip, so it can be moved.
     var trip=Object.keys(sess).filter(function(k2){var x=sess[k2];return TY(x.type).multiDay&&(s.recurringId?x.recurringId===s.recurringId:k2===key);});
@@ -1653,7 +1655,7 @@ function oView(key){
     }
     sd();render();oView(key);
   };}
-  document.getElementById('gpBtn').onclick=function(){gcalSyncOne(key);};
+  var gpb=document.getElementById('gpBtn');if(gpb)gpb.onclick=function(){gcalSyncOne(key);};
   var acts=document.getElementById('viewActs');acts.innerHTML='';
   var eb=mk('button','bs');eb.textContent='Edit';eb.style.flex='1';
   eb.onclick=function(){cView();oEdit(key);};acts.appendChild(eb);
@@ -2759,7 +2761,7 @@ function calName(id){
 function calForType(type){
   var c=TY(type).cal;
   if(c==='primary')return 'primary';
-  if(c==='shifts')return selCal3||selCal2||selCal;        // shared with Jess
+  if(c==='shifts'||c==='none')return selCal3||selCal2||selCal;   // shared with Jess ('none': only to find events made before it stopped being sent)
   if(c==='away')return selCal2||selCal;
   return selCal;
 }
@@ -2786,8 +2788,9 @@ function gcalNewId(){var a='0123456789abcdefghijklmnopqrstuv',id='cbc';for(var i
 function gStrip(s){var o={};Object.keys(s).forEach(function(f){if(G_FIELDS.indexOf(f)===-1)o[f]=s[f];});return o;}
 function gForget(s){G_FIELDS.forEach(function(f){delete s[f];});}
 // What Google needs for this session: '' (nothing), 'create', 'update' or 'delete'.
+function inGoogle(t){return TY(t).cal!=='none';}
 function gcalNeed(s){
-  if(effStatus(s)==='cancelled')return (s.gcalId||s.gcalTry)?'delete':'';     // cancelled sessions are not kept in Google
+  if(!inGoogle(s.type)||effStatus(s)==='cancelled')return (s.gcalId||s.gcalTry)?'delete':'';   // not kept in Google: remove any event the app made
   if(!s.gcalId)return 'create';
   if(!s.gcalSig)return '';                                       // synced by an older version: left alone until it changes or Sync is pressed
   return s.gcalSig===gcalSigOf(s)?'':'update';
@@ -2813,7 +2816,7 @@ function gcalNote(){
     if(old&&stj(gStrip(old))===stj(gStrip(s)))return;              // only its Google bookkeeping changed
     gDirty[k]=1;changed=true;
     if(s.gcalId&&!s.gcalSig)s.gcalSig=((old&&old.type)||s.type||'pt')+'|?';     // first change since an older version synced it
-    if(!s.gcalId&&!s.gcalTry&&effStatus(s)!=='cancelled')s.gcalTry=gcalNewId();
+    if(!s.gcalId&&!s.gcalTry&&effStatus(s)!=='cancelled'&&inGoogle(s.type))s.gcalTry=gcalNewId();
   });
   gcalSeen();
   if(queued)fbSave('gcaldel');
@@ -2936,7 +2939,9 @@ function gcalSync(all,manual){
     if(stamped)sd();
   }
   Object.keys(gdel).forEach(function(id){jobs.push({del:id});});
-  (all?Object.keys(sess):Object.keys(gDirty)).forEach(function(k){
+  // Events the app made for a type that's no longer sent (Crossfit) are removed on any run, not just Sync all.
+  var keys=all?Object.keys(sess):Object.keys(gDirty).concat(Object.keys(sess).filter(function(k){var s=sess[k];return !gDirty[k]&&!inGoogle(s.type)&&(s.gcalId||s.gcalTry);}));
+  keys.forEach(function(k){
     var s=sess[k];
     if(s&&gcalNeed(s))jobs.push({key:k});else delete gDirty[k];
   });
@@ -2969,6 +2974,7 @@ function gcalSyncOne(k){
   var s=sess[k];if(!s)return;
   if(!gcalReady()){toast(gConn&&gTok?'Still loading your calendars — try again in a moment':'Connect Google Calendar first');return;}
   if(effStatus(s)==='cancelled'&&!s.gcalId&&!s.gcalTry){toast('Cancelled sessions are not kept in Google Calendar');return;}
+  if(!inGoogle(s.type)&&!s.gcalId&&!s.gcalTry){toast(TY(s.type).name+' isn’t sent to Google Calendar');return;}
   if(s.gcalId)s.gcalSig=(((s.gcalSig||'').split('|')[0])||s.type||'pt')+'|?';     // force a fresh copy to be sent
   gDirty[k]=1;saveGdirty();
   toast('Syncing…');
