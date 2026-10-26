@@ -239,7 +239,13 @@ canvas{display:block;}
   .leg{padding:0 12px 6px;gap:8px;font-size:10px;}
   .cw{margin:0;padding:0 0 80px;}
   .cwh{margin:0;}
-  .cg{min-width:460px;}
+  /* Phones: wider days (about four on screen, swipe for the rest) and blocks that lead with the name. Type labels,
+     fees, goals and end times are left off; the colours, the day totals and the session itself still have them. */
+  .cg{min-width:640px;grid-template-columns:40px repeat(7,1fr);}
+  .blk{padding:2px 4px;}
+  .blk .bb:not(.keep),.blk .br,.blk .bgoal,.blk .bgr,.blk .bte{display:none;}
+  .blk .bb.keep{position:static;display:inline-block;margin-top:2px;}
+  .blk .bn{white-space:normal;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;font-size:11px;line-height:1.2;}
   .aw{padding:12px;}
   .ag{grid-template-columns:1fr 1fr;}
   .umg{grid-template-columns:1fr;}
@@ -1216,6 +1222,18 @@ function rGrid(){
     g.appendChild(tl);
     for(var d=0;d<7;d++)bCell(d,row,mins,isH,sm[d],g);
   }
+  phoneScrollToday();
+}
+// Phones show about four days at a time: the first time a week is shown, start it at today (other weeks at Monday).
+// Later redraws (e.g. a change arriving from another device) leave the sideways position alone.
+var autoWeek='';
+function phoneScrollToday(){
+  var cw=document.getElementById('cw');
+  if(window.innerWidth>600||!cw||!cw.offsetParent||autoWeek===iso(ws))return;
+  autoWeek=iso(ws);
+  var ti=0;for(var d=0;d<7;d++)if(isTod(aD(ws,d)))ti=d;
+  var c=cw.querySelector('.sc'),w=c?c.getBoundingClientRect().width:0;
+  cw.scrollLeft=Math.round(ti*w);document.getElementById('cwh').scrollLeft=cw.scrollLeft;
 }
 
 function bCell(col,row,mins,isH,csm,g){
@@ -1267,13 +1285,13 @@ function bBlock(key,s,past,bh){
   if(est==='cancelled'){blk.style.opacity='.5';blk.style.borderLeftColor='#888780';blk.style.background='#88878018';}
   var nm=mk('div','bn');nm.textContent=s.name;if(est==='cancelled')nm.style.textDecoration='line-through';blk.appendChild(nm);
   var cw=clashWith(curAway,s);
-  if(cw){var cb=mk('div','bb');cb.textContent='CLASH';cb.title='Overlaps '+cw.name;cb.style.color='#ff6b6b';cb.style.borderColor='rgba(224,85,85,0.7)';cb.style.background='rgba(224,85,85,0.22)';blk.appendChild(cb);blk.style.boxShadow='inset 0 0 0 1px rgba(224,85,85,0.75)';}
-  if(est==='noshow'){var nsb=mk('div','bb');nsb.textContent='NO-SHOW';nsb.style.color='#e05555';nsb.style.borderColor='rgba(224,85,85,0.4)';nsb.style.background='rgba(224,85,85,0.15)';blk.appendChild(nsb);}
+  if(cw){var cb=mk('div','bb keep');cb.textContent='CLASH';cb.title='Overlaps '+cw.name;cb.style.color='#ff6b6b';cb.style.borderColor='rgba(224,85,85,0.7)';cb.style.background='rgba(224,85,85,0.22)';blk.appendChild(cb);blk.style.boxShadow='inset 0 0 0 1px rgba(224,85,85,0.75)';}
+  if(est==='noshow'){var nsb=mk('div','bb keep');nsb.textContent='NO-SHOW';nsb.style.color='#e05555';nsb.style.borderColor='rgba(224,85,85,0.4)';nsb.style.background='rgba(224,85,85,0.15)';blk.appendChild(nsb);}
   if(cl&&bh>=40){var pw=progWeekAt(cl,s.date);var cue=cl.motivation||cl.goals||'';var sub2=((pw!==null&&pw>0)?('Wk'+pw+(cue?' · ':'')):'')+cue;if(sub2){var gl=mk('div','bgoal');gl.textContent=sub2;blk.appendChild(gl);}
     if(cl.motivation&&cl.goals){var gr=mk('div','bgr');gr.textContent=cl.goals;blk.appendChild(gr);}}
   if(ty.badge){var tbg=mk('div','bb');tbg.textContent=ty.badge;tbg.style.color=ty.col;tbg.style.borderColor=hexA(ty.col,0.45);tbg.style.background=hexA(ty.col,0.15);blk.appendChild(tbg);}
   if(s.makeup){blk.style.borderStyle='dashed';var mub=mk('div','bb');mub.textContent='MAKE-UP';mub.style.color='var(--lime)';mub.style.borderColor='rgba(198,241,53,0.4)';mub.style.background='rgba(198,241,53,0.15)';blk.appendChild(mub);}
-  var tm=mk('div','bt');tm.textContent=m2t(s.startMins)+' - '+m2t(s.startMins+(s.duration||60));blk.appendChild(tm);
+  var tm=mk('div','bt');tm.innerHTML='<span>'+m2t(s.startMins)+'</span><span class="bte"> - '+m2t(s.startMins+(s.duration||60))+'</span>';blk.appendChild(tm);   // phones show the start only
   if(s.rate){var rt=mk('div','br');rt.textContent='\u00a3'+ef(s);blk.appendChild(rt);}
   if(s.recurring){var bd=mk('div','bb');bd.textContent='REC';blk.appendChild(bd);}
   (function(k){blk.onclick=function(e){e.stopPropagation();oView(k);};})(key);
@@ -3578,6 +3596,7 @@ function showTab(which){
     document.getElementById('p'+t).classList.toggle('active',t===which);
   });
   if(which==='Ana')rAna();
+  if(which==='Cal')phoneScrollToday();
   if(which==='Sum')rSummary();
   if(which==='Cli')rClients();
   if(which==='Ses')rSessions();
