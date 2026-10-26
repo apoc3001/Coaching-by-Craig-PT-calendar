@@ -1195,7 +1195,8 @@ function rGrid(){
   var sm=[];for(var d=0;d<7;d++)sm.push({});
   for(var d=0;d<7;d++){
     var ds=iso(aD(ws,d));
-    Object.keys(sess).forEach(function(k){if(k.indexOf(ds+'_')!==0)return;var s=sess[k];sm[d][m2r(s.startMins)]=k;});
+    // Each session goes in the half-hour row it starts in (12:45 sits in the 12:30 row, 15 minutes down it).
+    Object.keys(sess).forEach(function(k){if(k.indexOf(ds+'_')!==0)return;var r=Math.floor(m2r(sess[k].startMins));(sm[d][r]=sm[d][r]||[]).push(k);});
   }
   for(var row=0;row<HR;row++){
     var mins=r2m(row),isH=(mins%60)===30;
@@ -1210,15 +1211,17 @@ function bCell(col,row,mins,isH,csm,g){
   var ds=iso(aD(ws,col)),past=isPM(ds,mins);
   var cls='sc'+(isH?' sch':'')+(past?' scp':'')+' sck';
   var cell=mk('div',cls);
-  if(csm[row]!==undefined){
-    var k=csm[row],s=sess[k];
-    if(s){
+  if(csm[row]){
+    // Cancelled ones first so a live session starting in the same half hour is drawn on top.
+    csm[row].slice().sort(function(a,b){var x=sess[a],y=sess[b],cx=effStatus(x)==='cancelled'?0:1,cy=effStatus(y)==='cancelled'?0:1;return cx-cy||x.startMins-y.startMins;}).forEach(function(k){
+      var s=sess[k];if(!s)return;
       var bh=((s.duration||60)/30)*RH-2;
       var blk=bBlock(k,s,past,bh);
+      blk.style.top=((s.startMins-mins)/30*RH)+'px';
       cell.appendChild(blk);
       cell.style.overflow='visible';
       cell.style.zIndex='10';
-    }
+    });
   }
   // Empty cells (incl. past, for retrospective entry) open the add modal.
   var ph=mk('div','ph');ph.textContent=m2t(mins);cell.appendChild(ph);   // shown on hover: the time this slot starts
