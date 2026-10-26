@@ -113,6 +113,11 @@ header{background:var(--dark);border-bottom:1px solid var(--border);padding:0 20
 .blk.tcon{background:#0a1428;border:1px solid #3a5488;border-left:3px solid #6a90d0;}
 .blk.trob{background:#26101a;border:1px solid #7d3b58;border-left:3px solid #ec6ba4;}
 .blk.tadi{background:#1c1c1c;border:1px solid #6a6a6a;border-left:3px solid #f2f2f2;}
+/* My Gym cover: a yellow striped band behind the day. PT sessions sit on top of it; a tap on its empty part books
+   the slot underneath, a tap on its label opens it. */
+.blk.bgblk{left:0;right:0;z-index:5;pointer-events:none;background:repeating-linear-gradient(135deg,rgba(255,212,0,.14) 0 6px,rgba(255,212,0,.05) 6px 12px);border:1px solid rgba(255,212,0,.35);border-left:3px solid #ffd400;}
+.blk.bgblk>*{pointer-events:auto;cursor:pointer;}
+.blk.bgblk .bn{color:#ffd400;}
 .blk.isp{opacity:.5;cursor:pointer;}
 .bn{font-size:10px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;line-height:1.3;}
 .bt{font-size:9px;color:var(--muted);pointer-events:none;}
@@ -308,6 +313,7 @@ header{padding-top:env(safe-area-inset-top);}
     <div class="li"><span style="font-size:8px;font-weight:700;letter-spacing:1px;padding:1px 4px;border:1px solid rgba(48,192,176,.4);color:#30c0b0;background:rgba(48,192,176,.15)">ME</span>Personal</div>
     <div class="li"><span style="font-size:8px;font-weight:700;letter-spacing:1px;padding:1px 4px;border:1px solid rgba(240,160,32,.4);color:#f0a020;background:rgba(240,160,32,.15)">CF</span>Crossfit</div>
     <div class="li"><span style="font-size:8px;font-weight:700;letter-spacing:1px;padding:1px 4px;border:1px solid rgba(242,242,242,.45);color:#f2f2f2;background:rgba(242,242,242,.12)">ADIDAS</span>Adidas</div>
+    <div class="li"><span style="font-size:8px;font-weight:700;letter-spacing:1px;padding:1px 4px;border:1px solid rgba(255,212,0,.45);color:#ffd400;background:rgba(255,212,0,.14)">MY GYM</span>Cover (PT on top)</div>
     <div class="li"><span style="font-size:8px;font-weight:700;letter-spacing:1px;padding:1px 4px;border:1px solid rgba(236,107,164,.4);color:#ec6ba4;background:rgba(236,107,164,.15)">ROBYN</span>Drop-off / pick-up</div>
     <div class="li"><span style="font-size:8px;font-weight:700;letter-spacing:1px;padding:1px 4px;border:1px solid rgba(176,96,176,.4);color:#b060b0;background:rgba(176,96,176,.15)">AWAY</span>Holiday</div>
     <div class="li"><span style="font-size:8px;font-weight:700;letter-spacing:1px;padding:1px 4px;border:1px solid rgba(224,85,85,.4);color:#e05555;background:rgba(224,85,85,.15)">NO-SHOW</span></div>
@@ -364,7 +370,7 @@ header{padding-top:env(safe-area-inset-top);}
       </div>
       <div id="sesTable"></div>
       <textarea class="fi" id="sesCopyBox" rows="6" readonly style="display:none;margin-top:12px;font-size:12px"></textarea>
-      <div style="font-size:11px;color:var(--muted);margin-top:12px;line-height:1.6">PT, Coaching, Crossfit and Adidas only. <b>Booked</b> = held + no-shows + still to come (cancelled ones left out), so it's the figure for "Units This Month" at the start of a cycle; <b>Held</b> is what actually happened. Hours count everything booked.</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:12px;line-height:1.6">PT, Coaching, Crossfit, Adidas and My Gym cover only. <b>Booked</b> = held + no-shows + still to come (cancelled ones left out), so it's the figure for "Units This Month" at the start of a cycle; <b>Held</b> is what actually happened. Hours count everything booked.</div>
     </div>
   </div>
 </div>
@@ -465,7 +471,7 @@ header{padding-top:env(safe-area-inset-top);}
     <div class="mt" id="addTit">BOOK SESSION</div>
     <div class="ms" id="addSub"></div>
     <div class="fr"><label class="fl" for="fN">Client Name</label><input class="fi" id="fN" placeholder="e.g. Sarah Johnson" autocomplete="off" list="clientNames"><datalist id="clientNames"></datalist></div>
-    <div class="fr"><label class="fl" for="fType">Session Type</label><select class="fi" id="fType" onchange="onTypeChange(this.value)"><option value="pt">PT Session</option><option value="coaching">Coaching (mindset / habits)</option><option value="consult">Consultation (free)</option><option value="personal">Personal (my training)</option><option value="robyn">Robyn (drop-off / pick-up)</option><option value="crossfit">Crossfit</option><option value="adidas">Adidas</option><option value="other">Other</option></select></div>
+    <div class="fr"><label class="fl" for="fType">Session Type</label><select class="fi" id="fType" onchange="onTypeChange(this.value)"><option value="pt">PT Session</option><option value="coaching">Coaching (mindset / habits)</option><option value="consult">Consultation (free)</option><option value="personal">Personal (my training)</option><option value="robyn">Robyn (drop-off / pick-up)</option><option value="crossfit">Crossfit</option><option value="adidas">Adidas</option><option value="mygym">My Gym cover</option><option value="other">Other</option></select></div>
     <div class="tr2" id="adidasRow" style="display:none">
       <label class="tw"><input type="checkbox" id="fAdiFull" onchange="onAdidasFull(this.checked)"><div class="tt"></div><div class="th"></div></label>
       <span style="font-size:13px" id="adiFullLbl">Full day (7am &ndash; 3pm) <span style="color:var(--lime)">&pound;150</span></span>
@@ -625,7 +631,7 @@ header{padding-top:env(safe-area-inset-top);}
     </div>
     <div class="fr2">
       <div><label class="fl" for="setCfRate">Crossfit rate (£/hr)</label><input class="fi" id="setCfRate" type="number" min="0" step="0.01"></div>
-      <div></div>
+      <div><label class="fl" for="setGymRate">My Gym cover rate (£/hr)</label><input class="fi" id="setGymRate" type="number" min="0" step="0.01"></div>
     </div>
     <div class="fr2">
       <div><label class="fl" for="setCredit">Make-up credit lasts (days)</label><input class="fi" id="setCredit" type="number" min="1"></div>
@@ -1018,11 +1024,11 @@ var MAX=7,SH=6,EH=21,RH=30,HR=(EH-SH)*2;
 // cals = which Google calendar each kind of session goes on (shared so every device files events the same way)
 // freshFrom = date bookings were re-entered from after "Clear all bookings" ('' if never)
 var SET={dayStart:6,dayEnd:21,dayTargets:[0,7,7,7,7,7,0],defaultDur:60,regularMin:20,premiumOver:70,cals:{pt:'',away:'',shifts:''},freshFrom:'',cycleDay:27,
-  adiFrom:7,adiTo:15,adiFee:150,cfRate:13.5,creditDays:30,blockLow:2,notSeenDays:28,rescreenWeeks:12};   // business rules, editable in Settings   // cycleDay = the day each pay cycle starts (the spreadsheet runs 27th to 26th)
+  adiFrom:7,adiTo:15,adiFee:150,cfRate:13.5,gymRate:0,creditDays:30,blockLow:2,notSeenDays:28,rescreenWeeks:12};   // business rules, editable in Settings   // cycleDay = the day each pay cycle starts (the spreadsheet runs 27th to 26th)
 function ldSet(){try{var o=JSON.parse(localStorage.getItem('cbc6_settings')||'null');if(o&&typeof o==='object')return o;}catch(e){}return null;}
 function applySettings(o){
   if(o){
-    ['dayStart','dayEnd','defaultDur','regularMin','premiumOver','cycleDay','adiFrom','adiTo','adiFee','cfRate','creditDays','blockLow','notSeenDays','rescreenWeeks'].forEach(function(k){if(typeof o[k]==='number'&&!isNaN(o[k]))SET[k]=o[k];});
+    ['dayStart','dayEnd','defaultDur','regularMin','premiumOver','cycleDay','adiFrom','adiTo','adiFee','cfRate','gymRate','creditDays','blockLow','notSeenDays','rescreenWeeks'].forEach(function(k){if(typeof o[k]==='number'&&!isNaN(o[k]))SET[k]=o[k];});
     if(Array.isArray(o.dayTargets)&&o.dayTargets.length===7)SET.dayTargets=o.dayTargets.map(function(n){return (typeof n==='number'&&!isNaN(n))?n:0;});
     else if(typeof o.dailyTarget==='number'){var t=o.dailyTarget;SET.dayTargets=[0,t,t,t,t,t,0];} // migrate old single target
     if(o.cals&&typeof o.cals==='object')['pt','away','shifts'].forEach(function(k){if(typeof o.cals[k]==='string')SET.cals[k]=o.cals[k];});
@@ -1038,6 +1044,7 @@ function targetFor(dow){var t=SET.dayTargets;return (t&&typeof t[dow]==='number'
 //  hourly:   the fee is per hour
 //  endTime:  booked with an end time instead of a length;  multiDay: can span several days (time away)
 //  cal:      which Google calendar ('pt', 'shifts', 'away' or 'primary'; 'none' = not sent);  shared: the shifts calendar Jess sees
+//  bg:       drawn as a background band that other sessions sit on top of, and doesn't count as an overlap with them
 //  g:        prefix for the Google event title;  badge/col/cls: how it looks on the calendar
 // Crossfit isn't sent: Craig keeps it in the calendar he shares with Jess by hand (2026-10-22).
 var TYPES={
@@ -1048,6 +1055,7 @@ var TYPES={
   robyn:   {label:'Robyn (drop-off / pick-up)',name:'Robyn',cal:'shifts',shared:1,g:'Robyn: ',badge:'ROBYN',col:'#ec6ba4',cls:'trob'},
   crossfit:{label:'Crossfit',name:'Crossfit',paid:1,hourly:1,endTime:1,cal:'none',shared:1,g:'CF: ',badge:'CF',col:'#f0a020',cls:'tcf'},
   adidas:  {label:'Adidas',name:'Adidas',paid:1,endTime:1,cal:'shifts',shared:1,g:'Adidas: ',badge:'ADIDAS',col:'#f2f2f2',cls:'tadi'},
+  mygym:   {label:'My Gym cover',name:'My Gym',paid:1,hourly:1,endTime:1,bg:1,cal:'shifts',shared:1,g:'My Gym: ',badge:'MY GYM',col:'#ffd400',cls:'tgym'},
   other:   {label:'Other (time away)',name:'Away',endTime:1,multiDay:1,cal:'away',g:'',badge:'AWAY',col:'#b060b0',cls:'toth'}
 };
 function TY(t){return TYPES[t||'pt']||TYPES.pt;}
@@ -1130,6 +1138,8 @@ function migrateClients(){
   if(document.getElementById('pCli').classList.contains('active'))rClients();
 }
 function sk(d,m){return d+'_'+m;}
+// A background shift (My Gym cover) has its own key, so a PT session can start at the same time as it.
+function keyFor(type,d,m){return sk(d,m)+(TY(type).bg?'_bg':'');}
 function gMon(d){var dt=new Date(d);dt.setHours(0,0,0,0);var day=dt.getDay();dt.setDate(dt.getDate()-(day===0?6:day-1));return dt;}
 function aD(d,n){var r=new Date(d);r.setDate(r.getDate()+n);return r;}
 function iso(d){return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate());}
@@ -1147,7 +1157,7 @@ function fd(ds){var d=new Date(ds+'T12:00:00');return DF[d.getDay()]+' '+d.getDa
 
 function render(){curAway=awayIndex();rWL();rSum();rGrid();}
 // ---- Clashes with time away: a session that overlaps an Away block is flagged so it can be moved ----
-var curAway={};
+var curAway={},curBands={};   // time away, and My Gym bands (by date) for the week being drawn
 function awayIndex(){
   var ix={};
   Object.keys(sess).forEach(function(k){var s=sess[k];if(TY(s.type).multiDay&&effStatus(s)!=='cancelled')(ix[s.date]=ix[s.date]||[]).push(s);});
@@ -1193,6 +1203,7 @@ function rGrid(){
     hg.appendChild(h);
   }
   var sm=[];for(var d=0;d<7;d++)sm.push({});
+  curBands={};Object.keys(sess).forEach(function(k){var s=sess[k];if(TY(s.type).bg&&effStatus(s)!=='cancelled')(curBands[s.date]=curBands[s.date]||[]).push(s);});
   for(var d=0;d<7;d++){
     var ds=iso(aD(ws,d));
     // Each session goes in the half-hour row it starts in (12:45 sits in the 12:30 row, 15 minutes down it).
@@ -1212,16 +1223,25 @@ function bCell(col,row,mins,isH,csm,g){
   var cls='sc'+(isH?' sch':'')+(past?' scp':'')+' sck';
   var cell=mk('div',cls);
   if(csm[row]){
-    // Cancelled ones first so a live session starting in the same half hour is drawn on top.
-    csm[row].slice().sort(function(a,b){var x=sess[a],y=sess[b],cx=effStatus(x)==='cancelled'?0:1,cy=effStatus(y)==='cancelled'?0:1;return cx-cy||x.startMins-y.startMins;}).forEach(function(k){
+    // Background shifts first, then cancelled, then live, so the live sessions are drawn on top.
+    function rank(x){return TY(x.type).bg?0:effStatus(x)==='cancelled'?1:2;}
+    var live=false;
+    csm[row].slice().sort(function(a,b){var x=sess[a],y=sess[b];return rank(x)-rank(y)||x.startMins-y.startMins;}).forEach(function(k){
       var s=sess[k];if(!s)return;
       var bh=((s.duration||60)/30)*RH-2;
       var blk=bBlock(k,s,past,bh);
       blk.style.top=((s.startMins-mins)/30*RH)+'px';
+      if(TY(s.type).bg)blk.classList.add('bgblk');
+      else{
+        live=true;
+        // On a My Gym band: inset from the left so a strip of the band stays visible down the whole shift.
+        var e2=s.startMins+(s.duration||60);
+        if((curBands[s.date]||[]).some(function(b){return b.startMins<e2&&s.startMins<b.startMins+(b.duration||60);}))blk.style.left='10px';
+      }
       cell.appendChild(blk);
       cell.style.overflow='visible';
-      cell.style.zIndex='10';
     });
+    cell.style.zIndex=live?'10':'9';      // a band-only cell sits under every cell with a session in it
   }
   // Empty cells (incl. past, for retrospective entry) open the add modal.
   var ph=mk('div','ph');ph.textContent=m2t(mins);cell.appendChild(ph);   // shown on hover: the time this slot starts
@@ -1241,7 +1261,8 @@ function bBlock(key,s,past,bh){
   blk.style.height=bh+'px';
   // PT sessions: colour the block by the client's training type.
   var cl=isClientSess?clientOf(s):null;
-  if(cl){var col=tagColor(cl.tag);blk.style.borderLeftColor=col;blk.style.background=col+'22';}
+  // (The tint sits on a solid base the colour of the slot, so it looks the same but stays solid over a My Gym band.)
+  if(cl){var col=tagColor(cl.tag);blk.style.borderLeftColor=col;blk.style.background='linear-gradient('+col+'22,'+col+'22),'+(past?'var(--ep)':'var(--ef)');}
   var est=isClientSess?effStatus(s):'';
   if(est==='cancelled'){blk.style.opacity='.5';blk.style.borderLeftColor='#888780';blk.style.background='#88878018';}
   var nm=mk('div','bn');nm.textContent=s.name;if(est==='cancelled')nm.style.textDecoration='line-through';blk.appendChild(nm);
@@ -1256,8 +1277,8 @@ function bBlock(key,s,past,bh){
   if(s.rate){var rt=mk('div','br');rt.textContent='\u00a3'+ef(s);blk.appendChild(rt);}
   if(s.recurring){var bd=mk('div','bb');bd.textContent='REC';blk.appendChild(bd);}
   (function(k){blk.onclick=function(e){e.stopPropagation();oView(k);};})(key);
-  // Drag to move within the calendar (desktop). Multi-day 'other' blocks aren't draggable.
-  if(!isOth){
+  // Drag to move within the calendar (desktop). Multi-day 'other' blocks and background shifts aren't draggable.
+  if(!isOth&&!ty.bg){
     blk.draggable=true;
     (function(k){
       blk.addEventListener('dragstart',function(e){draggingKey=k;e.dataTransfer.setData('text/plain',k);e.dataTransfer.effectAllowed='move';blk.classList.add('dragging');});
@@ -1270,9 +1291,9 @@ function bBlock(key,s,past,bh){
 function moveSession(key,newDate,newMins){try{
   var s=sess[key];if(!s)return;
   if(s.date===newDate&&s.startMins===newMins)return;
-  var newKey=sk(newDate,newMins);
+  var newKey=keyFor(s.type,newDate,newMins);
   if(sess[newKey]){toast('That slot is taken');return;}
-  if(!confirmClashes(overlapsAt(newDate,newMins,s.duration||60,[key])))return;
+  if(!confirmClashes(overlapsAt(newDate,newMins,s.duration||60,[key],s.type)))return;
   delete sess[key];
   s.date=newDate;s.startMins=newMins;
   sess[newKey]=s;
@@ -1291,11 +1312,12 @@ function onTypeChange(type){
   var adiRow=document.getElementById('adidasRow');if(adiRow)adiRow.style.display=(type==='adidas')?'flex':'none';
   if(type!=='adidas')document.getElementById('fAdiFull').checked=false;
   if(type==='adidas'){var af=adiFull();document.getElementById('adiFullLbl').innerHTML='Full day ('+m2t(af.start)+' &ndash; '+m2t(af.end)+') <span style="color:var(--lime)">&pound;'+af.fee+'</span>';}
-  // Crossfit and Adidas aren't client sessions: the name fills in with the type (still editable). Switching a new
-  // booking from one to the other swaps it; switching a new booking back to a client type clears it.
-  var fN=document.getElementById('fN'),nm=fN.value.trim(),auto={crossfit:'Crossfit',adidas:'Adidas'};
-  if(auto[type]&&(!nm||nm===auto.crossfit||nm===auto.adidas))fN.value=auto[type];
-  else if(!auto[type]&&!aEk&&(nm===auto.crossfit||nm===auto.adidas))fN.value='';
+  // Crossfit, Adidas and My Gym aren't client sessions: the name fills in with the type (still editable). Switching a
+  // new booking from one to another swaps it; switching a new booking back to a client type clears it.
+  var fN=document.getElementById('fN'),nm=fN.value.trim(),auto={crossfit:'Crossfit',adidas:'Adidas',mygym:'My Gym'};
+  var wasAuto=Object.keys(auto).some(function(t){return auto[t]===nm;});
+  if(auto[type]&&(!nm||wasAuto))fN.value=auto[type];
+  else if(!auto[type]&&!aEk&&wasAuto)fN.value='';
   if(TY(type).endTime&&!TY(type).multiDay){
     durWrap.style.display='none';
     etWrap.style.display='block';
@@ -1321,8 +1343,8 @@ function onTypeChange(type){
     etWrap.style.display='none';
     edWrap.style.display='none';
   }
-  // New bookings: Crossfit fills in its rate and the last shift's details; switching away undoes what it filled.
-  if(!aEk&&aSlot){if(type==='crossfit')copyLastCrossfit();else if(pf&&pf.id==='type:crossfit')uncopyLastSession();}
+  // New bookings: Crossfit and My Gym fill in their rate and the last shift's details; switching away undoes what they filled.
+  if(!aEk&&aSlot){if(WORK_RATE[type])copyLastWork(type);else if(pf&&String(pf.id).indexOf('type:')===0)uncopyLastSession();}
 }
 
 // Adidas full day: the hours and day rate come from Settings; unticking leaves the times/fee free to edit for a one-off session.
@@ -1386,10 +1408,11 @@ function copyLastSession(c){
   if(s){pfPut('fType',s.type||'pt',prev,now);pfPut('fD',s.duration||60,prev,now);pfPut('fR',s.rate||'',prev,now);pfPut('fLoc',s.location||'',prev,now);pfPut('fFoc',s.focus||'',prev,now);}
   pf=now;
 }
-function copyLastCrossfit(){
-  if(aEk||!aSlot||(pf&&pf.id==='type:crossfit'))return;
-  var s=lastSessionWhere(function(x){return x.type==='crossfit';},aSlot.date),prev=pf||{},now={id:'type:crossfit'};
-  pfPut('fR',SET.cfRate.toFixed(2),prev,now);
+var WORK_RATE={crossfit:'cfRate',mygym:'gymRate'};   // hourly rate in Settings for each kind of shift
+function copyLastWork(type){
+  if(aEk||!aSlot||(pf&&pf.id==='type:'+type))return;
+  var s=lastSessionWhere(function(x){return x.type===type;},aSlot.date),prev=pf||{},now={id:'type:'+type},r=SET[WORK_RATE[type]]||0;
+  pfPut('fR',r?r.toFixed(2):'',prev,now);
   if(s){
     pfPut('fLoc',s.location||'',prev,now);pfPut('fFoc',s.focus||'',prev,now);
     var st=t2m(document.getElementById('fST').value);if(!isNaN(st))pfPut('fET',m2i(st+(s.duration||60)),prev,now);
@@ -1494,12 +1517,14 @@ function fExtra(){return {
 };}
 
 // Sessions on `date` that overlap the slot starting at sm and lasting dur minutes. Cancelled ones don't take up time.
-// `skip` lists keys to ignore (the session being edited or moved).
-function overlapsAt(date,sm,dur,skip){
-  var end=sm+(dur||60),out=[];
+// `skip` lists keys to ignore (the session being edited or moved). A background shift (My Gym cover) and the sessions
+// done during it don't count as overlapping; time away still clashes with it.
+function overlapsAt(date,sm,dur,skip,type){
+  var end=sm+(dur||60),out=[],bgNew=!!TY(type).bg;
   Object.keys(sess).forEach(function(k){
     if(skip&&skip.indexOf(k)!==-1)return;
     var s=sess[k];if(s.date!==date||effStatus(s)==='cancelled')return;
+    if(!!TY(s.type).bg!==bgNew&&!TY(s.type).multiDay&&!TY(type).multiDay)return;
     if(s.startMins<end&&sm<s.startMins+(s.duration||60))out.push({k:k,s:s});
   });
   out.sort(function(a,b){return a.s.startMins-b.s.startMins;});
@@ -1555,11 +1580,11 @@ function svSess(){try{
   }
   var taken=[],clash=[],seen={};
   plan.forEach(function(p,i){
-    p.key=sk(p.date,p.sm);
+    p.key=keyFor(type,p.date,p.sm);
     if(sess[p.key]&&p.key!==aEk){p.taken=true;taken.push(p);return;}   // never write over another session
     // Editing without moving it: don't ask again about an overlap that was already there.
     if(i===0&&aEk&&old.date===p.date&&old.startMins===p.sm&&(old.duration||60)===p.dur)return;
-    overlapsAt(p.date,p.sm,p.dur,aEk?[aEk]:[]).forEach(function(o){if(!seen[o.k]){seen[o.k]=1;clash.push(o);}});
+    overlapsAt(p.date,p.sm,p.dur,aEk?[aEk]:[],type).forEach(function(o){if(!seen[o.k]){seen[o.k]=1;clash.push(o);}});
   });
   if(plan[0].taken){
     var t0=sess[plan[0].key];
@@ -1732,10 +1757,10 @@ function oExtend(key){
   var lastDt=new Date(last+'T12:00:00'),add=[],clash=[],seen={},taken=0;
   for(var w=intervalWeeks;w<=more;w+=intervalWeeks){
     var dt=new Date(lastDt);dt.setDate(dt.getDate()+w*7);
-    var d2=iso(dt),k2=sk(d2,s.startMins);
+    var d2=iso(dt),k2=keyFor(s.type,d2,s.startMins);
     if(sess[k2]){taken++;continue;}
     add.push({d:d2,k:k2});
-    overlapsAt(d2,s.startMins,s.duration||60,[]).forEach(function(o){if(!seen[o.k]){seen[o.k]=1;clash.push(o);}});
+    overlapsAt(d2,s.startMins,s.duration||60,[],s.type).forEach(function(o){if(!seen[o.k]){seen[o.k]=1;clash.push(o);}});
   }
   if(!add.length){toast(taken?'No new sessions added — those slots are already taken':'No new sessions added');return;}
   if(!confirmClashes(clash))return;
@@ -2780,7 +2805,7 @@ function gcalEvent(s){
     if(s.email)lines.push('Email: '+s.email);
     if(s.notes)lines.push('Notes: '+s.notes);
   }
-  var summary=(t==='adidas'&&/^adidas$/i.test(s.name))?'Adidas':(TY(t).g||'')+s.name;
+  var summary=(t==='adidas'&&/^adidas$/i.test(s.name))?'Adidas':(t==='mygym'&&/^my gym$/i.test(s.name))?'My Gym cover':(TY(t).g||'')+s.name;
   return {summary:summary,description:lines.join('\n'),location:s.location||'',
     start:{dateTime:gWall(s.date,s.startMins),timeZone:'Europe/London'},
     end:{dateTime:gWall(s.date,s.startMins+(s.duration||60)),timeZone:'Europe/London'},colorId:'10'};
@@ -3221,7 +3246,7 @@ function rSessions(){
     pl('No-shows',T.noshow,T.noshow?'var(--danger)':'var(--muted)')+pl('Cancelled',T.cancelled,T.cancelled?'#f0a020':'var(--muted)')+
     pl('Hours',hrs(T.mins),'var(--text)');
   var h;
-  if(!ct.rows.length)h='<div style="color:var(--muted);font-size:13px">No PT, Coaching, Crossfit or Adidas sessions between these dates.</div>';
+  if(!ct.rows.length)h='<div style="color:var(--muted);font-size:13px">No PT, Coaching, Crossfit, Adidas or My Gym sessions between these dates.</div>';
   else h='<div style="overflow-x:auto"><table class="sest"><thead><tr><th>Person / work</th><th>Type</th><th>Booked</th><th>Held</th><th>No-show</th><th>Cancelled</th><th>To come</th><th>Hours</th></tr></thead><tbody>'+
     ct.rows.map(function(r){return '<tr><td>'+esc(r.name)+'</td><td>'+SES_TYPES[r.type]+'</td><td><b>'+r.booked+'</b></td><td>'+r.held+'</td><td>'+(r.noshow||'')+'</td><td>'+(r.cancelled||'')+'</td><td>'+(r.toCome||'')+'</td><td>'+hrs(r.mins)+'</td></tr>';}).join('')+
     '</tbody><tfoot><tr><td>Total</td><td></td><td>'+T.booked+'</td><td>'+T.held+'</td><td>'+T.noshow+'</td><td>'+T.cancelled+'</td><td>'+T.toCome+'</td><td>'+hrs(T.mins)+'</td></tr></tfoot></table></div>';
@@ -3252,7 +3277,7 @@ document.getElementById('sesFrom').onchange=document.getElementById('sesTo').onc
 };
 
 function expCSV(){
-  var rows=['Date,Day,Client,Start Time,Duration (mins),Fee (per hour for Crossfit),Value,Type,Status,Location,Focus,Phone,Email,Notes,Recurring'];
+  var rows=['Date,Day,Client,Start Time,Duration (mins),Fee (per hour for Crossfit and My Gym),Value,Type,Status,Location,Focus,Phone,Email,Notes,Recurring'];
   function q(v){return '"'+String(v||'').replace(/"/g,'""')+'"';}
   Object.keys(sess).sort().forEach(function(k){var s=sess[k];var d=new Date(s.date+'T12:00:00');rows.push([s.date,DF[d.getDay()],q(s.name),m2t(s.startMins),s.duration||60,s.rate||0,ef(s),s.type||'pt',effStatus(s),q(s.location),q(s.focus),q(s.phone),q(s.email),q(s.notes),s.recurring?'Yes':'No'].join(','));});
   var blob=new Blob([rows.join('\n')],{type:'text/csv'});
@@ -3299,6 +3324,7 @@ function openSettings(){
   document.getElementById('setAdiTo').value=SET.adiTo;
   document.getElementById('setAdiFee').value=SET.adiFee;
   document.getElementById('setCfRate').value=SET.cfRate.toFixed(2);
+  document.getElementById('setGymRate').value=SET.gymRate?SET.gymRate.toFixed(2):'';
   document.getElementById('setCredit').value=SET.creditDays;
   document.getElementById('setBlockLow').value=SET.blockLow;
   document.getElementById('setNotSeen').value=SET.notSeenDays;
@@ -3325,6 +3351,7 @@ function saveSettings(){
   SET.adiTo=Math.round(num('setAdiTo',1,24,15));if(SET.adiTo<=SET.adiFrom)SET.adiTo=Math.min(24,SET.adiFrom+1);
   SET.adiFee=num('setAdiFee',0,100000,150);
   SET.cfRate=num('setCfRate',0,1000,13.5);
+  SET.gymRate=num('setGymRate',0,1000,0);
   SET.creditDays=Math.round(num('setCredit',1,365,30));
   SET.blockLow=Math.round(num('setBlockLow',0,100,2));
   SET.notSeenDays=Math.round(num('setNotSeen',1,365,28));
